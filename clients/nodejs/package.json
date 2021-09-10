@@ -1,0 +1,11 @@
+{
+    "name": "ferrum-db-client",
+    "version": "0.0.0",
+    "main": "dist/client.js",
+    "typings": "dist/client.d.ts",
+    "dependencies": {
+        "@types/node": "14.14.34",
+        "csharp-binary-stream": "1.0.3",
+        "bson": "4.4.0"
+    }
+}

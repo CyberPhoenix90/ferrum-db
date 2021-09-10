@@ -1,0 +1,5 @@
+bin
+obj
+.history
+dist
+node_modules
