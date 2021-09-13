@@ -24,6 +24,8 @@ enum ApiMessageType : int {
     INDEX_OPEN_WRITE_STREAM = 22,
     INDEX_CLOSE_WRITE_STREAM = 23,
     INDEX_WRITE_STREAM_WRITE_CHUNK = 24,
+    HEARTBEAT = 25,
+
 }
 
 abstract class Message {
@@ -33,6 +35,11 @@ abstract class Message {
     protected Message(ApiMessageType type, uint id) {
         this.type = type;
         this.id = id;
+    }
+}
+
+class HeartBeat : Message {
+    public HeartBeat(uint id) : base(ApiMessageType.HEARTBEAT, id) {
     }
 }
 

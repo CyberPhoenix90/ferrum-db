@@ -1,16 +1,22 @@
-import { Socket } from 'net';
-import { BinaryReader, BinaryWriter, Encoding } from 'csharp-binary-stream';
-import { gzip, gunzip } from 'zlib';
-import { promisify } from 'util';
-import { serialize, deserialize, setInternalBufferSize } from 'bson';
+import { Socket } from "net";
+import { BinaryReader, BinaryWriter, Encoding } from "csharp-binary-stream";
+import { gzip, gunzip } from "zlib";
+import { promisify } from "util";
+import { serialize, deserialize, setInternalBufferSize } from "bson";
 
 const gunzipPromise = promisify(gunzip);
 const gzipPromise = promisify(gzip);
 
-export type SupportedEncodingTypes = 'ndjson' | 'json' | 'bson' | 'string' | 'binary';
-export type SupportedCompressionTypes = 'gzip' | 'none';
+export type SupportedEncodingTypes =
+    | "ndjson"
+    | "json"
+    | "bson"
+    | "string"
+    | "binary";
+export type SupportedCompressionTypes = "gzip" | "none";
 
 let bsonBufferSize = 17825792;
+const MAX_BUFFER_SIZE = 128 * 1024 * 1024;
 
 enum ApiMessageType {
     CREATE_DATABASE = 0,
@@ -38,61 +44,75 @@ enum ApiMessageType {
     INDEX_OPEN_WRITE_STREAM = 22,
     INDEX_CLOSE_WRITE_STREAM = 23,
     INDEX_WRITE_STREAM_WRITE_CHUNK = 24,
+    HEARTBEAT = 25,
 }
 
-export function ferrumConnect(ip: string, port: number): Promise<FerrumServerConnection> {
+export function ferrumConnect(
+    ip: string,
+    port: number
+): Promise<FerrumServerConnection> {
     return new Promise((resolve, reject) => {
         const socket = new Socket();
         socket.setNoDelay(true);
         socket.connect(port, ip);
-        let connected: boolean = false;
         let client: FerrumServerClient;
 
-        socket.once('connect', () => {
-            connected = true;
+        socket.once("connect", () => {
             client = new FerrumServerClient(socket);
             resolve(new FerrumServerConnection(client));
         });
-        socket.once('error', (e) => {
+        socket.once("error", (e) => {
             console.error(e);
             reject(e);
         });
-        socket.once('close', (e) => {
-            if (!connected) {
-                console.error(e);
-                reject(e);
-            } else {
-                console.log('Ferrum DB Client: Connection lost. Reconnecting');
-                client.reconnect();
-            }
-        });
-        socket.once('timeout', () => {
-            console.error('Connection timeout');
-            reject(new Error('Connection timeout'));
+
+        socket.once("timeout", () => {
+            console.error("Connection timeout");
+            reject(new Error("Connection timeout"));
         });
     });
 }
 
 class FerrumServerClient {
     protected id: number = 0;
-    protected socket: Socket;
+    public socket: Socket;
     protected pending: Map<number, (buffer: Buffer) => void>;
     private writeBuffer: Buffer;
     private lengthBuffer: Buffer;
+    private heartBeatPending: boolean = false;
+    public disposed: boolean;
+    private lastResponse: number = Date.now();
+    private heartBeatInterval: NodeJS.Timeout;
 
     constructor(socket: Socket) {
+        this.initialize(socket);
+        this.heartBeatInterval = setInterval(() => {
+            this.heartbeat();
+        }, 2000);
+    }
+
+    private initialize(socket: Socket) {
         this.socket = socket;
         this.writeBuffer = Buffer.alloc(8192);
         this.lengthBuffer = Buffer.alloc(4);
         this.socket = socket;
         this.pending = new Map();
+        this.disposed = false;
         let msgBuffer = Buffer.alloc(1048576);
         let reading = false;
         let msgSize = 0;
         let msgRemaining = 0;
         let writeOffset = 0;
         let readOffset = 0;
-        this.socket.on('data', (data: Buffer) => {
+
+        socket.on("close", () => {
+            if (!this.disposed) {
+                this.reconnect();
+            }
+        });
+
+        this.socket.on("data", (data: Buffer) => {
+            this.lastResponse = Date.now();
             while (readOffset < data.length) {
                 if (reading === false) {
                     msgSize = msgRemaining = data.readInt32LE(readOffset);
@@ -100,22 +120,33 @@ class FerrumServerClient {
                     reading = true;
                     writeOffset = 0;
                 } else {
-                    const toRead = Math.min(data.length - readOffset, msgRemaining);
+                    const toRead = Math.min(
+                        data.length - readOffset,
+                        msgRemaining
+                    );
                     if (toRead + writeOffset > msgBuffer.length) {
-                        msgBuffer = this.expandBuffer(msgBuffer, 256 * 1024 * 1024);
+                        msgBuffer = this.expandBuffer(
+                            msgBuffer,
+                            MAX_BUFFER_SIZE
+                        );
                     }
-                    data.copy(msgBuffer, writeOffset, readOffset, readOffset + toRead);
+                    data.copy(
+                        msgBuffer,
+                        writeOffset,
+                        readOffset,
+                        readOffset + toRead
+                    );
                     msgRemaining -= toRead;
                     writeOffset += toRead;
                     readOffset += toRead;
                 }
 
                 if (msgRemaining < 0) {
-                    throw new Error('Illegal state');
+                    throw new Error("Illegal state");
                 }
 
                 if (readOffset > data.length) {
-                    throw new Error('Illegal state');
+                    throw new Error("Illegal state");
                 }
 
                 if (reading && msgRemaining === 0) {
@@ -133,13 +164,51 @@ class FerrumServerClient {
     }
 
     public reconnect(): void {
+        this.disposed = false;
+        this.heartBeatPending = false;
+        if (!this.heartBeatInterval) {
+            this.heartBeatInterval = setInterval(() => {
+                this.heartbeat();
+            }, 2000);
+        }
         this.socket.connect(this.socket.remotePort, this.socket.remoteAddress);
         for (const pendingId of this.pending.keys()) {
             const pending = this.pending.get(pendingId);
             const error = new BinaryWriter();
             error.writeBoolean(false);
-            error.writeString('Connection lost', Encoding.Utf8);
+            error.writeString("Connection lost", Encoding.Utf8);
             pending(Buffer.from(error.toUint8Array()));
+        }
+    }
+
+    public disconnect(): void {
+        clearInterval(this.heartBeatInterval);
+        this.heartBeatInterval = undefined;
+        this.disposed = true;
+        this.socket.destroy();
+    }
+
+    public async heartbeat(): Promise<void> {
+        if (Date.now() - this.lastResponse > 6000) {
+            this.socket.destroy();
+            return;
+        }
+
+        if (this.heartBeatPending) {
+            return;
+        }
+        this.heartBeatPending = true;
+
+        const { bw, myId } = this.getSendWriter(ApiMessageType.HEARTBEAT, 0);
+        this.sendMsg(bw);
+
+        const response = await this.getResponse(myId);
+        this.heartBeatPending = false;
+        const br = getBinaryReader(response);
+
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
         }
     }
 
@@ -149,13 +218,19 @@ class FerrumServerClient {
             buffer.copy(newBuffer);
             return newBuffer;
         } else {
-            throw new Error('Buffer overflow');
+            throw new Error("Buffer overflow");
         }
     }
 
-    public getSendWriter(messageType: ApiMessageType, payloadSize: number): { bw: BinaryWriter; myId: number } {
+    public getSendWriter(
+        messageType: ApiMessageType,
+        payloadSize: number
+    ): { bw: BinaryWriter; myId: number } {
         while (payloadSize > this.writeBuffer.length) {
-            this.writeBuffer = this.expandBuffer(this.writeBuffer, 256 * 1024 * 1024);
+            this.writeBuffer = this.expandBuffer(
+                this.writeBuffer,
+                MAX_BUFFER_SIZE
+            );
         }
 
         const buffer = this.writeBuffer;
@@ -198,8 +273,17 @@ export class FerrumServerConnection {
         this.client = client;
     }
 
-    public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST, dbName.length);
+    public disconnect(): void {
+        this.client.disconnect();
+    }
+
+    public async createDatabaseIfNotExists(
+        dbName: string
+    ): Promise<FerrumDBRemote> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST,
+            dbName.length
+        );
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -215,7 +299,10 @@ export class FerrumServerConnection {
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE, dbName.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.CREATE_DATABASE,
+            dbName.length
+        );
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -231,7 +318,10 @@ export class FerrumServerConnection {
     }
 
     public async hasDatabase(dbName: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_DATABASE, dbName.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.HAS_DATABASE,
+            dbName.length
+        );
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -247,7 +337,10 @@ export class FerrumServerConnection {
     }
 
     public async dropDatabase(dbName: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DROP_DATABASE, dbName.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.DROP_DATABASE,
+            dbName.length
+        );
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -263,7 +356,10 @@ export class FerrumServerConnection {
     }
 
     public async clearDatabase(dbName: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CLEAR_DATABASE, dbName.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.CLEAR_DATABASE,
+            dbName.length
+        );
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -278,7 +374,10 @@ export class FerrumServerConnection {
     }
 
     public async getDatabaseNames(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.LIST_DATABASES, 0);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.LIST_DATABASES,
+            0
+        );
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
@@ -311,8 +410,14 @@ export class FerrumDBRemote {
         this.dbName = dbName;
     }
 
-    public async createIndexIfNotExist(index: string, pageFileSize: number = 0): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX_IF_NOT_EXIST, this.dbName.length + index.length);
+    public async createIndexIfNotExist(
+        index: string,
+        pageFileSize: number = 0
+    ): Promise<void> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.CREATE_INDEX_IF_NOT_EXIST,
+            this.dbName.length + index.length
+        );
         bw.writeString(this.dbName, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
         bw.writeUnsignedInt(pageFileSize);
@@ -330,12 +435,25 @@ export class FerrumDBRemote {
         }
     }
 
-    public getIndex<T>(index: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): IndexRemote<T> {
-        return new IndexRemote<T>(this.client, this.dbName, index, encoding, compression);
+    public getIndex<T>(
+        index: string,
+        encoding: SupportedEncodingTypes = "bson",
+        compression: SupportedCompressionTypes = "gzip"
+    ): IndexRemote<T> {
+        return new IndexRemote<T>(
+            this.client,
+            this.dbName,
+            index,
+            encoding,
+            compression
+        );
     }
 
     public async deleteIndex(index: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_INDEX, index.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.DELETE_INDEX,
+            index.length
+        );
         bw.writeString(this.dbName, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
 
@@ -352,8 +470,14 @@ export class FerrumDBRemote {
         }
     }
 
-    public async createIndex(index: string, pageFileSize: number = 0): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX, index.length);
+    public async createIndex(
+        index: string,
+        pageFileSize: number = 0
+    ): Promise<void> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.CREATE_INDEX,
+            index.length
+        );
         bw.writeString(this.dbName, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
         bw.writeUnsignedInt(pageFileSize);
@@ -372,7 +496,10 @@ export class FerrumDBRemote {
     }
 
     public async hasIndex(index: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_INDEX, index.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.HAS_INDEX,
+            index.length
+        );
         bw.writeString(this.dbName, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -389,7 +516,10 @@ export class FerrumDBRemote {
     }
 
     public async getIndexes(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_INDEXES, 0);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.GET_INDEXES,
+            0
+        );
         bw.writeString(this.dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -410,7 +540,10 @@ export class FerrumDBRemote {
     }
 
     public async compact(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COMPACT, 0);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.COMPACT,
+            0
+        );
         bw.writeString(this.dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -433,7 +566,13 @@ export class IndexRemote<T> {
     private compression: SupportedCompressionTypes;
     private database: string;
 
-    constructor(client: FerrumServerClient, database: string, indexKey: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
+    constructor(
+        client: FerrumServerClient,
+        database: string,
+        indexKey: string,
+        encoding: SupportedEncodingTypes,
+        compression: SupportedCompressionTypes
+    ) {
         this.client = client;
         this.database = database;
         this.encoding = encoding;
@@ -442,7 +581,10 @@ export class IndexRemote<T> {
     }
 
     public async has(key: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_HAS, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_HAS,
+            this.database.length + this.indexKey.length + key.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -460,7 +602,10 @@ export class IndexRemote<T> {
     }
 
     public async getRecordSize(key: string): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_SIZE, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_GET_RECORD_SIZE,
+            this.database.length + this.indexKey.length + key.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -479,7 +624,10 @@ export class IndexRemote<T> {
     }
 
     public async getRecordCount(): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_COUNT, this.database.length + this.indexKey.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_GET_RECORD_COUNT,
+            this.database.length + this.indexKey.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -497,7 +645,10 @@ export class IndexRemote<T> {
     }
 
     public async get(key: string): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_GET,
+            this.database.length + this.indexKey.length + key.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -517,7 +668,7 @@ export class IndexRemote<T> {
             let decodedValue: any;
 
             switch (this.compression) {
-                case 'gzip':
+                case "gzip":
                     decompressed = await gunzipPromise(result);
                     break;
                 default:
@@ -525,25 +676,29 @@ export class IndexRemote<T> {
                     break;
             }
 
-            if (this.encoding === 'bson') {
+            if (this.encoding === "bson") {
                 if (decompressed.length > bsonBufferSize) {
                     setInternalBufferSize(decompressed.length);
                     bsonBufferSize = decompressed.length;
                 }
                 decodedValue = deserialize(decompressed);
-            } else if (this.encoding === 'json') {
+            } else if (this.encoding === "json") {
                 try {
-                    decodedValue = JSON.parse(decompressed.toString('utf8'));
+                    decodedValue = JSON.parse(decompressed.toString("utf8"));
                 } catch (e) {
-                    throw new Error(`Failed to decode JSON for key ${key}. ${decompressed.toString('utf8')}`);
+                    throw new Error(
+                        `Failed to decode JSON for key ${key}. ${decompressed.toString(
+                            "utf8"
+                        )}`
+                    );
                 }
-            } else if (this.encoding === 'ndjson') {
+            } else if (this.encoding === "ndjson") {
                 decodedValue = decompressed
-                    .toString('utf8')
-                    .split('\n')
+                    .toString("utf8")
+                    .split("\n")
                     .map((e) => JSON.parse(e));
-            } else if (this.encoding === 'string') {
-                decodedValue = decompressed.toString('utf8');
+            } else if (this.encoding === "string") {
+                decodedValue = decompressed.toString("utf8");
             } else {
                 decodedValue = decompressed;
             }
@@ -552,8 +707,15 @@ export class IndexRemote<T> {
         }
     }
 
-    public async readChunk(key: string, offset: number, size: number): Promise<Buffer> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.indexKey.length + key.length);
+    public async readChunk(
+        key: string,
+        offset: number,
+        size: number
+    ): Promise<Buffer> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_GET,
+            this.database.length + this.indexKey.length + key.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -581,19 +743,23 @@ export class IndexRemote<T> {
 
     public async set(key: string, value: T): Promise<void> {
         let encodedData: Buffer;
-        if (this.encoding === 'bson') {
+        if (this.encoding === "bson") {
             encodedData = encodeBSON(value);
-        } else if (this.encoding === 'json') {
+        } else if (this.encoding === "json") {
             encodedData = Buffer.from(JSON.stringify(value));
-        } else if (this.encoding === 'ndjson') {
+        } else if (this.encoding === "ndjson") {
             if (Array.isArray(value)) {
-                encodedData = Buffer.from(value.map((e) => JSON.stringify(e)).join('\n'));
+                encodedData = Buffer.from(
+                    value.map((e) => JSON.stringify(e)).join("\n")
+                );
             } else {
                 throw new Error(`Non array data cannot be ndjson encoded`);
             }
-        } else if (this.encoding === 'string') {
-            if (typeof value !== 'string') {
-                throw new Error(`Invalid input. Expected string got ${typeof value}`);
+        } else if (this.encoding === "string") {
+            if (typeof value !== "string") {
+                throw new Error(
+                    `Invalid input. Expected string got ${typeof value}`
+                );
             }
             encodedData = Buffer.from(value);
         } else {
@@ -605,14 +771,20 @@ export class IndexRemote<T> {
         }
 
         switch (this.compression) {
-            case 'gzip':
+            case "gzip":
                 encodedData = await gzipPromise(encodedData);
                 break;
             default:
                 break;
         }
 
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_SET, this.database.length + this.indexKey.length + key.length + encodedData.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_SET,
+            this.database.length +
+                this.indexKey.length +
+                key.length +
+                encodedData.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -634,7 +806,10 @@ export class IndexRemote<T> {
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_CLEAR, this.database.length + this.indexKey.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_CLEAR,
+            this.database.length + this.indexKey.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -651,7 +826,10 @@ export class IndexRemote<T> {
     }
 
     public async getKeys(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_KEYS, this.database.length + this.indexKey.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_GET_KEYS,
+            this.database.length + this.indexKey.length
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.indexKey, Encoding.Utf8);
         this.client.sendMsg(bw);

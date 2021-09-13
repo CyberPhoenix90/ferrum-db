@@ -55,8 +55,7 @@ class Index {
             pages.Add(page.Substring(this.path.Length + 1, page.Length - 5 - this.path.Length - 1));
         }
 
-        this.writer.Close();
-
+        //this.writer.Close();
         //var tmpFile = new BinaryWriter(File.Open(Path.Join(path, "tmprecords.index"), FileMode.Create));
 
 

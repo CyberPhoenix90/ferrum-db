@@ -11,6 +11,7 @@ class Config
 {
     public string ip;
     public int port;
+    public string dbFolder;
 }
 
 namespace ferrum_db_server {
@@ -20,7 +21,7 @@ namespace ferrum_db_server {
             Console.WriteLine($"Starting Database");
             var stopWatch = new Stopwatch();
             stopWatch.Start();
-            FerrumDb ferrumDb = new FerrumDb("ferrum_db_server.mr");
+            FerrumDb ferrumDb = new FerrumDb(Path.Join(config.dbFolder, "ferrum_db_server.mr"));
             stopWatch.Stop();
             new Thread(() =>
             {

@@ -108,6 +108,8 @@ namespace api_server
                     var type = reader.ReadInt32();
                     switch ((ApiMessageType)type)
                     {
+                        case ApiMessageType.HEARTBEAT:
+                            return new HeartBeat(reader.ReadUInt32());
                         case ApiMessageType.CREATE_DATABASE:
                             return new CreateDatabase(reader.ReadUInt32(), reader.ReadString());
                         case ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST:
@@ -177,6 +179,10 @@ namespace api_server
             {
                 switch (command.type)
                 {
+                    case ApiMessageType.HEARTBEAT:
+                        var heartbeat = (HeartBeat)command;
+                        this.sendOk(client, heartbeat.id);
+                        break;
                     case ApiMessageType.CREATE_DATABASE:
                         var createDatabase = ((CreateDatabase)command);
                         ferrumDb.createDatabase(createDatabase.name);
@@ -464,8 +470,11 @@ namespace api_server
 #if DEBUG
             Console.WriteLine($"Sending ERROR for ID ${id}");
 #endif
+            Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
+
             s.Write(false);
-            s.Write(e.Message);
+            s.Write(e.Message+'\n'+e.StackTrace);
             this.endSend(client, s);
         }
 
