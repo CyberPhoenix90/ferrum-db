@@ -5,7 +5,7 @@ using System.Linq;
 using entry_metadat;
 using page_file;
 
-class Index {
+public class Index {
     private readonly string path;
     public readonly long pos;
     private readonly string name;
@@ -17,7 +17,6 @@ class Index {
     private BinaryWriter writer;
 
     public Index(string path, long pos, string name, uint pageSize) {
-
         this.pageFiles = new Dictionary<uint, PageFile>();
         this.contentMap = new Dictionary<string, EntryMetadata>(10000);
         this.path = path;
@@ -25,13 +24,12 @@ class Index {
         this.name = name;
         this.pageSize = pageSize;
         initialize();
-
     }
 
     private void initialize() {
         Console.WriteLine($"Initializing index {name}");
         Directory.CreateDirectory(this.path);
-        if(Directory.Exists(Path.Join(this.path, "tmp"))) {
+        if (Directory.Exists(Path.Join(this.path, "tmp"))) {
             Directory.Delete(Path.Join(this.path, "tmp"), true);
         }
         Directory.CreateDirectory(Path.Join(this.path, "tmp"));
@@ -80,7 +78,7 @@ class Index {
         //tmpFile.Close();
         //File.Move(Path.Join(path, "tmprecords.index"), Path.Join(path, "records.index"), true);
         //foreach (var page in this.pageFiles) {
-        //    page.Value.dispose();
+        //    page.Value.Clear();
         //}
         //this.pageFiles.Clear();
         //this.contentMap.Clear();
@@ -109,9 +107,8 @@ class Index {
         this.contentMap.Clear();
         this.writer.Close();
         foreach (var pageFile in this.pageFiles.Values) {
-            pageFile.delete();
+            pageFile.dispose();
         }
-        Directory.Delete(this.path, true);
     }
 
     public bool has(string key) {
@@ -125,7 +122,13 @@ class Index {
     }
 
     public void clear() {
-        this.dispose();
+        this.contentMap.Clear();
+        this.writer.Close();
+        foreach (var pageFile in this.pageFiles.Values) {
+            pageFile.delete();
+        }
+        Directory.Delete(this.path, true);
+
         this.initialize();
         this.pageFiles.Clear();
         this.nextPageFile = 0;

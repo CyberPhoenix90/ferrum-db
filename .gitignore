@@ -3,3 +3,4 @@ obj
 .history
 dist
 node_modules
+coverage.cobertura.xml

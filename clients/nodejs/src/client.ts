@@ -62,12 +62,10 @@ export function ferrumConnect(
             resolve(new FerrumServerConnection(client));
         });
         socket.once("error", (e) => {
-            console.error(e);
             reject(e);
         });
 
         socket.once("timeout", () => {
-            console.error("Connection timeout");
             reject(new Error("Connection timeout"));
         });
     });
@@ -154,7 +152,9 @@ class FerrumServerClient {
                     writeOffset = 0;
                     const id = msgBuffer.readUInt32LE();
                     if (this.pending.has(id)) {
-                        this.pending.get(id)(msgBuffer.slice(4, msgSize));
+                        this.pending.get(id)(
+                            Buffer.from(msgBuffer.slice(4, msgSize))
+                        );
                         this.pending.delete(id);
                     }
                 }
@@ -410,10 +410,10 @@ export class FerrumDBRemote {
         this.dbName = dbName;
     }
 
-    public async createIndexIfNotExist(
+    public async createIndexIfNotExist<T>(
         index: string,
         pageFileSize: number = 0
-    ): Promise<void> {
+    ): Promise<IndexRemote<T>> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.CREATE_INDEX_IF_NOT_EXIST,
             this.dbName.length + index.length
@@ -431,7 +431,7 @@ export class FerrumDBRemote {
         if (!success) {
             return handleErrorResponse(br);
         } else {
-            return undefined;
+            return this.getIndex(index);
         }
     }
 
@@ -470,10 +470,10 @@ export class FerrumDBRemote {
         }
     }
 
-    public async createIndex(
+    public async createIndex<T>(
         index: string,
         pageFileSize: number = 0
-    ): Promise<void> {
+    ): Promise<IndexRemote<T>> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.CREATE_INDEX,
             index.length
@@ -491,7 +491,7 @@ export class FerrumDBRemote {
         if (!success) {
             return handleErrorResponse(br);
         } else {
-            return undefined;
+            return this.getIndex(index);
         }
     }
 
@@ -662,48 +662,55 @@ export class IndexRemote<T> {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
-            console.log(`Fetched ${len} bytes from DB`);
-            const result = Buffer.from(br.readBytes(len));
-            let decompressed: Buffer;
-            let decodedValue: any;
+            try {
+                const result = Buffer.from(br.readBytes(len));
+                let decompressed: Buffer;
+                let decodedValue: any;
 
-            switch (this.compression) {
-                case "gzip":
-                    decompressed = await gunzipPromise(result);
-                    break;
-                default:
-                    decompressed = result;
-                    break;
-            }
-
-            if (this.encoding === "bson") {
-                if (decompressed.length > bsonBufferSize) {
-                    setInternalBufferSize(decompressed.length);
-                    bsonBufferSize = decompressed.length;
+                switch (this.compression) {
+                    case "gzip":
+                        decompressed = await gunzipPromise(result);
+                        break;
+                    default:
+                        decompressed = result;
+                        break;
                 }
-                decodedValue = deserialize(decompressed);
-            } else if (this.encoding === "json") {
-                try {
-                    decodedValue = JSON.parse(decompressed.toString("utf8"));
-                } catch (e) {
-                    throw new Error(
-                        `Failed to decode JSON for key ${key}. ${decompressed.toString(
-                            "utf8"
-                        )}`
-                    );
-                }
-            } else if (this.encoding === "ndjson") {
-                decodedValue = decompressed
-                    .toString("utf8")
-                    .split("\n")
-                    .map((e) => JSON.parse(e));
-            } else if (this.encoding === "string") {
-                decodedValue = decompressed.toString("utf8");
-            } else {
-                decodedValue = decompressed;
-            }
 
-            return decodedValue;
+                if (this.encoding === "bson") {
+                    if (decompressed.length > bsonBufferSize) {
+                        setInternalBufferSize(decompressed.length);
+                        bsonBufferSize = decompressed.length;
+                    }
+                    decodedValue = deserialize(decompressed);
+                } else if (this.encoding === "json") {
+                    try {
+                        decodedValue = JSON.parse(
+                            decompressed.toString("utf8")
+                        );
+                    } catch (e) {
+                        throw new Error(
+                            `Failed to decode JSON for key ${key}. ${decompressed.toString(
+                                "utf8"
+                            )}`
+                        );
+                    }
+                } else if (this.encoding === "ndjson") {
+                    decodedValue = decompressed
+                        .toString("utf8")
+                        .split("\n")
+                        .map((e) => JSON.parse(e));
+                } else if (this.encoding === "string") {
+                    decodedValue = decompressed.toString("utf8");
+                } else {
+                    decodedValue = decompressed;
+                }
+
+                return decodedValue;
+            } catch (e) {
+                throw new Error(
+                    `Failed to get ${key} from ${this.indexKey} \n\nCaused by: ${e}`
+                );
+            }
         }
     }
 

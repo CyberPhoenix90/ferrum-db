@@ -6,7 +6,7 @@ using System.Linq;
 namespace master_record {
 
 
-    class DatabaseManager {
+    public class DatabaseManager {
         private Dictionary<string, Database> databases;
         private BinaryWriter writer;
         private string path;
@@ -40,10 +40,8 @@ namespace master_record {
             }
         }
 
-        public void clear()
-        {
-            foreach (string database in this.databases.Keys)
-            {
+        public void clear() {
+            foreach (string database in this.databases.Keys) {
                 this.deleteDatabase(database);
             }
         }
@@ -57,22 +55,21 @@ namespace master_record {
         public Database addDatabase(string name) {
             Console.WriteLine($"Creating Database {name}");
             //Forbid all characters that are not allowed as part of a file name
-            if (name.Any(c => Path.GetInvalidFileNameChars().Contains(c)))
-            {
+            if (name.Any(c => Path.GetInvalidFileNameChars().Contains(c))) {
                 throw new ArgumentException("Invalid database name. Must not include any characters that aren't allowed in file names");
             }
 
-            var pos = this.writer.BaseStream.Position;
             Directory.CreateDirectory(Path.Join(this.folder, name));
+            this.writer.BaseStream.Seek(0, SeekOrigin.End);
+            var pos = this.writer.BaseStream.Position;
+
             var database = new Database(Path.Join(this.folder, name), name, pos);
             this.databases.TryAdd(name, database);
             this.writer.Write(false);
             this.writer.Write(name);
 
             this.writer.BaseStream.Seek(pos, SeekOrigin.Begin);
-            this.writer.Flush();
             this.writer.Write(true);
-            this.writer.BaseStream.Seek(0, SeekOrigin.End);
             this.writer.Flush();
 
             return database;
@@ -87,12 +84,14 @@ namespace master_record {
         public void deleteDatabase(string name) {
             Database? database;
             this.databases.TryGetValue(name, out database);
-            if (database!= null) {
-                this.writer.BaseStream.Position = database.pos;
+            if (database != null) {
+#if DEBUG
+                Console.WriteLine($"Deleting Database {name} at pos {database.pos}");
+#endif
+                this.writer.BaseStream.Seek(database.pos, SeekOrigin.Begin);
                 this.writer.Write(false);
-                this.writer.BaseStream.Seek(0, SeekOrigin.End);
                 this.databases.Remove(name);
-                database.dispose();
+                database.clear();
                 Console.WriteLine($"Deleting database {name} at {Path.Join(this.folder, database.name)}");
                 Directory.Delete(Path.Join(this.folder, database.name), true);
             } else {
@@ -105,10 +104,16 @@ namespace master_record {
             var isAlive = reader.ReadBoolean();
             var name = reader.ReadString();
             if (!isAlive) {
-                reader.BaseStream.Seek(4, SeekOrigin.Current);
                 return;
             }
             this.databases.TryAdd(name, new Database(Path.Join(this.folder, name), name, pos));
+        }
+
+        public void dispose() {
+            foreach (Database database in this.databases.Values) {
+                database.dispose();
+            }
+            this.writer.Close();
         }
     }
 }

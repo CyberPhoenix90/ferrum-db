@@ -343,7 +343,7 @@ namespace api_server
                         }
                         break;
                     case ApiMessageType.INDEX_GET_KEYS:
-                        var indexGetKeys = ((IndexHas)command);
+                        var indexGetKeys = ((IndexGetKeys)command);
                         db = ferrumDb.getDatabase(indexGetKeys.database);
                         index = db.getIndex(indexGetKeys.index);
                         if (index != null)

@@ -6,7 +6,7 @@ using master_record;
 namespace ferrum_db {
 
 
-    class FerrumDb {
+    public class FerrumDb {
         private DatabaseManager databaseManager;
 
         public FerrumDb(string path) {
@@ -44,8 +44,7 @@ namespace ferrum_db {
             }
         }
 
-        public void clear()
-        {
+        public void clear() {
             this.databaseManager.clear();
         }
 
@@ -59,6 +58,10 @@ namespace ferrum_db {
 
         public Database? getDatabase(string name) {
             return this.databaseManager.getDatabase(name);
+        }
+
+        public void dispose() {
+            this.databaseManager.dispose();
         }
     }
 }

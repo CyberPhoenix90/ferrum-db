@@ -58,14 +58,14 @@ namespace page_file {
             this.usedBytes += (value.Length);
             this.writer.Flush();
 #if DEBUG
-            Console.WriteLine($"{value.Length} bytes written at {this.writer.BaseStream.Position- value.Length} to {this.writer.BaseStream.Position}");
+            Console.WriteLine($"{value.Length} bytes written at {this.writer.BaseStream.Position - value.Length} to {this.writer.BaseStream.Position}");
 #endif
 
             return writePos;
         }
 
         public void dispose() {
-            this.writer.Dispose();
+            this.writer.Close();
         }
 
         public void delete() {
@@ -73,7 +73,7 @@ namespace page_file {
             Console.WriteLine($"Deleting page {this.path}");
 #endif
             this.writer.Dispose();
-File.Delete(this.path);
-}
+            File.Delete(this.path);
+        }
     }
 }

@@ -1,6 +1,6 @@
 {
     "name": "ferrum-db-client",
-    "version": "0.0.2",
+    "version": "0.0.5",
     "main": "dist/client.js",
     "typings": "dist/client.d.ts",
     "dependencies": {
