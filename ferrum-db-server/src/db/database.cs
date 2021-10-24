@@ -29,8 +29,12 @@ namespace master_record {
                 isNew = false;
                 Console.WriteLine($"Initializing database {name}...");
                 using (BinaryReader reader = new BinaryReader(File.Open(this.path, FileMode.Open))) {
+                    var version = reader.ReadInt32();
+                    if (version > Database.Version) {
+                        throw new Exception($"Database version {version} is newer than supported version {Database.Version}");
+                    }
                     while (reader.PeekChar() != -1) {
-                        this.readIndex(reader);
+                        this.readCollection(reader);
                     }
                 }
             } else {
@@ -209,20 +213,20 @@ namespace master_record {
             this.writer.Close();
         }
 
-        private void readIndex(BinaryReader reader) {
+        private void readCollection(BinaryReader reader) {
             var pos = reader.BaseStream.Position;
             var isAlive = reader.ReadBoolean();
             var name = reader.ReadString();
-            if (!isAlive) {
-                reader.BaseStream.Seek(4, SeekOrigin.Current);
-                return;
-            }
             var type = reader.ReadByte();
             if (type == 0) {
                 var pageSize = reader.ReadUInt32();
-                this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize));
+                if (isAlive) {
+                    this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize));
+                }
             } else {
-                this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name));
+                if (isAlive) {
+                    this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name));
+                }
             }
         }
     }

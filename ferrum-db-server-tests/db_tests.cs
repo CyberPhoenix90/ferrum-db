@@ -119,5 +119,27 @@ namespace ferrum_db_server_tests {
 
             Assert.IsTrue(File.Exists("tmp/test/4/records.set"));
         }
+
+        [TestMethod]
+        public void Mixed() {
+            var dbServer = new FerrumDb("tmp/test.mr");
+            var db = dbServer.createDatabase("test");
+            db.addSet("testIndex");
+            db.addIndex("testIndex", 0);
+            db.addIndex("testIndex2", 0);
+            db.addSet("testSet2");
+
+            dbServer.dispose();
+            dbServer = new FerrumDb("tmp/test.mr");
+            db = dbServer.getDatabase("test");
+
+            db.hasSet("testIndex");
+            db.hasIndex("testIndex");
+            db.hasIndex("testIndex2");
+            db.hasSet("testSet2");
+
+
+            Assert.IsTrue(File.Exists("tmp/test/4/records.set"));
+        }
     }
 }
