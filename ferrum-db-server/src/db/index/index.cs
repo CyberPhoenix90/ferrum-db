@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using entry_metadat;
+using entry_metadata;
 using page_file;
 
 public class Index {
@@ -11,14 +11,14 @@ public class Index {
     private readonly string name;
     private readonly uint pageSize;
     private Dictionary<uint, PageFile> pageFiles;
-    private Dictionary<string, EntryMetadata> contentMap;
+    private Dictionary<string, IndexEntryMetadata> contentMap;
     private PageFile? activePageFile;
     private uint nextPageFile;
     private BinaryWriter writer;
 
     public Index(string path, long pos, string name, uint pageSize) {
         this.pageFiles = new Dictionary<uint, PageFile>();
-        this.contentMap = new Dictionary<string, EntryMetadata>(10000);
+        this.contentMap = new Dictionary<string, IndexEntryMetadata>(10000);
         this.path = path;
         this.pos = pos;
         this.name = name;
@@ -99,7 +99,7 @@ public class Index {
         var length = reader.ReadInt64();
         var isAlive = reader.ReadBoolean();
         if (isAlive) {
-            this.contentMap.TryAdd(key, new EntryMetadata(pageFileId, posInPage, length, reader.BaseStream.Position - 1));
+            this.contentMap.TryAdd(key, new IndexEntryMetadata(pageFileId, posInPage, length, reader.BaseStream.Position - 1));
         }
     }
 
@@ -136,7 +136,7 @@ public class Index {
     }
 
     public void delete(string key) {
-        EntryMetadata? entry;
+        IndexEntryMetadata? entry;
         this.contentMap.TryGetValue(key, out entry);
         if (entry == null) {
             return;
@@ -164,7 +164,7 @@ public class Index {
 #if DEBUG
         Console.WriteLine($"Getting record {key} from index {this.name}");
 #endif
-        EntryMetadata? entry;
+        IndexEntryMetadata? entry;
         this.contentMap.TryGetValue(key, out entry);
         if (entry == null) {
             return null;
@@ -183,7 +183,7 @@ public class Index {
 #if DEBUG
         Console.WriteLine($"Reading chunk of record {key} from index {this.name} at {offset} size: {size} ");
 #endif
-        EntryMetadata? entry;
+        IndexEntryMetadata? entry;
         this.contentMap.TryGetValue(key, out entry);
         if (entry == null) {
             return null;
@@ -205,7 +205,7 @@ public class Index {
 #if DEBUG
         Console.WriteLine($"Reading chunk of record {key} from index {this.name} from {offset} until byte {until}");
 #endif
-        EntryMetadata? entry;
+        IndexEntryMetadata? entry;
         this.contentMap.TryGetValue(key, out entry);
         if (entry == null) {
             return null;
@@ -238,7 +238,7 @@ public class Index {
         Console.WriteLine($"Page pointer moved from {locationOnPage} to {page.pos}");
 #endif
         this.writeRecord(this.writer, key, page.index, (uint)locationOnPage, value.Length);
-        var entry = new EntryMetadata(page.index, (uint)locationOnPage, value.Length, this.writer.BaseStream.Position - 1);
+        var entry = new IndexEntryMetadata(page.index, (uint)locationOnPage, value.Length, this.writer.BaseStream.Position - 1);
         this.contentMap.Add(key, entry);
     }
 
@@ -270,7 +270,7 @@ public class Index {
     }
 
     public long? getRecordSize(string key) {
-        EntryMetadata? entry;
+        IndexEntryMetadata? entry;
         this.contentMap.TryGetValue(key, out entry);
         if (entry == null) {
             return null;

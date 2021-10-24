@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using ferrum_db;
+using System;
 
 namespace ferrum_db_server_tests {
     [TestClass]
@@ -35,7 +36,8 @@ namespace ferrum_db_server_tests {
             var db = dbServer.createDatabase("test");
             var index = db.addIndex("testIndex", 8);
             dbServer.dispose();
-            Assert.IsTrue(File.Exists("tmp/test/0/records.index"));
+            Assert.IsNotNull(index);
+            Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
         }
 
         [TestMethod]
@@ -47,9 +49,9 @@ namespace ferrum_db_server_tests {
             CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
             dbServer.dispose();
 
-            Assert.IsTrue(File.Exists("tmp/test/0/records.index"));
-            Assert.IsTrue(File.Exists("tmp/test/0/0.page"));
-            Assert.IsTrue(Directory.GetFiles("tmp/test/0").Length == 2);
+            Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
+            Assert.IsTrue(File.Exists("tmp/test/4/0.page"));
+            Assert.IsTrue(Directory.GetFiles("tmp/test/4").Length == 2);
         }
 
         [TestMethod]
@@ -65,9 +67,9 @@ namespace ferrum_db_server_tests {
             index2.set("test2", new byte[] { 0, 1, 2 });
             CollectionAssert.AreEqual(index2.get("test2"), new byte[] { 0, 1, 2 });
 
-            Assert.IsTrue(File.Exists("tmp/test/0/records.index"));
-            Assert.IsTrue(File.Exists("tmp/test/0/0.page"));
-            Assert.IsTrue(Directory.GetFiles("tmp/test/0").Length == 2);
+            Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
+            Assert.IsTrue(File.Exists("tmp/test/4/0.page"));
+            Assert.IsTrue(Directory.GetFiles("tmp/test/4").Length == 2);
         }
 
         [TestMethod]
@@ -97,9 +99,25 @@ namespace ferrum_db_server_tests {
             index.set("test", new byte[] { 0, 1, 2 });
             CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
 
-            Assert.IsTrue(File.Exists("tmp/test/0/records.index"));
-            Assert.IsTrue(File.Exists("tmp/test/0/0.page"));
-            Assert.IsTrue(Directory.GetFiles("tmp/test/0").Length == 2);
+            Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
+            Assert.IsTrue(File.Exists("tmp/test/4/0.page"));
+            Assert.IsTrue(Directory.GetFiles("tmp/test/4").Length == 2);
+        }
+
+        [TestMethod]
+        public void Sets() {
+            var dbServer = new FerrumDb("tmp/test.mr");
+            var db = dbServer.createDatabase("test");
+            var set = db.addSet("testIndex");
+            set.add("test");
+            set.add("test2");
+            set.add("test3");
+            Assert.IsTrue(set.has("test"));
+            Assert.IsTrue(set.has("test2"));
+            Assert.IsFalse(set.has("test4"));
+            CollectionAssert.AreEqual(set.getKeys(), new string[] { "test", "test2", "test3" });
+
+            Assert.IsTrue(File.Exists("tmp/test/4/records.set"));
         }
     }
 }

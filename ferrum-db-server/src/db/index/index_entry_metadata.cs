@@ -1,13 +1,13 @@
 using System;
 
-namespace entry_metadat {
-    public class EntryMetadata {
+namespace entry_metadata {
+    public class IndexEntryMetadata {
         public readonly uint pageFile;
         public readonly uint pos;
         public readonly long length;
         public readonly long deleteBytePosInRecord;
 
-        public EntryMetadata(uint pageFile, uint pos, long length, long deleteBytePosInRecord) {
+        public IndexEntryMetadata(uint pageFile, uint pos, long length, long deleteBytePosInRecord) {
             this.pageFile = pageFile;
             this.pos = pos;
             this.length = length;

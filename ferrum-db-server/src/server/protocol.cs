@@ -25,7 +25,17 @@ enum ApiMessageType : int {
     INDEX_CLOSE_WRITE_STREAM = 23,
     INDEX_WRITE_STREAM_WRITE_CHUNK = 24,
     HEARTBEAT = 25,
-
+    CREATE_SET = 26,
+    CREATE_SET_IF_NOT_EXIST = 27,
+    DELETE_SET = 28,
+    HAS_SET = 29,
+    GET_SETS = 30,
+    SET_HAS = 31,
+    SET_ADD = 32,
+    SET_DELETE = 33,
+    SET_GET_KEYS = 34,
+    SET_CLEAR = 35,
+    SET_GET_RECORD_COUNT = 36,
 }
 
 abstract class Message {
@@ -75,21 +85,17 @@ class DropDatabase : Message {
     }
 }
 
-class ClearDatabase : Message
-{
+class ClearDatabase : Message {
     public readonly string name;
 
-    public ClearDatabase(uint id, string name) : base(ApiMessageType.CLEAR_DATABASE, id)
-    {
+    public ClearDatabase(uint id, string name) : base(ApiMessageType.CLEAR_DATABASE, id) {
         this.name = name;
     }
 }
 
-class ListDatabases : Message
-{
+class ListDatabases : Message {
 
-    public ListDatabases(uint id) : base(ApiMessageType.LIST_DATABASES, id)
-    {
+    public ListDatabases(uint id) : base(ApiMessageType.LIST_DATABASES, id) {
     }
 }
 
@@ -306,5 +312,117 @@ class IndexGetKeys : Message {
     public IndexGetKeys(uint id, string database, string index) : base(ApiMessageType.INDEX_GET_KEYS, id) {
         this.database = database;
         this.index = index;
+    }
+}
+
+
+class SetAdd : Message {
+    public readonly string database;
+    public readonly string set;
+    public readonly string key;
+
+    public SetAdd(uint id, string database, string set, string key) : base(ApiMessageType.SET_ADD, id) {
+        this.database = database;
+        this.set = set;
+        this.key = key;
+    }
+}
+
+class SetDelete : Message {
+    public readonly string database;
+    public readonly string set;
+    public readonly string key;
+
+    public SetDelete(uint id, string database, string set, string key) : base(ApiMessageType.SET_DELETE, id) {
+        this.database = database;
+        this.set = set;
+        this.key = key;
+    }
+}
+
+class SetClear : Message {
+    public readonly string database;
+    public readonly string set;
+
+    public SetClear(uint id, string database, string set) : base(ApiMessageType.SET_CLEAR, id) {
+        this.database = database;
+        this.set = set;
+    }
+}
+
+class SetGetKeys : Message {
+    public readonly string database;
+    public readonly string set;
+
+    public SetGetKeys(uint id, string database, string set) : base(ApiMessageType.SET_GET_KEYS, id) {
+        this.database = database;
+        this.set = set;
+    }
+}
+
+class CreateSet : Message {
+    public readonly string database;
+    public readonly string set;
+
+    public CreateSet(uint id, string database, string set) : base(ApiMessageType.CREATE_SET, id) {
+        this.database = database;
+        this.set = set;
+    }
+}
+class CreateSetIfNotExist : Message {
+    public readonly string database;
+    public readonly string set;
+
+    public CreateSetIfNotExist(uint id, string database, string set) : base(ApiMessageType.CREATE_SET_IF_NOT_EXIST, id) {
+        this.database = database;
+        this.set = set;
+    }
+}
+
+class DeleteSet : Message {
+    public readonly string database;
+    public readonly string set;
+
+    public DeleteSet(uint id, string database, string set) : base(ApiMessageType.DELETE_SET, id) {
+        this.database = database;
+        this.set = set;
+    }
+}
+class HasSet : Message {
+    public readonly string database;
+    public readonly string set;
+
+    public HasSet(uint id, string database, string set) : base(ApiMessageType.HAS_SET, id) {
+        this.database = database;
+        this.set = set;
+    }
+}
+
+class GetSets : Message {
+    public readonly string database;
+
+    public GetSets(uint id, string database) : base(ApiMessageType.GET_SETS, id) {
+        this.database = database;
+    }
+}
+
+class SetHas : Message {
+    public readonly string database;
+    public readonly string set;
+    public readonly string key;
+
+    public SetHas(uint id, string database, string set, string key) : base(ApiMessageType.SET_HAS, id) {
+        this.database = database;
+        this.set = set;
+        this.key = key;
+    }
+}
+
+class SetRecordCount : Message {
+    public readonly string database;
+    public readonly string set;
+    public SetRecordCount(uint id, string database, string set) : base(ApiMessageType.SET_GET_RECORD_COUNT, id) {
+        this.database = database;
+        this.set = set;
     }
 }
