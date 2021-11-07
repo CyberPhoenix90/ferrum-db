@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using entry_metadata;
-using page_file;
 
 public class Set {
     private readonly string path;
@@ -12,21 +10,21 @@ public class Set {
     private Dictionary<string, long> contentSet;
     private BinaryWriter writer;
 
-    public Set(string path, long pos, string name) {
+    public Set(string path, long pos, string name, Set? transactionSet) {
         this.contentSet = new Dictionary<string, long>(5000);
         this.path = path;
         this.pos = pos;
         this.name = name;
-        initialize();
+        initialize(transactionSet);
     }
 
-    private void initialize() {
+    private void initialize(Set? transactionSet) {
         Console.WriteLine($"Initializing set {name}");
         Directory.CreateDirectory(this.path);
         if (File.Exists(Path.Join(this.path, "records.set"))) {
             using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, "records.set"), FileMode.Open))) {
                 while (reader.PeekChar() != -1) {
-                    this.readRecords(reader);
+                    this.readRecords(reader, transactionSet);
                 }
             }
         }
@@ -38,10 +36,18 @@ public class Set {
     public void compact() {
     }
 
-    private void readRecords(BinaryReader reader) {
+    private void readRecords(BinaryReader reader, Set? transactionSet) {
+        var commited = true;
+
         var key = reader.ReadString();
-        var isAlive = reader.ReadBoolean();
-        if (isAlive) {
+        var transactionId = reader.ReadInt64();
+        if (transactionId != -1 && transactionSet != null) {
+            if (!transactionSet.has(transactionId.ToString())) {
+                commited = false;
+            }
+        }
+        var isAlive = reader.ReadByte();
+        if (isAlive == 1 && commited || isAlive == 2 && !commited) {
             this.contentSet.TryAdd(key, reader.BaseStream.Position - 1);
         }
     }
@@ -66,10 +72,10 @@ public class Set {
         this.writer.Close();
         Directory.Delete(this.path, true);
 
-        this.initialize();
+        this.initialize(null);
     }
 
-    public void delete(string key) {
+    public void delete(string key, long transactionId) {
         if (this.contentSet.ContainsKey(key) == false) {
             return;
         }
@@ -78,25 +84,33 @@ public class Set {
 #endif
         var pos = this.contentSet[key];
         this.contentSet.Remove(key);
-        this.writer.BaseStream.Seek(pos, SeekOrigin.Begin);
-        this.writer.Write(false);
+        if (transactionId != -1) {
+            this.writer.BaseStream.Seek(pos - 8, SeekOrigin.Begin);
+            this.writer.Write(transactionId);
+            this.writer.Write((byte)2);
+        } else {
+            this.writer.BaseStream.Seek(pos, SeekOrigin.Begin);
+            this.writer.Write(false);
+        }
+
         this.writer.BaseStream.Seek(0, SeekOrigin.End);
         this.writer.Flush();
     }
 
-    public void add(string key) {
+    public void add(string key, long transactionId) {
 #if DEBUG
         Console.WriteLine($"Putting record {key} in set {this.name}");
 #endif
         if (!this.has(key)) {
-            this.writeRecord(this.writer, key);
-            this.contentSet.TryAdd(key, this.writer.BaseStream.Position);
+            this.writeRecord(this.writer, key, transactionId);
+            this.contentSet.TryAdd(key, this.writer.BaseStream.Position - 1);
         }
 
     }
 
-    private void writeRecord(BinaryWriter output, string key) {
+    private void writeRecord(BinaryWriter output, string key, long transactionId) {
         output.Write(key);
+        output.Write(transactionId);
         output.Write(true);
         output.Flush();
     }

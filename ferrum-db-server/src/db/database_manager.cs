@@ -2,21 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ferrum_db_server.db;
 
 namespace master_record {
 
 
     public class DatabaseManager {
+        private Database internalDatabase;
         private Dictionary<string, Database> databases;
         private BinaryWriter writer;
         private string path;
         private string folder;
+        private Set transactionSet;
+        private Index transactionIdIndex;
 
         public DatabaseManager(string path) {
             this.path = path;
             this.folder = Path.GetDirectoryName(path);
 
             this.databases = new Dictionary<string, Database>();
+            Directory.CreateDirectory(Path.Join(this.folder, "$$internal"));
+            this.internalDatabase = new Database(Path.Join(this.folder, "$$internal"), "$$internal", 0, null);
+            this.transactionSet = this.internalDatabase.addSetIfNotExist("transactions");
+            this.transactionIdIndex = this.internalDatabase.addIndexIfNotExist("transactionIds", 0);
+
 
             if (File.Exists(path)) {
                 using (BinaryReader reader = new BinaryReader(File.Open(path, FileMode.Open))) {
@@ -28,6 +37,56 @@ namespace master_record {
 
             this.writer = new BinaryWriter(File.Open(path, FileMode.OpenOrCreate));
             this.writer.BaseStream.Seek(0, SeekOrigin.End);
+        }
+
+        public long performTransaction(DatabaseOperation[] operations) {
+            long id;
+
+            if (!this.transactionIdIndex.has("id")) {
+                id = 0;
+            } else {
+                id = new BinaryReader(new MemoryStream(this.transactionIdIndex.get("id")!)).ReadInt64();
+            }
+
+            id++;
+            this.transactionIdIndex.set("id", BitConverter.GetBytes(id), -1);
+
+            foreach (DatabaseOperation operation in operations) {
+
+                var db = this.databases[operation.database];
+                switch (operation.targetType) {
+                    case TargetType.SET:
+                        var set = db.getSet(operation.target);
+                        switch (operation.operationType) {
+                            case DatabaseOperationType.WRITE:
+                                set.add(operation.key, id);
+                                break;
+                            case DatabaseOperationType.DELETE:
+                                set.delete(operation.key, id);
+                                break;
+                        }
+                        break;
+                    case TargetType.INDEX:
+                        var index = db.getIndex(operation.target);
+
+                        switch (operation.operationType) {
+                            case DatabaseOperationType.WRITE:
+                                index.set(operation.key, operation.newValue, id);
+                                break;
+                            case DatabaseOperationType.DELETE:
+                                index.delete(operation.key, id);
+                                break;
+                        }
+                        break;
+                }
+            }
+
+            this.transactionSet.add(id.ToString(), -1);
+            return id;
+        }
+
+        public void deleteTransactionRecord(long id) {
+            this.transactionSet.delete(id.ToString(), -1);
         }
 
         public bool hasDatabase(string name) {
@@ -44,6 +103,7 @@ namespace master_record {
             foreach (string database in this.databases.Keys) {
                 this.deleteDatabase(database);
             }
+            this.internalDatabase.clear();
         }
 
         public string[] getDatabases() {
@@ -63,7 +123,7 @@ namespace master_record {
             this.writer.BaseStream.Seek(0, SeekOrigin.End);
             var pos = this.writer.BaseStream.Position;
 
-            var database = new Database(Path.Join(this.folder, name), name, pos);
+            var database = new Database(Path.Join(this.folder, name), name, pos, this.transactionSet);
             this.databases.TryAdd(name, database);
             this.writer.Write(false);
             this.writer.Write(name);
@@ -106,13 +166,14 @@ namespace master_record {
             if (!isAlive) {
                 return;
             }
-            this.databases.TryAdd(name, new Database(Path.Join(this.folder, name), name, pos));
+            this.databases.TryAdd(name, new Database(Path.Join(this.folder, name), name, pos, this.transactionSet));
         }
 
         public void dispose() {
             foreach (Database database in this.databases.Values) {
                 database.dispose();
             }
+            this.internalDatabase.dispose();
             this.writer.Close();
         }
     }

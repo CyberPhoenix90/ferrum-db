@@ -288,7 +288,7 @@ namespace api_server {
 
                         index = db.getIndex(indexDelete.index);
                         if (index != null) {
-                            index.delete(indexDelete.key);
+                            index.delete(indexDelete.key, -1);
                             this.sendOk(client, indexDelete.id);
                         } else {
                             this.sendError(client, indexDelete.id, new Exception($"No Index found for key {indexDelete.index}"));
@@ -394,7 +394,7 @@ namespace api_server {
 #if DEBUG
                             Console.WriteLine($"IndexSet: {indexSet.key} -> { System.Text.Encoding.Default.GetString(indexSet.value)}");
 #endif
-                            index.set(indexSet.key, indexSet.value);
+                            index.set(indexSet.key, indexSet.value, -1);
                             this.sendOk(client, indexSet.id);
                         } else {
                             this.sendError(client, indexSet.id, new Exception($"No Index found for key {indexSet.index}"));
@@ -520,7 +520,7 @@ namespace api_server {
 
                         set = db.getSet(setDelete.set);
                         if (set != null) {
-                            set.delete(setDelete.key);
+                            set.delete(setDelete.key, -1);
                             this.sendOk(client, setDelete.id);
                         } else {
                             this.sendError(client, setDelete.id, new Exception($"No Index found for key {setDelete.set}"));
@@ -570,7 +570,7 @@ namespace api_server {
 #if DEBUG
                             Console.WriteLine($"SetAdd: {setAdd.key}");
 #endif
-                            set.add(setAdd.key);
+                            set.add(setAdd.key, -1);
                             this.sendOk(client, setAdd.id);
                         } else {
                             this.sendError(client, setAdd.id, new Exception($"No Set found for key {setAdd.set}"));

@@ -16,17 +16,17 @@ public class Index {
     private uint nextPageFile;
     private BinaryWriter writer;
 
-    public Index(string path, long pos, string name, uint pageSize) {
+    public Index(string path, long pos, string name, uint pageSize, Set? transactionSet) {
         this.pageFiles = new Dictionary<uint, PageFile>();
         this.contentMap = new Dictionary<string, IndexEntryMetadata>(10000);
         this.path = path;
         this.pos = pos;
         this.name = name;
         this.pageSize = pageSize;
-        initialize();
+        initialize(transactionSet);
     }
 
-    private void initialize() {
+    private void initialize(Set? transactionSet) {
         Console.WriteLine($"Initializing index {name}");
         Directory.CreateDirectory(this.path);
         if (Directory.Exists(Path.Join(this.path, "tmp"))) {
@@ -38,7 +38,7 @@ public class Index {
         if (File.Exists(Path.Join(this.path, "records.index"))) {
             using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, "records.index"), FileMode.Open))) {
                 while (reader.PeekChar() != -1) {
-                    this.readRecords(reader);
+                    this.readRecords(reader, transactionSet);
                 }
             }
         }
@@ -85,7 +85,8 @@ public class Index {
         //this.initialize();
     }
 
-    private void readRecords(BinaryReader reader) {
+    private void readRecords(BinaryReader reader, Set? transactionSet) {
+        var commited = true;
         var key = reader.ReadString();
         var pageFileId = reader.ReadUInt32();
         if (!this.pageFiles.ContainsKey(pageFileId)) {
@@ -97,8 +98,14 @@ public class Index {
         }
         var posInPage = reader.ReadUInt32();
         var length = reader.ReadInt64();
-        var isAlive = reader.ReadBoolean();
-        if (isAlive) {
+        var transactionId = reader.ReadInt64();
+        if (transactionId != -1 && transactionSet != null) {
+            if (!transactionSet.has(transactionId.ToString())) {
+                commited = false;
+            }
+        }
+        var isAlive = reader.ReadByte();
+        if (isAlive == 1 && commited || isAlive == 2 && !commited) {
             this.contentMap.TryAdd(key, new IndexEntryMetadata(pageFileId, posInPage, length, reader.BaseStream.Position - 1));
         }
     }
@@ -129,13 +136,13 @@ public class Index {
         }
         Directory.Delete(this.path, true);
 
-        this.initialize();
+        this.initialize(null);
         this.pageFiles.Clear();
         this.nextPageFile = 0;
 
     }
 
-    public void delete(string key) {
+    public void delete(string key, long transactionId) {
         IndexEntryMetadata? entry;
         this.contentMap.TryGetValue(key, out entry);
         if (entry == null) {
@@ -145,8 +152,16 @@ public class Index {
         Console.WriteLine($"Deleting record {key} from index {this.name}");
 #endif
         this.contentMap.Remove(key);
-        this.writer.BaseStream.Seek(entry.deleteBytePosInRecord, SeekOrigin.Begin);
-        this.writer.Write(false);
+
+        if (transactionId != -1) {
+            this.writer.BaseStream.Seek(entry.deleteBytePosInRecord - 8, SeekOrigin.Begin);
+            this.writer.Write(transactionId);
+            this.writer.Write((byte)2);
+        } else {
+            this.writer.BaseStream.Seek(entry.deleteBytePosInRecord, SeekOrigin.Begin);
+            this.writer.Write(false);
+        }
+
         this.writer.BaseStream.Seek(0, SeekOrigin.End);
         this.writer.Flush();
 
@@ -224,12 +239,12 @@ public class Index {
 
     }
 
-    public void set(string key, byte[] value) {
+    public void set(string key, byte[] value, long transactionId) {
 #if DEBUG
         Console.WriteLine($"Putting record {key} in index {this.name}");
 #endif
         if (this.has(key)) {
-            this.delete(key);
+            this.delete(key, transactionId);
         }
 
         var page = this.selectPageFile(key, value.Length);
@@ -237,16 +252,17 @@ public class Index {
 #if DEBUG
         Console.WriteLine($"Page pointer moved from {locationOnPage} to {page.pos}");
 #endif
-        this.writeRecord(this.writer, key, page.index, (uint)locationOnPage, value.Length);
+        this.writeRecord(this.writer, key, page.index, (uint)locationOnPage, value.Length, transactionId);
         var entry = new IndexEntryMetadata(page.index, (uint)locationOnPage, value.Length, this.writer.BaseStream.Position - 1);
         this.contentMap.Add(key, entry);
     }
 
-    private void writeRecord(BinaryWriter output, string key, uint pageFile, uint pos, long length) {
+    private void writeRecord(BinaryWriter output, string key, uint pageFile, uint pos, long length, long transactionId) {
         output.Write(key);
         output.Write(pageFile);
         output.Write(pos);
         output.Write(length);
+        output.Write(transactionId);
         output.Write(true);
         output.Flush();
     }

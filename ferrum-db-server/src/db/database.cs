@@ -15,8 +15,9 @@ namespace master_record {
         private string folder;
         public string name;
         public readonly long pos;
+        private Set? transactionSet;
 
-        public Database(string path, string name, long pos) {
+        public Database(string path, string name, long pos, Set? transactionSet) {
             bool isNew;
             this.path = Path.Join(path, "indexes.bin");
             this.folder = path;
@@ -122,7 +123,7 @@ namespace master_record {
             }
 
             var pos = this.writer.BaseStream.Position;
-            var set = new Set(Path.Join(this.folder, pos.ToString()), pos, name);
+            var set = new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet);
             this.sets.TryAdd(name, set);
             this.writer.Write(false);
             this.writer.Write(name);
@@ -146,7 +147,7 @@ namespace master_record {
             }
 
             var pos = this.writer.BaseStream.Position;
-            var index = new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize);
+            var index = new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet);
             this.indexes.TryAdd(name, index);
             this.writer.Write(false);
             this.writer.Write(name);
@@ -221,11 +222,11 @@ namespace master_record {
             if (type == 0) {
                 var pageSize = reader.ReadUInt32();
                 if (isAlive) {
-                    this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize));
+                    this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet));
                 }
             } else {
                 if (isAlive) {
-                    this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name));
+                    this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet));
                 }
             }
         }

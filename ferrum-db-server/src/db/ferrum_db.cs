@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using ferrum_db_server.db;
 using master_record;
 
 namespace ferrum_db {
@@ -13,6 +14,14 @@ namespace ferrum_db {
             this.databaseManager = new DatabaseManager(path);
             this.databaseManager.compact();
             GC.Collect();
+        }
+
+        public long performTransaction(DatabaseOperation[] operations) {
+            return this.databaseManager.performTransaction(operations);
+        }
+
+        public void deleteTransactionRecord(long transactionId) {
+            this.databaseManager.deleteTransactionRecord(transactionId);
         }
 
         public void compact() {

@@ -5,10 +5,11 @@
 Ferrum DB is a NOSQL database server with a focus on high throughput at the expense of having higher RAM requirements.
 
 > Warning: This database is experimental and in development. Is it working but not production ready. Feel free to play around and report issues but I hold no responsibility for data loss
+> Breaking changes will occur in the data at this stage of development
 
 ### How does it work?
 
-Ferrum DB is persisted and atomic, the way it achieves high performance is by holding all record meta data in memory at runtime. This means that record metadata querying is nearly instanteous as no disk access is needed to respond and access to data is quicker as no expensive disk lookups are needed to find out where a record is located on disk
+Ferrum DB is persisted and atomic, the way it achieves high performance is by holding all record meta data in memory at runtime. This means that record metadata querying is nearly instanteous as no disk access is needed to respond and access to data is quicker as no expensive disk lookups are needed to find out where a record is located on disk. The meta data is not exclusively held in memory, a record is kept on disk for persistence.
 
 ## Main features
 
@@ -33,6 +34,10 @@ The data that is written to the DB is written exactly once. There is a fixed ove
 The "has" operation to check if something exists and it requires no disk lookup and is extremely lightweight.
 The DB also has a getRecordSize operation that is just as cheap and can help with streaming.
 You can get the number of records no matter how big the index is this will be almost instantenous.
+
+### Transactions
+
+This database is capable of batching transactions. Which allows for multiple operations to be done atomically even across multiple databases.
 
 ## Limitations
 
@@ -129,10 +134,6 @@ Support to add content to an existing record without having to rewrite the entir
 ### Multithreading
 
 Indexes are fully isolated from each other allowing each index to use their own CPU thread. This may be completely futile though because TCP will prevent you from being able to max out the CPU of the Database anyway unless you have a lot of clients.
-
-### Transactions
-
-This database would be capable of locking transactions. Which would allow for multiple operations to be done atomically as long as you don’t mind that nothing can happen until the transaction completed (like leveldb batches, unlike LMDB transactions). The locking can even be optimized to only lock the indexes involved
 
 ### Observability
 

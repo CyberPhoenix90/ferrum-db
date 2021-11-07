@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using ferrum_db;
 using System;
+using ferrum_db_server.db;
 
 namespace ferrum_db_server_tests {
     [TestClass]
@@ -45,7 +46,7 @@ namespace ferrum_db_server_tests {
             var dbServer = new FerrumDb("tmp/test.mr");
             var db = dbServer.createDatabase("test");
             var index = db.addIndex("testIndex", 8);
-            index.set("test", new byte[] { 0, 1, 2 });
+            index.set("test", new byte[] { 0, 1, 2 }, -1);
             CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
             dbServer.dispose();
 
@@ -59,12 +60,12 @@ namespace ferrum_db_server_tests {
             var dbServer = new FerrumDb("tmp/test.mr");
             var db = dbServer.createDatabase("test");
             var index = db.addIndex("testIndex", 8);
-            index.set("test", new byte[] { 0, 1, 2 });
+            index.set("test", new byte[] { 0, 1, 2 }, -1);
             CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
             dbServer.deleteDatabase("test");
             var db2 = dbServer.createDatabase("test");
             var index2 = db2.addIndex("testIndex", 8);
-            index2.set("test2", new byte[] { 0, 1, 2 });
+            index2.set("test2", new byte[] { 0, 1, 2 }, -1);
             CollectionAssert.AreEqual(index2.get("test2"), new byte[] { 0, 1, 2 });
 
             Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
@@ -80,7 +81,7 @@ namespace ferrum_db_server_tests {
             dbServer.createDatabase("test3");
             dbServer.createDatabase("test4");
             var index = db.addIndex("testIndex", 8);
-            index.set("test", new byte[] { 0, 1, 2 });
+            index.set("test", new byte[] { 0, 1, 2 }, -1);
             CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
             dbServer.deleteDatabase("test");
             dbServer.deleteDatabase("test2");
@@ -96,7 +97,7 @@ namespace ferrum_db_server_tests {
             var dbServer = new FerrumDb("tmp/test.mr");
             var db = dbServer.createDatabase("test");
             var index = db.addIndex("testIndex", 8);
-            index.set("test", new byte[] { 0, 1, 2 });
+            index.set("test", new byte[] { 0, 1, 2 }, -1);
             CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
 
             Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
@@ -109,9 +110,9 @@ namespace ferrum_db_server_tests {
             var dbServer = new FerrumDb("tmp/test.mr");
             var db = dbServer.createDatabase("test");
             var set = db.addSet("testIndex");
-            set.add("test");
-            set.add("test2");
-            set.add("test3");
+            set.add("test", -1);
+            set.add("test2", -1);
+            set.add("test3", -1);
             Assert.IsTrue(set.has("test"));
             Assert.IsTrue(set.has("test2"));
             Assert.IsFalse(set.has("test4"));
@@ -140,6 +141,35 @@ namespace ferrum_db_server_tests {
 
 
             Assert.IsTrue(File.Exists("tmp/test/4/records.set"));
+        }
+
+        [TestMethod]
+        public void TransactionPass() {
+            var dbServer = new FerrumDb("tmp/test.mr");
+            var db = dbServer.createDatabase("test");
+            db.addSet("testSet");
+            db.addIndex("testIndex", 0);
+
+            dbServer.performTransaction(new DatabaseOperation[] {
+                new DatabaseOperation("test" ,DatabaseOperationType.WRITE, TargetType.INDEX, "testIndex", "a", new byte[] { 0, 1, 2 }),
+                new DatabaseOperation("test" ,DatabaseOperationType.WRITE, TargetType.INDEX, "testIndex", "b", new byte[] { 2, 3, 4 }),
+                new DatabaseOperation("test" ,DatabaseOperationType.WRITE, TargetType.SET, "testSet", "c"),
+            });
+
+            dbServer.dispose();
+            dbServer = new FerrumDb("tmp/test.mr");
+            db = dbServer.getDatabase("test");
+
+            var set = db.getSet("testSet");
+            var index = db.getIndex("testIndex");
+
+            Assert.IsTrue(index.has("a"));
+            Assert.IsTrue(index.has("b"));
+
+            CollectionAssert.AreEqual(index.get("a"), new byte[] { 0, 1, 2 });
+            CollectionAssert.AreEqual(index.get("b"), new byte[] { 2, 3, 4 });
+
+            Assert.IsTrue(set.has("c"));
         }
     }
 }
