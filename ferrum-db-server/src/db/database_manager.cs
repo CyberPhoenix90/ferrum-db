@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ferrum_db_server.db;
 
 namespace master_record {
@@ -23,6 +24,7 @@ namespace master_record {
             this.databases = new Dictionary<string, Database>();
             Directory.CreateDirectory(Path.Join(this.folder, "$$internal"));
             this.internalDatabase = new Database(Path.Join(this.folder, "$$internal"), "$$internal", 0, null);
+            this.internalDatabase.initializeDatabase();
             this.transactionSet = this.internalDatabase.addSetIfNotExist("transactions");
             this.transactionIdIndex = this.internalDatabase.addIndexIfNotExist("transactionIds", 0);
 
@@ -37,6 +39,12 @@ namespace master_record {
 
             this.writer = new BinaryWriter(File.Open(path, FileMode.OpenOrCreate));
             this.writer.BaseStream.Seek(0, SeekOrigin.End);
+            var tasks = new List<Task>();
+            foreach (var db in this.databases.Values) {
+                tasks.Add(Task.Run(() => db.initializeDatabase()));
+            }
+
+            Task.WaitAll(tasks.ToArray());
         }
 
         public long performTransaction(DatabaseOperation[] operations) {
@@ -124,6 +132,7 @@ namespace master_record {
             var pos = this.writer.BaseStream.Position;
 
             var database = new Database(Path.Join(this.folder, name), name, pos, this.transactionSet);
+            database.initializeDatabase();
             this.databases.TryAdd(name, database);
             this.writer.Write(false);
             this.writer.Write(name);

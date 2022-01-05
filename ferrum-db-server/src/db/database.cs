@@ -26,6 +26,10 @@ namespace master_record {
             this.indexes = new Dictionary<string, Index>();
             this.sets = new Dictionary<string, Set>();
 
+        }
+
+        public void initializeDatabase() {
+            bool isNew;
             if (File.Exists(this.path)) {
                 isNew = false;
                 Console.WriteLine($"Initializing database {name}...");
@@ -56,6 +60,7 @@ namespace master_record {
                 this.writer.BaseStream.Seek(0, SeekOrigin.End);
 
             }
+
         }
 
         private void writeHeader() {

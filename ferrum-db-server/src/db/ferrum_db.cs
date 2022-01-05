@@ -12,7 +12,6 @@ namespace ferrum_db {
 
         public FerrumDb(string path) {
             this.databaseManager = new DatabaseManager(path);
-            this.databaseManager.compact();
             GC.Collect();
         }
 
