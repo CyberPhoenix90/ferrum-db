@@ -88,6 +88,9 @@ namespace api_server {
 
                 using (var reader = new BinaryReader(new MemoryStream(buffer))) {
                     var type = reader.ReadInt32();
+#if DEBUG
+                    Console.WriteLine($"Decoding {type}");
+#endif
                     switch ((ApiMessageType)type) {
                         case ApiMessageType.HEARTBEAT:
                             return new HeartBeat(reader.ReadUInt32());
@@ -163,6 +166,47 @@ namespace api_server {
                             return new SetAdd(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
                         case ApiMessageType.SET_GET_RECORD_COUNT:
                             return new SetRecordCount(reader.ReadUInt32(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_CLEAR:
+                            return new TimeSeriesClear(reader.ReadUInt32(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_DELETE_ENTRY:
+                            return new TimeSeriesDeleteEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_DELETE_SERIE:
+                            return new TimeSeriesDeleteSerie(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_GET_EARLIEST_ENTRY:
+                            return new TimeSeriesGetFirstEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_GET_LATEST_ENTRY:
+                            return new TimeSeriesGetLastEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_GET_ENTRIES_BETWEEN_TIMESTAMPS:
+                            return new TimeSeriesGetEntriesBetween(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_GET_ENTRY:
+                            return new TimeSeriesGetEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_AFTER_TIMESTAMP:
+                            return new TimeSeriesGetFirstEntryAfter(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_BEFORE_TIMESTAMP:
+                            return new TimeSeriesGetFirstEntryBefore(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES:
+                            return new TimeSeriesGetLastNEntries(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt32());
+                        case ApiMessageType.TIME_SERIES_GET_NEAREST_ENTRY_TO_TIMESTAMP:
+                            return new TimeSeriesGetNearestEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_HAS_ENTRY:
+                            return new TimeSeriesHasEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64());
+                        case ApiMessageType.TIME_SERIES_HAS_SERIE:
+                            return new TimeSeriesHasSerie(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.CREATE_TIME_SERIES:
+                            return new CreateTimeSeries(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadUInt32());
+                        case ApiMessageType.CREATE_TIME_SERIES_IF_NOT_EXIST:
+                            return new CreateTimeSeriesIfNotExist(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadUInt32());
+                        case ApiMessageType.DELETE_TIME_SERIES:
+                            return new DeleteTimeSeries(reader.ReadUInt32(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.HAS_TIME_SERIES:
+                            return new HasTimeSeries(reader.ReadUInt32(), reader.ReadString(), reader.ReadString());
+                        case ApiMessageType.GET_TIME_SERIES:
+                            return new GetTimeSeries(reader.ReadUInt32(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_PUT_ENTRY:
+                            return new TimeSeriesSetEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64(), reader.ReadBytes(reader.ReadInt32()));
+                        default:
+                            throw new Exception("Unknown message type: " + type);
+
                     }
                 }
             }
@@ -887,6 +931,30 @@ namespace api_server {
                         else {
                             this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetNearestEntryToTimestamp.timeSeries}"));
                         }
+                        break;
+                    case ApiMessageType.TIME_SERIES_PUT_ENTRY:
+                        var timeSeriesPutEntry = (TimeSeriesSetEntry)command;
+
+                        db = this.getDbOrFail(timeSeriesPutEntry.database, timeSeriesPutEntry.id, client, ferrumDb);
+
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesPutEntry.timeSeries);
+
+                        if (timeSeries != null) {
+                            timeSeries.set(timeSeriesPutEntry.key, timeSeriesPutEntry.timestamp, timeSeriesPutEntry.value, -1);
+                            this.sendOk(client, command.id);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesPutEntry.timeSeries}"));
+                        }
+
+                        break;
+
+                    default:
+                        this.sendError(client, command.id, new Exception($"Command not implemented: {command.type}"));
                         break;
                 }
             }

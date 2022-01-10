@@ -27,7 +27,7 @@ public class TimeSeries {
     }
 
     private void initialize(Set? transactionSet) {
-        Console.WriteLine($"Initializing index {name}");
+        Console.WriteLine($"Initializing Time Series {name}");
         Directory.CreateDirectory(this.path);
         if (Directory.Exists(Path.Join(this.path, "tmp"))) {
             Directory.Delete(Path.Join(this.path, "tmp"), true);

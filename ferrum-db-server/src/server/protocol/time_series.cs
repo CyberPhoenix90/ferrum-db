@@ -234,14 +234,12 @@ namespace ferrum_db_server.src.server.protocol {
         public readonly string database;
         public readonly string timeSeries;
         public readonly string key;
-        public readonly long timestamp;
         public readonly int count;
 
-        public TimeSeriesGetLastNEntries(uint id, string database, string timeSeries, string key, long timestamp, int count) : base(ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES, id) {
+        public TimeSeriesGetLastNEntries(uint id, string database, string timeSeries, string key, int count) : base(ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES, id) {
             this.database = database;
             this.timeSeries = timeSeries;
             this.key = key;
-            this.timestamp = timestamp;
             this.count = count;
         }
     }

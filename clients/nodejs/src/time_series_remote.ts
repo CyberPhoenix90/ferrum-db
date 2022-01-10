@@ -195,7 +195,7 @@ export class TimeSeriesRemote<T> {
 
     public async getLastNEntries(serie: string, count: number): Promise<T[]> {
         const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_LATEST_ENTRY,
+            ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES,
             this.database.length + this.timeSeriesKey.length + serie.length + 4,
         );
         bw.writeString(this.database, Encoding.Utf8);
@@ -276,7 +276,7 @@ export class TimeSeriesRemote<T> {
         let encodedData: Buffer = await encodeData(value, this.encoding, this.compression);
 
         const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.INDEX_SET,
+            ApiMessageType.TIME_SERIES_PUT_ENTRY,
             this.database.length + this.timeSeriesKey.length + serie.length + 8 + encodedData.length,
         );
         bw.writeString(this.database, Encoding.Utf8);

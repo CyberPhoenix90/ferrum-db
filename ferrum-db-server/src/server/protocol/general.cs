@@ -11,6 +11,9 @@ namespace ferrum_db_server.src.server.protocol {
         protected Message(ApiMessageType type, uint id) {
             this.type = type;
             this.id = id;
+#if DEBUG
+            Console.WriteLine("Message: " + type);
+#endif
         }
     }
 
