@@ -6,7 +6,8 @@ namespace ferrum_db_server.db {
 
     public enum TargetType {
         SET,
-        INDEX
+        INDEX,
+        TIME_SERIES
     }
 
 
@@ -16,6 +17,7 @@ namespace ferrum_db_server.db {
         public readonly string database;
         public readonly string target;
         public readonly string key;
+        public readonly long? timestamp;
         public readonly byte[]? newValue;
 
 

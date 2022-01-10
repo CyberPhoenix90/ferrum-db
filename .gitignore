@@ -4,3 +4,4 @@ obj
 dist
 node_modules
 coverage.cobertura.xml
+test-data

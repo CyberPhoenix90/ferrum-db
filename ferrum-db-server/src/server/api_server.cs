@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using ferrum_db;
+using ferrum_db_server.src.server.protocol;
 using master_record;
 
 namespace api_server {
@@ -45,7 +47,8 @@ namespace api_server {
                     var size = BitConverter.ToInt32(sizeBytes, 0);
                     if (size > 1048576 * 256) {
                         Console.WriteLine("Error: Msg Buffer overflow");
-                    } else if (size > buffer.Length) {
+                    }
+                    else if (size > buffer.Length) {
                         buffer = new byte[size];
                     }
                     if (read == 0) {
@@ -61,7 +64,8 @@ namespace api_server {
                         Console.WriteLine("Warning: Socket hangup");
                         break;
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     Console.WriteLine(e);
                     break;
                 }
@@ -161,7 +165,8 @@ namespace api_server {
                             return new SetRecordCount(reader.ReadUInt32(), reader.ReadString(), reader.ReadString());
                     }
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Console.WriteLine($"Error while decoding message {e.Message}");
             }
 
@@ -171,6 +176,7 @@ namespace api_server {
         private void handleCommand(Message command, NetworkStream client, FerrumDb ferrumDb) {
             Index? index;
             Set? set;
+            TimeSeries? timeSeries;
             Database? db;
             try {
                 switch (command.type) {
@@ -274,7 +280,8 @@ namespace api_server {
                         if (index != null) {
                             index.clear();
                             this.sendOk(client, indexClear.id);
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexClear.id, new Exception($"No Index found for key {indexClear.index}"));
                         }
                         break;
@@ -290,7 +297,8 @@ namespace api_server {
                         if (index != null) {
                             index.delete(indexDelete.key, -1);
                             this.sendOk(client, indexDelete.id);
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexDelete.id, new Exception($"No Index found for key {indexDelete.index}"));
                         }
                         break;
@@ -310,10 +318,12 @@ namespace api_server {
                                 Console.WriteLine($"IndexGet: {indexGet.key} -> { System.Text.Encoding.Default.GetString(data)}");
 #endif
                                 this.sendBinary(client, indexGet.id, data);
-                            } else {
+                            }
+                            else {
                                 this.sendError(client, indexGet.id, new Exception($"No Record found for key {indexGet.key} in index {indexGet.index}"));
                             }
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexGet.id, new Exception($"No Index found for key {indexGet.index}"));
                         }
                         break;
@@ -329,7 +339,8 @@ namespace api_server {
                         if (index != null) {
                             var count = index.getRecordCount();
                             this.sendInt(client, indexRecordCount.id, count);
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexRecordCount.id, new Exception($"No Index found for key {indexRecordCount.index}"));
                         }
                         break;
@@ -346,10 +357,12 @@ namespace api_server {
                             var size = index.getRecordSize(indexRecordSize.key);
                             if (size == null) {
                                 this.sendError(client, indexRecordSize.id, new Exception($"No Record found for key {indexRecordSize.key} in index {indexRecordSize.index}"));
-                            } else {
+                            }
+                            else {
                                 this.sendLong(client, indexRecordSize.id, ((long)size));
                             }
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexRecordSize.id, new Exception($"No Index found for key {indexRecordSize.index}"));
                         }
                         break;
@@ -364,7 +377,8 @@ namespace api_server {
                         index = db.getIndex(indexHas.index);
                         if (index != null) {
                             this.sendBool(client, indexHas.id, index.has(indexHas.key));
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexHas.id, new Exception($"No Index found for key {indexHas.index}"));
                         }
                         break;
@@ -378,7 +392,8 @@ namespace api_server {
                         index = db.getIndex(indexGetKeys.index);
                         if (index != null) {
                             this.sendList(client, indexGetKeys.id, index.getKeys());
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexGetKeys.id, new Exception($"No Index found for key {indexGetKeys.index}"));
                         }
                         break;
@@ -396,7 +411,8 @@ namespace api_server {
 #endif
                             index.set(indexSet.key, indexSet.value, -1);
                             this.sendOk(client, indexSet.id);
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexSet.id, new Exception($"No Index found for key {indexSet.index}"));
                         }
                         break;
@@ -412,10 +428,12 @@ namespace api_server {
                             var data = index.readChunk(indexReadChunk.key, indexReadChunk.offset, indexReadChunk.size);
                             if (data == null) {
                                 this.sendError(client, indexReadChunk.id, new Exception($"No Record found for key {indexReadChunk.key} in index {indexReadChunk.index}"));
-                            } else {
+                            }
+                            else {
                                 this.sendBinary(client, indexReadChunk.id, data);
                             }
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexReadChunk.id, new Exception($"No Index found for key {indexReadChunk.index}"));
                         }
                         break;
@@ -431,15 +449,17 @@ namespace api_server {
                             var data = index.readUntil(indexReadUntil.key, indexReadUntil.offset, indexReadUntil.until);
                             if (data == null) {
                                 this.sendError(client, indexReadUntil.id, new Exception($"No Record found for key {indexReadUntil.key} in index {indexReadUntil.index}"));
-                            } else {
+                            }
+                            else {
                                 this.sendBinary(client, indexReadUntil.id, data);
                             }
-                        } else {
+                        }
+                        else {
                             this.sendError(client, indexReadUntil.id, new Exception($"No Index found for key {indexReadUntil.index}"));
                         }
                         break;
 
-
+                    ////////// SETS
 
                     case ApiMessageType.CREATE_SET:
                         var createSet = (CreateSet)command;
@@ -482,7 +502,7 @@ namespace api_server {
                             return;
                         }
 
-                        this.sendBool(client, command.id, db.hasIndex(hasSet.set));
+                        this.sendBool(client, command.id, db.hasSet(hasSet.set));
                         break;
                     case ApiMessageType.GET_SETS:
                         var getSets = (GetSets)command;
@@ -506,8 +526,9 @@ namespace api_server {
                         if (set != null) {
                             set.clear();
                             this.sendOk(client, setClear.id);
-                        } else {
-                            this.sendError(client, setClear.id, new Exception($"No Index found for key {setClear.set}"));
+                        }
+                        else {
+                            this.sendError(client, setClear.id, new Exception($"No Set found for key {setClear.set}"));
                         }
                         break;
                     case ApiMessageType.SET_DELETE:
@@ -522,8 +543,9 @@ namespace api_server {
                         if (set != null) {
                             set.delete(setDelete.key, -1);
                             this.sendOk(client, setDelete.id);
-                        } else {
-                            this.sendError(client, setDelete.id, new Exception($"No Index found for key {setDelete.set}"));
+                        }
+                        else {
+                            this.sendError(client, setDelete.id, new Exception($"No Set found for key {setDelete.set}"));
                         }
                         break;
                     case ApiMessageType.SET_HAS:
@@ -537,8 +559,9 @@ namespace api_server {
                         set = db.getSet(setHas.set);
                         if (set != null) {
                             this.sendBool(client, setHas.id, set.has(setHas.key));
-                        } else {
-                            this.sendError(client, setHas.id, new Exception($"No Index found for key {setHas.set}"));
+                        }
+                        else {
+                            this.sendError(client, setHas.id, new Exception($"No Set found for key {setHas.set}"));
                         }
                         break;
                     case ApiMessageType.SET_GET_KEYS:
@@ -551,8 +574,9 @@ namespace api_server {
                         set = db.getSet(setGetKeys.set);
                         if (set != null) {
                             this.sendList(client, setGetKeys.id, set.getKeys());
-                        } else {
-                            this.sendError(client, setGetKeys.id, new Exception($"No Index found for key {setGetKeys.set}"));
+                        }
+                        else {
+                            this.sendError(client, setGetKeys.id, new Exception($"No Set found for key {setGetKeys.set}"));
                         }
                         break;
 
@@ -572,7 +596,8 @@ namespace api_server {
 #endif
                             set.add(setAdd.key, -1);
                             this.sendOk(client, setAdd.id);
-                        } else {
+                        }
+                        else {
                             this.sendError(client, setAdd.id, new Exception($"No Set found for key {setAdd.set}"));
                         }
                         break;
@@ -588,12 +613,284 @@ namespace api_server {
                         if (set != null) {
                             var count = set.getRecordCount();
                             this.sendInt(client, setRecordCount.id, count);
-                        } else {
-                            this.sendError(client, setRecordCount.id, new Exception($"No Index found for key {setRecordCount.set}"));
+                        }
+                        else {
+                            this.sendError(client, setRecordCount.id, new Exception($"No Set found for key {setRecordCount.set}"));
+                        }
+                        break;
+
+
+                    ////////// TIME SERIES
+
+                    case ApiMessageType.CREATE_TIME_SERIES:
+                        var createTimeSeries = (CreateTimeSeries)command;
+
+                        db = this.getDbOrFail(createTimeSeries.database, createTimeSeries.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        db.addTimeSeries(createTimeSeries.timeSeries, createTimeSeries.pageSize);
+                        this.sendOk(client, command.id);
+                        break;
+                    case ApiMessageType.CREATE_TIME_SERIES_IF_NOT_EXIST:
+                        var createTimeSeriesIfNotExist = (CreateTimeSeriesIfNotExist)command;
+
+                        db = this.getDbOrFail(createTimeSeriesIfNotExist.database, createTimeSeriesIfNotExist.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        db.addTimeSeriesIfNotExist(createTimeSeriesIfNotExist.timeSeries, createTimeSeriesIfNotExist.pageSize);
+                        this.sendOk(client, command.id);
+                        break;
+                    case ApiMessageType.DELETE_TIME_SERIES:
+                        var deleteTimeSeries = (DeleteTimeSeries)command;
+
+                        db = this.getDbOrFail(deleteTimeSeries.database, deleteTimeSeries.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        db.deleteTimeSeries(deleteTimeSeries.timeSeries);
+                        this.sendOk(client, command.id);
+                        break;
+                    case ApiMessageType.HAS_TIME_SERIES:
+                        var hasTimeSeries = (HasTimeSeries)command;
+
+                        db = this.getDbOrFail(hasTimeSeries.database, hasTimeSeries.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        this.sendBool(client, command.id, db.hasTimeSeries(hasTimeSeries.timeSeries));
+                        break;
+                    case ApiMessageType.GET_TIME_SERIES:
+                        var getTimeSeries = (GetTimeSeries)command;
+
+                        db = this.getDbOrFail(getTimeSeries.database, getTimeSeries.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+                    case ApiMessageType.TIME_SERIES_CLEAR:
+                        var timeSeriesClear = (TimeSeriesClear)command;
+
+                        db = this.getDbOrFail(timeSeriesClear.database, timeSeriesClear.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesClear.timeSeries);
+
+                        if (timeSeries != null) {
+                            timeSeries.clear();
+                            this.sendOk(client, command.id);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesClear.timeSeries}"));
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+
+                    case ApiMessageType.TIME_SERIES_DELETE_ENTRY:
+                        var timeSeriesDeleteEntry = (TimeSeriesDeleteEntry)command;
+
+                        db = this.getDbOrFail(timeSeriesDeleteEntry.database, timeSeriesDeleteEntry.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesDeleteEntry.timeSeries);
+
+                        if (timeSeries != null) {
+                            timeSeries.delete(timeSeriesDeleteEntry.key, timeSeriesDeleteEntry.timestamp, -1);
+                            this.sendOk(client, command.id);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesDeleteEntry.timeSeries}"));
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_ENTRY:
+                        var timeSeriesGetEntry = (TimeSeriesGetEntry)command;
+
+                        db = this.getDbOrFail(timeSeriesGetEntry.database, timeSeriesGetEntry.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetEntry.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entry = timeSeries.get(timeSeriesGetEntry.key, timeSeriesGetEntry.timestamp);
+                            this.sendBinary(client, command.id, entry);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntry.timeSeries}"));
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_AFTER_TIMESTAMP:
+                        var timeSeriesGetFirstEntryAfterTimestamp = (TimeSeriesGetFirstEntryAfter)command;
+
+                        db = this.getDbOrFail(timeSeriesGetFirstEntryAfterTimestamp.database, timeSeriesGetFirstEntryAfterTimestamp.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetFirstEntryAfterTimestamp.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entry = timeSeries.getFirstEntryAfterTimestamp(timeSeriesGetFirstEntryAfterTimestamp.key, timeSeriesGetFirstEntryAfterTimestamp.timestamp);
+                            this.sendBinary(client, command.id, entry);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFirstEntryAfterTimestamp.timeSeries}"));
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_BEFORE_TIMESTAMP:
+                        var timeSeriesGetLastEntryBeforeTimestamp = (TimeSeriesGetFirstEntryBefore)command;
+
+                        db = this.getDbOrFail(timeSeriesGetLastEntryBeforeTimestamp.database, timeSeriesGetLastEntryBeforeTimestamp.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetLastEntryBeforeTimestamp.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entry = timeSeries.getFirstEntryBeforeTimestamp(timeSeriesGetLastEntryBeforeTimestamp.key, timeSeriesGetLastEntryBeforeTimestamp.timestamp);
+                            this.sendBinary(client, command.id, entry);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLastEntryBeforeTimestamp.timeSeries}"));
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_ENTRIES_BETWEEN_TIMESTAMPS:
+                        var timeSeriesGetEntriesBetweenTimestamps = (TimeSeriesGetEntriesBetween)command;
+
+                        db = this.getDbOrFail(timeSeriesGetEntriesBetweenTimestamps.database, timeSeriesGetEntriesBetweenTimestamps.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetEntriesBetweenTimestamps.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entries = timeSeries.getEntriesBetweenTimestamps(timeSeriesGetEntriesBetweenTimestamps.key, timeSeriesGetEntriesBetweenTimestamps.start, timeSeriesGetEntriesBetweenTimestamps.end);
+                            this.sendBinaryList(client, command.id, entries);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntriesBetweenTimestamps.timeSeries}"));
+                        }
+
+                        this.sendList(client, command.id, db.getTimeSeries());
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES:
+                        var timeSeriesGetLastNEntries = (TimeSeriesGetLastNEntries)command;
+
+                        db = this.getDbOrFail(timeSeriesGetLastNEntries.database, timeSeriesGetLastNEntries.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetLastNEntries.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entries = timeSeries.getLastNEntries(timeSeriesGetLastNEntries.key, timeSeriesGetLastNEntries.count);
+                            this.sendBinaryList(client, command.id, entries);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLastNEntries.timeSeries}"));
+                        }
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_EARLIEST_ENTRY:
+                        var timeSeriesGetEarliestEntry = (TimeSeriesGetFirstEntry)command;
+
+                        db = this.getDbOrFail(timeSeriesGetEarliestEntry.database, timeSeriesGetEarliestEntry.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetEarliestEntry.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entry = timeSeries.getEarliestEntry(timeSeriesGetEarliestEntry.key);
+                            this.sendBinary(client, command.id, entry);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEarliestEntry.timeSeries}"));
+                        }
+                        break;
+                    case ApiMessageType.TIME_SERIES_GET_LATEST_ENTRY:
+                        var timeSeriesGetLatestEntry = (TimeSeriesGetLastEntry)command;
+
+                        db = this.getDbOrFail(timeSeriesGetLatestEntry.database, timeSeriesGetLatestEntry.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetLatestEntry.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entry = timeSeries.getLatestEntry(timeSeriesGetLatestEntry.key);
+                            this.sendBinary(client, command.id, entry);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLatestEntry.timeSeries}"));
+                        }
+                        break;
+                    case ApiMessageType.TIME_SERIES_DELETE_SERIE:
+                        var timeSeriesDeleteSerie = (TimeSeriesDeleteSerie)command;
+
+                        db = this.getDbOrFail(timeSeriesDeleteSerie.database, timeSeriesDeleteSerie.id, client, ferrumDb);
+
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesDeleteSerie.timeSeries);
+
+                        if (timeSeries != null) {
+                            timeSeries.deleteSerie(timeSeriesDeleteSerie.key, -1);
+                            this.sendOk(client, command.id);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesDeleteSerie.timeSeries}"));
+                        }
+                        break;
+
+                    case ApiMessageType.TIME_SERIES_GET_NEAREST_ENTRY_TO_TIMESTAMP:
+                        var timeSeriesGetNearestEntryToTimestamp = (TimeSeriesGetNearestEntry)command;
+
+                        db = this.getDbOrFail(timeSeriesGetNearestEntryToTimestamp.database, timeSeriesGetNearestEntryToTimestamp.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetNearestEntryToTimestamp.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entry = timeSeries.getNearestMatch(timeSeriesGetNearestEntryToTimestamp.key, timeSeriesGetNearestEntryToTimestamp.timestamp);
+                            this.sendBinary(client, command.id, entry);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetNearestEntryToTimestamp.timeSeries}"));
                         }
                         break;
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 this.sendError(client, command.id, e);
             }
         }
@@ -621,7 +918,8 @@ namespace api_server {
 #if DEBUG
                 Console.WriteLine($"Sent {buffer.Length} bytes");
 #endif
-            } catch (Exception) {
+            }
+            catch (Exception) {
             }
         }
 
@@ -671,6 +969,18 @@ namespace api_server {
             s.Write(true);
             s.Write(list.Length);
             foreach (var item in list) {
+                s.Write(item);
+            }
+            this.endSend(client, s);
+        }
+
+        private void sendBinaryList(NetworkStream client, uint id, IList<byte[]> list) {
+            var s = this.startSend();
+            s.Write(id);
+            s.Write(true);
+            s.Write(list.Count);
+            foreach (var item in list) {
+                s.Write(item.Length);
                 s.Write(item);
             }
             this.endSend(client, s);

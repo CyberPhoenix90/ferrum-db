@@ -1,8 +1,10 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
-using ferrum_db;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using ferrum_db;
 using ferrum_db_server.db;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ferrum_db_server_tests {
     [TestClass]
@@ -29,30 +31,6 @@ namespace ferrum_db_server_tests {
             var db = dbServer.createDatabase("test");
             dbServer.dispose();
             Assert.IsTrue(File.Exists("tmp/test/indexes.bin"));
-        }
-
-        [TestMethod]
-        public void TestCreateIndex() {
-            var dbServer = new FerrumDb("tmp/test.mr");
-            var db = dbServer.createDatabase("test");
-            var index = db.addIndex("testIndex", 8);
-            dbServer.dispose();
-            Assert.IsNotNull(index);
-            Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
-        }
-
-        [TestMethod]
-        public void TestIndexSetGet() {
-            var dbServer = new FerrumDb("tmp/test.mr");
-            var db = dbServer.createDatabase("test");
-            var index = db.addIndex("testIndex", 8);
-            index.set("test", new byte[] { 0, 1, 2 }, -1);
-            CollectionAssert.AreEqual(index.get("test"), new byte[] { 0, 1, 2 });
-            dbServer.dispose();
-
-            Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
-            Assert.IsTrue(File.Exists("tmp/test/4/0.page"));
-            Assert.IsTrue(Directory.GetFiles("tmp/test/4").Length == 2);
         }
 
         [TestMethod]
@@ -103,22 +81,6 @@ namespace ferrum_db_server_tests {
             Assert.IsTrue(File.Exists("tmp/test/4/records.index"));
             Assert.IsTrue(File.Exists("tmp/test/4/0.page"));
             Assert.IsTrue(Directory.GetFiles("tmp/test/4").Length == 2);
-        }
-
-        [TestMethod]
-        public void Sets() {
-            var dbServer = new FerrumDb("tmp/test.mr");
-            var db = dbServer.createDatabase("test");
-            var set = db.addSet("testIndex");
-            set.add("test", -1);
-            set.add("test2", -1);
-            set.add("test3", -1);
-            Assert.IsTrue(set.has("test"));
-            Assert.IsTrue(set.has("test2"));
-            Assert.IsFalse(set.has("test4"));
-            CollectionAssert.AreEqual(set.getKeys(), new string[] { "test", "test2", "test3" });
-
-            Assert.IsTrue(File.Exists("tmp/test/4/records.set"));
         }
 
         [TestMethod]

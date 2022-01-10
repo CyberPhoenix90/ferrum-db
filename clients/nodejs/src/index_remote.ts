@@ -1,13 +1,7 @@
-import { FerrumServerClient } from './client';
-import { promisify } from 'util';
-import { gunzip, gzip } from 'zlib';
-import { ApiMessageType } from './protcol';
 import { Encoding } from 'csharp-binary-stream';
-import { bsonBufferSize, encodeBSON, expandBsonBuffer, getBinaryReader, handleErrorResponse } from './utils';
-import { deserialize, setInternalBufferSize } from 'bson';
-
-const gunzipPromise = promisify(gunzip);
-const gzipPromise = promisify(gzip);
+import { FerrumServerClient } from './client';
+import { ApiMessageType } from './protcol';
+import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData } from './utils';
 
 export type SupportedEncodingTypes = 'ndjson' | 'json' | 'bson' | 'string' | 'binary';
 
@@ -97,47 +91,8 @@ export class IndexRemote<T> {
         if (!success) {
             return handleErrorResponse(br);
         } else {
-            const len = br.readInt();
             try {
-                const result = Buffer.from(br.readBytes(len));
-                let decompressed: Buffer;
-                let decodedValue: any;
-
-                switch (this.compression) {
-                    case 'gzip':
-                        decompressed = await gunzipPromise(result);
-                        break;
-                    default:
-                        decompressed = result;
-                        break;
-                }
-
-                if (this.encoding === 'bson') {
-                    if (decompressed.length > bsonBufferSize) {
-                        setInternalBufferSize(decompressed.length);
-                        expandBsonBuffer(decompressed.length);
-                    }
-                    decodedValue = deserialize(decompressed);
-                } else if (this.encoding === 'json') {
-                    try {
-                        decodedValue = JSON.parse(decompressed.toString('utf8'));
-                    } catch (e) {
-                        throw new Error(
-                            `Failed to decode JSON for key ${key}. ${e?.message} Value: ${decompressed.length < 2048 ? decompressed.toString('utf8') : ''}`,
-                        );
-                    }
-                } else if (this.encoding === 'ndjson') {
-                    decodedValue = decompressed
-                        .toString('utf8')
-                        .split('\n')
-                        .map((e) => JSON.parse(e));
-                } else if (this.encoding === 'string') {
-                    decodedValue = decompressed.toString('utf8');
-                } else {
-                    decodedValue = decompressed;
-                }
-
-                return decodedValue;
+                return readEncodedData(br, this.encoding, this.compression);
             } catch (e) {
                 throw new Error(`Failed to get ${key} from ${this.indexKey} \n\nCaused by: ${e}`);
             }
@@ -190,37 +145,7 @@ export class IndexRemote<T> {
     }
 
     public async set(key: string, value: T): Promise<void> {
-        let encodedData: Buffer;
-        if (this.encoding === 'bson') {
-            encodedData = encodeBSON(value);
-        } else if (this.encoding === 'json') {
-            encodedData = Buffer.from(JSON.stringify(value));
-        } else if (this.encoding === 'ndjson') {
-            if (Array.isArray(value)) {
-                encodedData = Buffer.from(value.map((e) => JSON.stringify(e)).join('\n'));
-            } else {
-                throw new Error(`Non array data cannot be ndjson encoded`);
-            }
-        } else if (this.encoding === 'string') {
-            if (typeof value !== 'string') {
-                throw new Error(`Invalid input. Expected string got ${typeof value}`);
-            }
-            encodedData = Buffer.from(value);
-        } else {
-            if (value instanceof Buffer) {
-                encodedData = value;
-            } else {
-                throw new Error(`Invalid input. Expected buffer`);
-            }
-        }
-
-        switch (this.compression) {
-            case 'gzip':
-                encodedData = await gzipPromise(encodedData);
-                break;
-            default:
-                break;
-        }
+        const encodedData = await encodeData(value, this.encoding, this.compression);
 
         const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_SET, this.database.length + this.indexKey.length + key.length + encodedData.length);
         bw.writeString(this.database, Encoding.Utf8);

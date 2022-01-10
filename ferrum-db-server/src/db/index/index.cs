@@ -68,7 +68,8 @@ public class Index {
             if (page == null) {
                 File.Delete(Path.Join(this.path, unusedPage + ".page"));
 
-            } else {
+            }
+            else {
                 page.delete();
                 this.pageFiles.Remove(uint.Parse(unusedPage));
             }
@@ -157,7 +158,8 @@ public class Index {
             this.writer.BaseStream.Seek(entry.deleteBytePosInRecord - 8, SeekOrigin.Begin);
             this.writer.Write(transactionId);
             this.writer.Write((byte)2);
-        } else {
+        }
+        else {
             this.writer.BaseStream.Seek(entry.deleteBytePosInRecord, SeekOrigin.Begin);
             this.writer.Write(false);
         }
@@ -169,7 +171,8 @@ public class Index {
         this.pageFiles.TryGetValue(entry.pageFile, out pageFile);
         if (pageFile == null) {
             throw new Exception("Illegal state");
-        } else {
+        }
+        else {
             if (entry.length >= pageFile.size)
                 pageFile.delete();
         }

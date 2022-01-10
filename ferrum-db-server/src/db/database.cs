@@ -10,6 +10,7 @@ namespace master_record {
         private static int Version = 0;
         private Dictionary<string, Index> indexes;
         private Dictionary<string, Set> sets;
+        private Dictionary<string, TimeSeries> timeSeries;
         private BinaryWriter writer;
         private string path;
         private string folder;
@@ -25,7 +26,7 @@ namespace master_record {
             this.pos = pos;
             this.indexes = new Dictionary<string, Index>();
             this.sets = new Dictionary<string, Set>();
-
+            this.timeSeries = new Dictionary<string, TimeSeries>();
         }
 
         public void initializeDatabase() {
@@ -42,7 +43,8 @@ namespace master_record {
                         this.readCollection(reader);
                     }
                 }
-            } else {
+            }
+            else {
                 isNew = true;
 #if DEBUG
                 Console.WriteLine($"New database {name} at {pos}");
@@ -56,7 +58,8 @@ namespace master_record {
             if (isNew) {
                 this.writeHeader();
 
-            } else {
+            }
+            else {
                 this.writer.BaseStream.Seek(0, SeekOrigin.End);
 
             }
@@ -77,6 +80,10 @@ namespace master_record {
 
         public bool hasSet(string name) {
             return this.sets.ContainsKey(name);
+        }
+
+        public bool hasTimeSeries(string name) {
+            return this.timeSeries.ContainsKey(name);
         }
 
         public void compact() {
@@ -106,10 +113,17 @@ namespace master_record {
             return array;
         }
 
+        public string[] getTimeSeries() {
+            var array = new string[this.timeSeries.Count];
+            this.timeSeries.Keys.CopyTo(array, 0);
+            return array;
+        }
+
         public Index addIndexIfNotExist(string name, uint pageSize) {
             if (this.hasIndex(name)) {
                 return this.getIndex(name)!;
-            } else {
+            }
+            else {
                 return this.addIndex(name, pageSize);
             }
         }
@@ -117,9 +131,46 @@ namespace master_record {
         public Set addSetIfNotExist(string name) {
             if (this.hasSet(name)) {
                 return this.getSet(name)!;
-            } else {
+            }
+            else {
                 return this.addSet(name);
             }
+        }
+
+        public TimeSeries addTimeSeriesIfNotExist(string name, uint pageSize) {
+            if (this.hasTimeSeries(name)) {
+                return this.getTimeSeries(name)!;
+            }
+            else {
+                return this.addTimeSeries(name, pageSize);
+            }
+        }
+
+        public TimeSeries addTimeSeries(string name, uint pageSize) {
+            if (this.hasTimeSeries(name)) {
+                throw new Exception($"Time series {name} already exists");
+            }
+
+            if (pageSize < 1024 * 1024) {
+                pageSize = 1024 * 1024;
+            }
+
+            var pos = this.writer.BaseStream.Position;
+            var timeSeries = new TimeSeries(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet);
+            this.timeSeries.TryAdd(name, timeSeries);
+            this.writer.Write(false);
+            this.writer.Write(name);
+            this.writer.Write((byte)2);
+            this.writer.Write(pageSize);
+
+            this.writer.BaseStream.Seek(pos, SeekOrigin.Begin);
+            //For writing to disk to be atomic you have to "commit" the written content with a single write command as a result we use the delete byte to indicate whether
+            //the written content was completed or not
+            this.writer.Write(true);
+            this.writer.BaseStream.Seek(0, SeekOrigin.End);
+            this.writer.Flush();
+
+            return timeSeries;
         }
 
         public Set addSet(string name) {
@@ -179,6 +230,11 @@ namespace master_record {
             return set;
         }
 
+        public TimeSeries? getTimeSeries(string name) {
+            this.timeSeries.TryGetValue(name, out TimeSeries? timeSeries);
+            return timeSeries;
+        }
+
         public void deleteIndex(string name) {
             this.indexes.TryGetValue(name, out Index? index);
             if (index != null) {
@@ -189,7 +245,24 @@ namespace master_record {
                 index.clear();
                 Console.WriteLine($"Deleting index {name} at {Path.Join(this.folder, index.pos.ToString())}");
                 Directory.Delete(Path.Join(this.folder, index.pos.ToString()), true);
-            } else {
+            }
+            else {
+                throw new Exception("Illegal state");
+            }
+        }
+
+        public void deleteTimeSeries(string name) {
+            this.timeSeries.TryGetValue(name, out TimeSeries? timeSeries);
+            if (timeSeries != null) {
+                this.writer.BaseStream.Position = timeSeries.pos;
+                this.writer.Write(false);
+                this.writer.BaseStream.Seek(0, SeekOrigin.End);
+                this.indexes.Remove(name);
+                timeSeries.clear();
+                Console.WriteLine($"Deleting index {name} at {Path.Join(this.folder, timeSeries.pos.ToString())}");
+                Directory.Delete(Path.Join(this.folder, timeSeries.pos.ToString()), true);
+            }
+            else {
                 throw new Exception("Illegal state");
             }
         }
@@ -204,7 +277,8 @@ namespace master_record {
                 set.clear();
                 Console.WriteLine($"Deleting index {name} at {Path.Join(this.folder, set.pos.ToString())}");
                 Directory.Delete(Path.Join(this.folder, set.pos.ToString()), true);
-            } else {
+            }
+            else {
                 throw new Exception("Illegal state");
             }
         }
@@ -229,12 +303,20 @@ namespace master_record {
                 if (isAlive) {
                     this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet));
                 }
-            } else {
+            }
+            else if (type == 1) {
                 if (isAlive) {
                     this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet));
                 }
             }
+            else if (type == 2) {
+                var pageSize = reader.ReadUInt32();
+                if (isAlive) {
+                    this.timeSeries.TryAdd(name, new TimeSeries(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet));
+                }
+            }
         }
+
     }
 
 }

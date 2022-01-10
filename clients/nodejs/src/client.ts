@@ -1,7 +1,7 @@
-import { BinaryWriter, Encoding } from "csharp-binary-stream";
-import { Socket } from "net";
-import { ApiMessageType } from "./protcol";
-import { getBinaryReader, handleErrorResponse } from "./utils";
+import { BinaryWriter, Encoding } from 'csharp-binary-stream';
+import { Socket } from 'net';
+import { ApiMessageType } from './protcol';
+import { getBinaryReader, handleErrorResponse } from './utils';
 
 const MAX_BUFFER_SIZE = 128 * 1024 * 1024;
 
@@ -15,6 +15,8 @@ export class FerrumServerClient {
     public disposed: boolean;
     private lastResponse: number = Date.now();
     private heartBeatInterval: NodeJS.Timeout;
+    private ip: string;
+    private port: number;
 
     constructor(socket: Socket) {
         this.initialize(socket);
@@ -25,6 +27,8 @@ export class FerrumServerClient {
 
     private initialize(socket: Socket) {
         this.socket = socket;
+        this.ip = socket.remoteAddress;
+        this.port = socket.remotePort;
         this.writeBuffer = Buffer.alloc(8192);
         this.lengthBuffer = Buffer.alloc(4);
         this.socket = socket;
@@ -37,13 +41,13 @@ export class FerrumServerClient {
         let writeOffset = 0;
         let readOffset = 0;
 
-        socket.on("close", () => {
+        socket.on('close', () => {
             if (!this.disposed) {
                 this.reconnect();
             }
         });
 
-        this.socket.on("data", (data: Buffer) => {
+        this.socket.on('data', (data: Buffer) => {
             this.lastResponse = Date.now();
             while (readOffset < data.length) {
                 if (reading === false) {
@@ -52,33 +56,22 @@ export class FerrumServerClient {
                     reading = true;
                     writeOffset = 0;
                 } else {
-                    const toRead = Math.min(
-                        data.length - readOffset,
-                        msgRemaining
-                    );
+                    const toRead = Math.min(data.length - readOffset, msgRemaining);
                     if (toRead + writeOffset > msgBuffer.length) {
-                        msgBuffer = this.expandBuffer(
-                            msgBuffer,
-                            MAX_BUFFER_SIZE
-                        );
+                        msgBuffer = this.expandBuffer(msgBuffer, MAX_BUFFER_SIZE);
                     }
-                    data.copy(
-                        msgBuffer,
-                        writeOffset,
-                        readOffset,
-                        readOffset + toRead
-                    );
+                    data.copy(msgBuffer, writeOffset, readOffset, readOffset + toRead);
                     msgRemaining -= toRead;
                     writeOffset += toRead;
                     readOffset += toRead;
                 }
 
                 if (msgRemaining < 0) {
-                    throw new Error("Illegal state");
+                    throw new Error('Illegal state');
                 }
 
                 if (readOffset > data.length) {
-                    throw new Error("Illegal state");
+                    throw new Error('Illegal state');
                 }
 
                 if (reading && msgRemaining === 0) {
@@ -86,9 +79,7 @@ export class FerrumServerClient {
                     writeOffset = 0;
                     const id = msgBuffer.readUInt32LE();
                     if (this.pending.has(id)) {
-                        this.pending.get(id)(
-                            Buffer.from(msgBuffer.slice(4, msgSize))
-                        );
+                        this.pending.get(id)(Buffer.from(msgBuffer.slice(4, msgSize)));
                         this.pending.delete(id);
                     }
                 }
@@ -105,12 +96,12 @@ export class FerrumServerClient {
                 this.heartbeat();
             }, 2000);
         }
-        this.socket.connect(this.socket.remotePort, this.socket.remoteAddress);
+        this.socket.connect(this.port, this.ip);
         for (const pendingId of this.pending.keys()) {
             const pending = this.pending.get(pendingId);
             const error = new BinaryWriter();
             error.writeBoolean(false);
-            error.writeString("Connection lost", Encoding.Utf8);
+            error.writeString('Connection lost', Encoding.Utf8);
             pending(Buffer.from(error.toUint8Array()));
         }
     }
@@ -152,19 +143,13 @@ export class FerrumServerClient {
             buffer.copy(newBuffer);
             return newBuffer;
         } else {
-            throw new Error("Buffer overflow");
+            throw new Error('Buffer overflow');
         }
     }
 
-    public getSendWriter(
-        messageType: ApiMessageType,
-        payloadSize: number
-    ): { bw: BinaryWriter; myId: number } {
+    public getSendWriter(messageType: ApiMessageType, payloadSize: number): { bw: BinaryWriter; myId: number } {
         while (payloadSize > this.writeBuffer.length) {
-            this.writeBuffer = this.expandBuffer(
-                this.writeBuffer,
-                MAX_BUFFER_SIZE
-            );
+            this.writeBuffer = this.expandBuffer(this.writeBuffer, MAX_BUFFER_SIZE);
         }
 
         const buffer = this.writeBuffer;

@@ -67,13 +67,13 @@ Or lower if your file system does not support files this big (linux typically is
 
 For your convenience you can write large values with a single write but streaming is recommended for multi MB values to keep memory use down
 
-### Maximum records per index: 2,146,435,071
+### Maximum records per collection: 2,146,435,071
 
-However the memory requirements are large to even reach this limit. It would take 214 GB to hold this many records, even if they are spread over multiple indexes
+However the memory requirements are large to even reach this limit. It would take 214 GB to hold this many records, even if they are spread over multiple collections
 
-### Maximum indexes: 2,146,435,071
+### Maximum collections: 2,146,435,071
 
-Subject to inode or folder capacity limitation of file system. Also uses about 1 GB of Ram per 10 Million indexes
+Subject to inode or folder capacity limitation of file system. Also uses about 1 GB of Ram per 10 Million collections
 
 ### Maximum Databases (per server): 2,146,435,071
 
@@ -133,7 +133,7 @@ Support to add content to an existing record without having to rewrite the entir
 
 ### Multithreading
 
-Indexes are fully isolated from each other allowing each index to use their own CPU thread. This may be completely futile though because TCP will prevent you from being able to max out the CPU of the Database anyway unless you have a lot of clients.
+Collections are fully isolated from each other allowing each index to use their own CPU thread. This may be completely futile though because TCP will prevent you from being able to max out the CPU of the Database anyway unless you have a lot of clients.
 
 ### Observability
 

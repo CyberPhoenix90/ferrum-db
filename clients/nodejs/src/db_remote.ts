@@ -3,6 +3,7 @@ import { FerrumServerClient } from './client';
 import { IndexRemote, SupportedCompressionTypes, SupportedEncodingTypes } from './index_remote';
 import { ApiMessageType } from './protcol';
 import { SetRemote } from './set_remote';
+import { TimeSeriesRemote } from './time_series_remote';
 import { getBinaryReader, handleErrorResponse } from './utils';
 
 export class FerrumDBRemote {
@@ -60,7 +61,12 @@ export class FerrumDBRemote {
         }
     }
 
-    public async createIndex<T>(index: string, pageFileSize: number = 0): Promise<IndexRemote<T>> {
+    public async createIndex<T>(
+        index: string,
+        encoding: SupportedEncodingTypes = 'bson',
+        compression: SupportedCompressionTypes = 'gzip',
+        pageFileSize: number = 0,
+    ): Promise<IndexRemote<T>> {
         const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX, index.length);
         bw.writeString(this.dbName, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
@@ -75,7 +81,7 @@ export class FerrumDBRemote {
         if (!success) {
             return handleErrorResponse(br);
         } else {
-            return this.getIndex(index);
+            return this.getIndex(index, encoding, compression);
         }
     }
 
@@ -213,6 +219,113 @@ export class FerrumDBRemote {
         }
     }
 
+    public async createTimeSeriesIfNotExist<T>(
+        name: string,
+        encoding: SupportedEncodingTypes = 'bson',
+        compression: SupportedCompressionTypes = 'gzip',
+        pageFileSize: number = 0,
+    ): Promise<TimeSeriesRemote<T>> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES_IF_NOT_EXIST, this.dbName.length + name.length);
+        bw.writeString(this.dbName, Encoding.Utf8);
+        bw.writeString(name, Encoding.Utf8);
+        bw.writeUnsignedInt(pageFileSize);
+
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+        const br = getBinaryReader(response);
+
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            return this.getTimeSeries(name, encoding, compression);
+        }
+    }
+
+    public getTimeSeries<T>(name: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): TimeSeriesRemote<T> {
+        return new TimeSeriesRemote<T>(this.client, this.dbName, name, encoding, compression);
+    }
+
+    public async deleteTimeSeries(name: string): Promise<void> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_TIME_SERIES, name.length);
+        bw.writeString(this.dbName, Encoding.Utf8);
+        bw.writeString(name, Encoding.Utf8);
+
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+        const br = getBinaryReader(response);
+
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            return undefined;
+        }
+    }
+
+    public async createTimeSeries<T>(
+        name: string,
+        encoding: SupportedEncodingTypes = 'bson',
+        compression: SupportedCompressionTypes = 'gzip',
+        pageFileSize: number = 0,
+    ): Promise<TimeSeriesRemote<T>> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES, name.length);
+        bw.writeString(this.dbName, Encoding.Utf8);
+        bw.writeString(name, Encoding.Utf8);
+        bw.writeUnsignedInt(pageFileSize);
+
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+        const br = getBinaryReader(response);
+
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            return this.getTimeSeries(name, encoding, compression);
+        }
+    }
+
+    public async hasTimeSeries(name: string): Promise<boolean> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_TIME_SERIES, name.length);
+        bw.writeString(this.dbName, Encoding.Utf8);
+        bw.writeString(name, Encoding.Utf8);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            return br.readBoolean();
+        }
+    }
+
+    public async getListOfTimeSeries(): Promise<string[]> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_TIME_SERIES, 0);
+        bw.writeString(this.dbName, Encoding.Utf8);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            const len = br.readInt();
+            const result = new Array(len);
+            for (let i = 0; i < len; i++) {
+                result[i] = br.readString(Encoding.Utf8);
+            }
+            return result;
+        }
+    }
     public async compact(): Promise<void> {
         const { bw, myId } = this.client.getSendWriter(ApiMessageType.COMPACT, 0);
         bw.writeString(this.dbName, Encoding.Utf8);

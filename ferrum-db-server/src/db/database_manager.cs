@@ -52,7 +52,8 @@ namespace master_record {
 
             if (!this.transactionIdIndex.has("id")) {
                 id = 0;
-            } else {
+            }
+            else {
                 id = new BinaryReader(new MemoryStream(this.transactionIdIndex.get("id")!)).ReadInt64();
             }
 
@@ -83,6 +84,23 @@ namespace master_record {
                                 break;
                             case DatabaseOperationType.DELETE:
                                 index.delete(operation.key, id);
+                                break;
+                        }
+                        break;
+                    case TargetType.TIME_SERIES:
+                        var timeseries = db.getTimeSeries(operation.target);
+
+                        switch (operation.operationType) {
+                            case DatabaseOperationType.WRITE:
+                                timeseries.set(operation.key, operation.timestamp.Value, operation.newValue, id);
+                                break;
+                            case DatabaseOperationType.DELETE:
+                                if (operation.timestamp == null) {
+                                    timeseries.deleteSerie(operation.key, id);
+                                }
+                                else {
+                                    timeseries.delete(operation.key, operation.timestamp.Value, id);
+                                }
                                 break;
                         }
                         break;
@@ -163,7 +181,8 @@ namespace master_record {
                 database.clear();
                 Console.WriteLine($"Deleting database {name} at {Path.Join(this.folder, database.name)}");
                 Directory.Delete(Path.Join(this.folder, database.name), true);
-            } else {
+            }
+            else {
                 throw new Exception("Illegal state");
             }
         }
