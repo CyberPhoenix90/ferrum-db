@@ -1,8 +1,10 @@
 import { deserialize, serialize, setInternalBufferSize } from 'bson';
 import { BinaryReader, Encoding } from 'csharp-binary-stream';
-import { SupportedCompressionTypes, SupportedEncodingTypes } from '.';
 import { promisify } from 'util';
 import { gunzip, gzip } from 'zlib';
+
+export type SupportedEncodingTypes = 'ndjson' | 'json' | 'bson' | 'string' | 'binary' | 'float' | 'integer';
+export type SupportedCompressionTypes = 'gzip' | 'none';
 
 export let bsonBufferSize = 17825792; // 128MB
 const gunzipPromise = promisify(gunzip);
@@ -79,6 +81,10 @@ export async function readEncodedData(br: BinaryReader, encoding: SupportedEncod
             expandBsonBuffer(decompressed.length);
         }
         decodedValue = deserialize(decompressed);
+    } else if (encoding === 'float') {
+        decodedValue = decompressed.readDoubleBE();
+    } else if (encoding === 'integer') {
+        decodedValue = decompressed.readInt32BE();
     } else if (encoding === 'json') {
         try {
             decodedValue = JSON.parse(decompressed.toString('utf8'));
@@ -103,6 +109,12 @@ export async function encodeData(value: any, encoding: SupportedEncodingTypes, c
     let encodedData: Buffer;
     if (encoding === 'bson') {
         encodedData = encodeBSON(value);
+    } else if (encoding === 'float') {
+        encodedData = Buffer.alloc(8);
+        encodedData.writeDoubleBE(value, 0);
+    } else if (encoding === 'integer') {
+        encodedData = Buffer.alloc(4);
+        encodedData.writeInt32BE(value, 0);
     } else if (encoding === 'json') {
         encodedData = Buffer.from(JSON.stringify(value));
     } else if (encoding === 'ndjson') {

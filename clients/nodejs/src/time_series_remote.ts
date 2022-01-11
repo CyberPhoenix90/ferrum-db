@@ -1,11 +1,15 @@
 import { Encoding } from 'csharp-binary-stream';
 import { FerrumServerClient } from './client';
 import { ApiMessageType } from './protcol';
-import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData, readEncodedDataArray } from './utils';
-
-export type SupportedEncodingTypes = 'ndjson' | 'json' | 'bson' | 'string' | 'binary';
-
-export type SupportedCompressionTypes = 'gzip' | 'none';
+import {
+    encodeData,
+    getBinaryReader,
+    handleErrorResponse,
+    readEncodedData,
+    readEncodedDataArray,
+    SupportedCompressionTypes,
+    SupportedEncodingTypes,
+} from './utils';
 
 export class TimeSeriesRemote<T> {
     private client: FerrumServerClient;

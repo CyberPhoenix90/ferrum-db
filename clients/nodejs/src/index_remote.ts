@@ -1,11 +1,7 @@
 import { Encoding } from 'csharp-binary-stream';
 import { FerrumServerClient } from './client';
 import { ApiMessageType } from './protcol';
-import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData } from './utils';
-
-export type SupportedEncodingTypes = 'ndjson' | 'json' | 'bson' | 'string' | 'binary';
-
-export type SupportedCompressionTypes = 'gzip' | 'none';
+import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData, SupportedCompressionTypes, SupportedEncodingTypes } from './utils';
 
 export class IndexRemote<T> {
     private client: FerrumServerClient;

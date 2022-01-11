@@ -1,10 +1,10 @@
 import { Encoding } from 'csharp-binary-stream';
 import { FerrumServerClient } from './client';
-import { IndexRemote, SupportedCompressionTypes, SupportedEncodingTypes } from './index_remote';
+import { IndexRemote } from './index_remote';
 import { ApiMessageType } from './protcol';
 import { SetRemote } from './set_remote';
 import { TimeSeriesRemote } from './time_series_remote';
-import { getBinaryReader, handleErrorResponse } from './utils';
+import { getBinaryReader, handleErrorResponse, SupportedCompressionTypes, SupportedEncodingTypes } from './utils';
 
 export class FerrumDBRemote {
     private client: FerrumServerClient;

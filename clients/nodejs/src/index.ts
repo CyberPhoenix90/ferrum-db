@@ -1,39 +1,32 @@
-import { Encoding } from "csharp-binary-stream";
-import { Socket } from "net";
-import { FerrumServerClient } from "./client";
-import { FerrumDBRemote } from "./db_remote";
-import { ApiMessageType } from "./protcol";
-import { getBinaryReader, handleErrorResponse } from "./utils";
+import { Encoding } from 'csharp-binary-stream';
+import { Socket } from 'net';
+import { FerrumServerClient } from './client';
+import { FerrumDBRemote } from './db_remote';
+import { ApiMessageType } from './protcol';
+import { getBinaryReader, handleErrorResponse } from './utils';
 
-export { FerrumDBRemote } from "./db_remote";
-export {
-    IndexRemote,
-    SupportedCompressionTypes,
-    SupportedEncodingTypes,
-} from "./index_remote";
+export { FerrumDBRemote } from './db_remote';
+export { IndexRemote } from './index_remote';
 
-export { SetRemote } from "./set_remote";
+export { SetRemote } from './set_remote';
 
-export function ferrumConnect(
-    ip: string,
-    port: number
-): Promise<FerrumServerConnection> {
+export function ferrumConnect(ip: string, port: number): Promise<FerrumServerConnection> {
     return new Promise((resolve, reject) => {
         const socket = new Socket();
         socket.setNoDelay(true);
         socket.connect(port, ip);
         let client: FerrumServerClient;
 
-        socket.once("connect", () => {
+        socket.once('connect', () => {
             client = new FerrumServerClient(socket);
             resolve(new FerrumServerConnection(client));
         });
-        socket.once("error", (e) => {
+        socket.once('error', (e) => {
             reject(e);
         });
 
-        socket.once("timeout", () => {
-            reject(new Error("Connection timeout"));
+        socket.once('timeout', () => {
+            reject(new Error('Connection timeout'));
         });
     });
 }
@@ -49,13 +42,8 @@ export class FerrumServerConnection {
         this.client.disconnect();
     }
 
-    public async createDatabaseIfNotExists(
-        dbName: string
-    ): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST,
-            dbName.length
-        );
+    public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST, dbName.length);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -71,10 +59,7 @@ export class FerrumServerConnection {
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.CREATE_DATABASE,
-            dbName.length
-        );
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE, dbName.length);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -90,10 +75,7 @@ export class FerrumServerConnection {
     }
 
     public async hasDatabase(dbName: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.HAS_DATABASE,
-            dbName.length
-        );
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_DATABASE, dbName.length);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -109,10 +91,7 @@ export class FerrumServerConnection {
     }
 
     public async dropDatabase(dbName: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.DROP_DATABASE,
-            dbName.length
-        );
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DROP_DATABASE, dbName.length);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -128,10 +107,7 @@ export class FerrumServerConnection {
     }
 
     public async clearDatabase(dbName: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.CLEAR_DATABASE,
-            dbName.length
-        );
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CLEAR_DATABASE, dbName.length);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -146,10 +122,7 @@ export class FerrumServerConnection {
     }
 
     public async getDatabaseNames(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.LIST_DATABASES,
-            0
-        );
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.LIST_DATABASES, 0);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
