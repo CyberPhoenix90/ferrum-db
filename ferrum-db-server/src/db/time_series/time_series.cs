@@ -35,9 +35,10 @@ public class TimeSeries {
         Directory.CreateDirectory(Path.Join(this.path, "tmp"));
         this.nextPageFile = 0;
 
-        if (File.Exists(Path.Join(this.path, "records.timeseries"))) {
+        string record = Path.Join(this.path, "records.timeseries");
+        if (File.Exists(record) && new FileInfo(record).Length > 0) {
             using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, "records.timeseries"), FileMode.Open))) {
-                while (reader.PeekChar() != -1) {
+                while (reader.BaseStream.Position < reader.BaseStream.Length) {
                     this.readRecords(reader, transactionSet);
                 }
             }

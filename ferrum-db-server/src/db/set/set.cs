@@ -21,9 +21,10 @@ public class Set {
     private void initialize(Set? transactionSet) {
         Console.WriteLine($"Initializing set {name}");
         Directory.CreateDirectory(this.path);
-        if (File.Exists(Path.Join(this.path, "records.set"))) {
+        string record = Path.Join(this.path, "records.set");
+        if (File.Exists(record) && new FileInfo(record).Length > 0) {
             using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, "records.set"), FileMode.Open))) {
-                while (reader.PeekChar() != -1) {
+                while (reader.BaseStream.Position < reader.BaseStream.Length) {
                     this.readRecords(reader, transactionSet);
                 }
             }
@@ -88,7 +89,8 @@ public class Set {
             this.writer.BaseStream.Seek(pos - 8, SeekOrigin.Begin);
             this.writer.Write(transactionId);
             this.writer.Write((byte)2);
-        } else {
+        }
+        else {
             this.writer.BaseStream.Seek(pos, SeekOrigin.Begin);
             this.writer.Write(false);
         }
