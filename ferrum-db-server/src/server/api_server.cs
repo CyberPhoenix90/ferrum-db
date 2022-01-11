@@ -205,7 +205,7 @@ namespace api_server {
                         case ApiMessageType.TIME_SERIES_PUT_ENTRY:
                             return new TimeSeriesSetEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64(), reader.ReadBytes(reader.ReadInt32()));
                         case ApiMessageType.TIME_SERIES_GET_SERIES:
-                            return new GetTimeSeries(reader.ReadUInt32(), reader.ReadString());
+                            return new TimeSeriesGetSeries(reader.ReadUInt32(), reader.ReadString(), reader.ReadString());
                         case ApiMessageType.TIME_SERIES_GET_FULL_SERIE:
                             return new TimeSeriesGetFullSerie(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
                         default:
@@ -974,6 +974,25 @@ namespace api_server {
                             this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFullSerie.timeSeries}"));
                         }
                         break;
+                    case ApiMessageType.TIME_SERIES_GET_SERIES:
+                        var timeSeriesGetSeries = (TimeSeriesGetSeries)command;
+
+                        db = this.getDbOrFail(timeSeriesGetSeries.database, timeSeriesGetSeries.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetSeries.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entries = timeSeries.getKeys();
+                            this.sendList(client, command.id, entries);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetSeries.timeSeries}"));
+                        }
+
+                        break;
                     default:
                         this.sendError(client, command.id, new Exception($"Command not implemented: {command.type}"));
                         break;
@@ -1063,14 +1082,23 @@ namespace api_server {
             this.endSend(client, s);
         }
 
-        private void sendBinaryList(NetworkStream client, uint id, IList<byte[]> list) {
+        private void sendBinaryList(NetworkStream client, uint id, List<byte[]> list) {
             var s = this.startSend();
             s.Write(id);
+#if DEBUG
+            Console.WriteLine($"Sending {list.Count} binary items for ID ${id}");
+#endif
             s.Write(true);
             s.Write(list.Count);
             foreach (var item in list) {
-                s.Write(item.Length);
-                s.Write(item);
+                if (item == null) {
+                    s.Write(0);
+                }
+                else {
+                    s.Write(item.Length);
+                    s.Write(item);
+
+                }
             }
             this.endSend(client, s);
         }
@@ -1082,8 +1110,13 @@ namespace api_server {
             Console.WriteLine($"Sending binary for ID ${id}");
 #endif
             s.Write(true);
-            s.Write(data.Length);
-            s.Write(data);
+            if (data == null) {
+                s.Write(0);
+            }
+            else {
+                s.Write(data.Length);
+                s.Write(data);
+            }
             this.endSend(client, s);
         }
 

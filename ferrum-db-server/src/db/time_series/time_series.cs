@@ -74,35 +74,6 @@ public class TimeSeries {
         }
     }
 
-    private void readRecords(BinaryReader reader, Set? transactionSet) {
-        var commited = true;
-        var key = reader.ReadString();
-        var pageFileId = reader.ReadUInt32();
-        if (!this.pageFiles.ContainsKey(pageFileId)) {
-            var page = new PageFile(Path.Join(this.path, pageFileId.ToString() + ".page"), pageFileId, this.pageSize);
-            if (pageFileId >= this.nextPageFile) {
-                this.nextPageFile = pageFileId + 1;
-            }
-            this.pageFiles.Add(pageFileId, page);
-        }
-        var posInPage = reader.ReadUInt32();
-        var length = reader.ReadInt64();
-        var timestamp = reader.ReadInt64();
-        var transactionId = reader.ReadInt64();
-        if (transactionId != -1 && transactionSet != null) {
-            if (!transactionSet.has(transactionId.ToString())) {
-                commited = false;
-            }
-        }
-        var isAlive = reader.ReadByte();
-        if (isAlive == 1 && commited || isAlive == 2 && !commited) {
-            if (!this.contentMap.ContainsKey(key)) {
-                this.contentMap.TryAdd(key, new SortedDictionary<long, IndexEntryMetadata>());
-            }
-            this.contentMap[key].Add(timestamp, new IndexEntryMetadata(pageFileId, posInPage, length, reader.ReadInt64()));
-        }
-    }
-
     public void dispose() {
         this.contentMap.Clear();
         this.writer.Close();
@@ -577,7 +548,7 @@ public class TimeSeries {
 #if DEBUG
         Console.WriteLine($"Page pointer moved from {locationOnPage} to {page.pos}");
 #endif
-        this.writeRecord(this.writer, key, page.index, (uint)locationOnPage, value.Length, transactionId);
+        this.writeRecord(this.writer, key, timestamp, page.index, (uint)locationOnPage, value.Length, transactionId);
         var entry = new IndexEntryMetadata(page.index, (uint)locationOnPage, value.Length, this.writer.BaseStream.Position - 1);
         if (!this.contentMap.ContainsKey(key)) {
             this.contentMap.Add(key, new SortedDictionary<long, IndexEntryMetadata>());
@@ -585,8 +556,9 @@ public class TimeSeries {
         this.contentMap[key].Add(timestamp, entry);
     }
 
-    private void writeRecord(BinaryWriter output, string key, uint pageFile, uint pos, long length, long transactionId) {
+    private void writeRecord(BinaryWriter output, string key, long timestamp, uint pageFile, uint pos, long length, long transactionId) {
         output.Write(key);
+        output.Write(timestamp);
         output.Write(pageFile);
         output.Write(pos);
         output.Write(length);
@@ -595,6 +567,39 @@ public class TimeSeries {
         output.Flush();
     }
 
+    private void readRecords(BinaryReader reader, Set? transactionSet) {
+        var commited = true;
+        var key = reader.ReadString();
+        var timestamp = reader.ReadInt64();
+        var pageFileId = reader.ReadUInt32();
+        if (!this.pageFiles.ContainsKey(pageFileId)) {
+            var page = new PageFile(Path.Join(this.path, pageFileId.ToString() + ".page"), pageFileId, this.pageSize);
+            if (pageFileId >= this.nextPageFile) {
+                this.nextPageFile = pageFileId + 1;
+            }
+            this.pageFiles.Add(pageFileId, page);
+        }
+        var posInPage = reader.ReadUInt32();
+        var length = reader.ReadInt64();
+        var transactionId = reader.ReadInt64();
+
+        if (transactionId != -1 && transactionSet != null) {
+            if (!transactionSet.has(transactionId.ToString())) {
+                commited = false;
+            }
+        }
+        var isAlive = reader.ReadByte();
+
+        if (isAlive == 1 && commited || isAlive == 2 && !commited) {
+#if DEBUG
+            Console.WriteLine($"Read record {key} at time {timestamp} from time series {this.name}");
+#endif
+            if (!this.contentMap.ContainsKey(key)) {
+                this.contentMap.TryAdd(key, new SortedDictionary<long, IndexEntryMetadata>());
+            }
+            this.contentMap[key].Add(timestamp, new IndexEntryMetadata(pageFileId, posInPage, length, -1));
+        }
+    }
     public int getRecordCount() {
         return this.contentMap.Count;
     }

@@ -62,6 +62,11 @@ export async function readEncodedDataArray(br: BinaryReader, encoding: Supported
 
 export async function readEncodedData(br: BinaryReader, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes): Promise<any> {
     const len = br.readInt();
+
+    if (len === 0) {
+        return undefined;
+    }
+
     const result = Buffer.from(br.readBytes(len));
     let decompressed: Buffer;
     let decodedValue: any;

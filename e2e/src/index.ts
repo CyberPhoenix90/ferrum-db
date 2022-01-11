@@ -28,7 +28,7 @@ async function testKillCorruption(): Promise<void> {
     server.kill();
 
     server = await startServer();
-    await sleep(3500);
+    await sleep(2500);
 
     client = await ferrumConnect('localhost', 3000);
     dbRemote = client.getDatabase('test');
@@ -45,9 +45,10 @@ async function testKillCorruption(): Promise<void> {
 
 async function testTimeSeries(): Promise<void> {
     await clearDatabase();
-    let server = await startServer();
 
+    let server = await startServer();
     let client = await ferrumConnect('localhost', 3000);
+
     let dbRemote = await client.createDatabase('test');
     console.log('Created Database');
     let series = await dbRemote.createTimeSeries<{ a: number; b: string }>('test', 'json', 'gzip');
@@ -60,6 +61,14 @@ async function testTimeSeries(): Promise<void> {
     await series.put('a.c', 0, { a: 1, b: 'test string value' });
 
     console.log('Inserted content');
+    client.disconnect();
+    server.kill();
+
+    server = await startServer();
+    client = await ferrumConnect('localhost', 3000);
+    dbRemote = client.getDatabase('test');
+
+    series = dbRemote.getTimeSeries<{ a: number; b: string }>('test', 'json', 'gzip');
 
     const entriesA = await series.getEntriesBetween('a.b', 0, 100);
 
@@ -132,7 +141,7 @@ async function startServer(): Promise<ChildProcess> {
         console.log(`[Server]${msg.toString().trim()}`);
     });
 
-    await sleep(1500);
+    await sleep(2000);
 
     return cp;
 }

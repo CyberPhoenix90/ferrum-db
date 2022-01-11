@@ -145,6 +145,16 @@ namespace ferrum_db_server.src.server.protocol {
             this.timeSeries = timeSeries;
         }
     }
+
+    public class TimeSeriesGetSeries : Message {
+        public readonly string database;
+        public readonly string timeSeries;
+        public TimeSeriesGetSeries(uint id, string database, string timeSeries) : base(ApiMessageType.TIME_SERIES_GET_SERIES, id) {
+            this.database = database;
+            this.timeSeries = timeSeries;
+        }
+    }
+
     public class TimeSeriesGetNearestEntry : Message {
         public readonly string database;
         public readonly string timeSeries;

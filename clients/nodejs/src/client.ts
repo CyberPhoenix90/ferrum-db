@@ -43,7 +43,9 @@ export class FerrumServerClient {
 
         socket.on('close', () => {
             if (!this.disposed) {
-                this.reconnect();
+                setTimeout(() => {
+                    this.reconnect();
+                }, 400);
             }
         });
 
@@ -96,6 +98,7 @@ export class FerrumServerClient {
                 this.heartbeat();
             }, 2000);
         }
+
         this.socket.connect(this.port, this.ip);
         for (const pendingId of this.pending.keys()) {
             const pending = this.pending.get(pendingId);
