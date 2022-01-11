@@ -431,6 +431,24 @@ public class TimeSeries {
         return result;
     }
 
+    public List<byte[]> getFullSerie(string serie) {
+        if (!this.contentMap.ContainsKey(serie)) {
+            return new List<byte[]>();
+        }
+
+        var entries = this.contentMap[serie];
+        var result = new List<byte[]>();
+
+        foreach (var entry in entries) {
+            var value = get(serie, entry.Key);
+            if (value != null) {
+                result.Add(value);
+            }
+        }
+
+        return result;
+    }
+
     public long[] getSerieTimestmaps(string key) {
         if (!this.contentMap.ContainsKey(key)) {
             return new long[0];

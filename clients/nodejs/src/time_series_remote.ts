@@ -70,6 +70,31 @@ export class TimeSeriesRemote<T> {
         }
     }
 
+    public async getFullSerie(serie: string): Promise<T[]> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.TIME_SERIES_GET_FULL_SERIE,
+            this.database.length + this.timeSeriesKey.length + serie.length,
+        );
+        bw.writeString(this.database, Encoding.Utf8);
+        bw.writeString(this.timeSeriesKey, Encoding.Utf8);
+        bw.writeString(serie, Encoding.Utf8);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            try {
+                return readEncodedDataArray(br, this.encoding, this.compression);
+            } catch (e) {
+                throw new Error(`Failed to get ${serie} from ${this.timeSeriesKey} \n\nCaused by: ${e}`);
+            }
+        }
+    }
+
     public async getNearestEntryToTimestamp(serie: string, timestamp: number): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_NEAREST_ENTRY_TO_TIMESTAMP,

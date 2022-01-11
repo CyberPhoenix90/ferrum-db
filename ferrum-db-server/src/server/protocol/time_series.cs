@@ -202,6 +202,18 @@ namespace ferrum_db_server.src.server.protocol {
         }
     }
 
+    public class TimeSeriesGetFullSerie : Message {
+        public readonly string database;
+        public readonly string timeSeries;
+        public readonly string key;
+
+        public TimeSeriesGetFullSerie(uint id, string database, string timeSeries, string key) : base(ApiMessageType.TIME_SERIES_GET_FULL_SERIE, id) {
+            this.database = database;
+            this.timeSeries = timeSeries;
+            this.key = key;
+        }
+    }
+
     public class TimeSeriesGetLastEntry : Message {
         public readonly string database;
         public readonly string timeSeries;

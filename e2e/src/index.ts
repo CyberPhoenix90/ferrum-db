@@ -94,6 +94,18 @@ async function testTimeSeries(): Promise<void> {
 
     assert.equal(entriesG.a, 2);
 
+    const entriesH = await series.getFullSerie('a.c');
+
+    assert.equal(entriesH.length, 1);
+    assert.equal(entriesH[0].a, 1);
+
+    const entriesI = await series.getFullSerie('a.b');
+
+    assert.equal(entriesI.length, 3);
+    assert.equal(entriesI[0].a, 0);
+    assert.equal(entriesI[1].a, 1);
+    assert.equal(entriesI[2].a, 2);
+
     console.log('Time series test: OK.');
 
     client.disconnect();

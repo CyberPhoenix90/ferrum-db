@@ -204,6 +204,10 @@ namespace api_server {
                             return new GetTimeSeries(reader.ReadUInt32(), reader.ReadString());
                         case ApiMessageType.TIME_SERIES_PUT_ENTRY:
                             return new TimeSeriesSetEntry(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString(), reader.ReadInt64(), reader.ReadBytes(reader.ReadInt32()));
+                        case ApiMessageType.TIME_SERIES_GET_SERIES:
+                            return new GetTimeSeries(reader.ReadUInt32(), reader.ReadString());
+                        case ApiMessageType.TIME_SERIES_GET_FULL_SERIE:
+                            return new TimeSeriesGetFullSerie(reader.ReadUInt32(), reader.ReadString(), reader.ReadString(), reader.ReadString());
                         default:
                             throw new Exception("Unknown message type: " + type);
 
@@ -952,7 +956,24 @@ namespace api_server {
                         }
 
                         break;
+                    case ApiMessageType.TIME_SERIES_GET_FULL_SERIE:
+                        var timeSeriesGetFullSerie = (TimeSeriesGetFullSerie)command;
 
+                        db = this.getDbOrFail(timeSeriesGetFullSerie.database, timeSeriesGetFullSerie.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesGetFullSerie.timeSeries);
+
+                        if (timeSeries != null) {
+                            var entries = timeSeries.getFullSerie(timeSeriesGetFullSerie.key);
+                            this.sendBinaryList(client, command.id, entries);
+                        }
+                        else {
+                            this.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFullSerie.timeSeries}"));
+                        }
+                        break;
                     default:
                         this.sendError(client, command.id, new Exception($"Command not implemented: {command.type}"));
                         break;

@@ -62,6 +62,7 @@ namespace ferrum_db_server.src.server.protocol {
         HAS_TIME_SERIES = 54,
         GET_TIME_SERIES = 55,
         TIME_SERIES_DELETE_ENTRY = 56,
+        TIME_SERIES_GET_FULL_SERIE = 57,
     }
 
 }
