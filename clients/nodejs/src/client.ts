@@ -3,7 +3,7 @@ import { Socket } from 'net';
 import { ApiMessageType } from './protcol';
 import { getBinaryReader, handleErrorResponse } from './utils';
 
-const MAX_BUFFER_SIZE = 128 * 1024 * 1024;
+const MAX_BUFFER_SIZE = 512 * 1024 * 1024;
 
 export class FerrumServerClient {
     protected id: number = 0;
@@ -59,7 +59,7 @@ export class FerrumServerClient {
                     writeOffset = 0;
                 } else {
                     const toRead = Math.min(data.length - readOffset, msgRemaining);
-                    if (toRead + writeOffset > msgBuffer.length) {
+                    while (toRead + writeOffset > msgBuffer.length) {
                         msgBuffer = this.expandBuffer(msgBuffer, MAX_BUFFER_SIZE);
                     }
                     data.copy(msgBuffer, writeOffset, readOffset, readOffset + toRead);
@@ -99,7 +99,6 @@ export class FerrumServerClient {
             }, 2000);
         }
 
-        this.socket.connect(this.port, this.ip);
         for (const pendingId of this.pending.keys()) {
             const pending = this.pending.get(pendingId);
             const error = new BinaryWriter();
@@ -107,6 +106,9 @@ export class FerrumServerClient {
             error.writeString('Connection lost', Encoding.Utf8);
             pending(Buffer.from(error.toUint8Array()));
         }
+        this.socket.connect(this.port, this.ip, () => {
+            this.lastResponse = Date.now();
+        });
     }
 
     public disconnect(): void {
@@ -117,8 +119,8 @@ export class FerrumServerClient {
     }
 
     public async heartbeat(): Promise<void> {
-        if (Date.now() - this.lastResponse > 6000) {
-            this.socket.destroy();
+        if (Date.now() - this.lastResponse > 12000) {
+            this.socket.destroy(new Error('Heartbeat timeout'));
             return;
         }
 
@@ -180,8 +182,13 @@ export class FerrumServerClient {
     }
 
     public getResponse(myId: number): Promise<Buffer> {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Timeout waiting for database response'));
+            }, 90000);
+
             this.pending.set(myId, (buffer) => {
+                clearTimeout(timeout);
                 resolve(buffer);
             });
         });

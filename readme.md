@@ -63,7 +63,7 @@ However be aware that the larger the keyname the higher the IO cost for TCP to s
 
 Or lower if your file system does not support files this big (linux typically is capped at 16 TB)
 
-### Non streamed value size limit: 128 MB
+### Non streamed value size limit: 512 MB
 
 For your convenience you can write large values with a single write but streaming is recommended for multi MB values to keep memory use down
 

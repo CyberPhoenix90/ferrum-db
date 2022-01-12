@@ -38,21 +38,26 @@ namespace api_server {
             Console.WriteLine("New Client connected");
             byte[] sizeBytes = new byte[4];
             byte[] buffer = new byte[1048576];
-            client.ReceiveBufferSize = 1048576 * 256;
+            client.ReceiveBufferSize = 1048576 * 512;
             var stream = client.GetStream();
             stream.ReadTimeout = 10000;
             while (client.Connected) {
                 try {
+                    if (!client.Connected) {
+                        Console.WriteLine("Client disconnected");
+                        break;
+                    }
+
                     var read = stream.Read(sizeBytes, 0, 4);
                     var size = BitConverter.ToInt32(sizeBytes, 0);
-                    if (size > 1048576 * 256) {
+                    if (size > 1048576 * 512) {
                         Console.WriteLine("Error: Msg Buffer overflow");
                     }
                     else if (size > buffer.Length) {
                         buffer = new byte[size];
                     }
                     if (read == 0) {
-                        Console.WriteLine("Warning: Socket hangup");
+                        Console.WriteLine("Client disconnected. No data read");
                         break;
                     }
                     var offset = 0;
@@ -61,7 +66,7 @@ namespace api_server {
                         size -= read;
                     }
                     if (size != 0) {
-                        Console.WriteLine("Warning: Socket hangup");
+                        Console.WriteLine("Client disconnected. Not all data received");
                         break;
                     }
                 }
