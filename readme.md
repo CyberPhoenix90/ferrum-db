@@ -33,11 +33,20 @@ The data that is written to the DB is written exactly once. There is a fixed ove
 
 The "has" operation to check if something exists and it requires no disk lookup and is extremely lightweight.
 The DB also has a getRecordSize operation that is just as cheap and can help with streaming.
-You can get the number of records no matter how big the index is this will be almost instantenous.
+You can get the number of records no matter how big the collection is this will be almost instantenous.
 
 ### Transactions
 
 This database is capable of batching transactions. Which allows for multiple operations to be done atomically even across multiple databases.
+
+### Different types of collections
+
+FerrumDB currently supports 3 types of collections:
+Index (key-value)
+Set (key)
+Time Series (key-value but with queryable number as key)
+
+This increases the flexibility of the database without shoehorning all the features into one type at the cost of performance or memory. Each collection is specially crafted for performance in their respective use cases
 
 ## Limitations
 
@@ -45,7 +54,7 @@ FerrumDB has quite a few limitations in the name of performance
 
 ### The data is not sorted and thus not iterable unlike most (if not all) nosql solutions.
 
-It is however possible to get a collection of all the keys in an index (in random order). This operation is almost free beyond the IO of transferring it over TCP due to those keys already being stored in memory. Then you can use the keys to iterate on the client side. However be aware that this means you cannot be sure that the keys do not get deleted or new keys get added while you are iterating.
+It is however possible to get a list of all the keys in an collection (in random order). This operation is almost free beyond the IO of transferring it over TCP due to those keys already being stored in memory. Then you can use the keys to iterate on the client side. However be aware that this means you cannot be sure that the keys do not get deleted or new keys get added while you are iterating.
 
 ### This DB uses more RAM and has an upper limit to its maximum scale depending on your system RAM.
 
@@ -65,7 +74,7 @@ Or lower if your file system does not support files this big (linux typically is
 
 ### Non streamed value size limit: 512 MB
 
-For your convenience you can write large values with a single write but streaming is recommended for multi MB values to keep memory use down
+For your convenience you can read/write large values with a single read/write but streaming is recommended for multi MB values to keep memory use down
 
 ### Maximum records per collection: 2,146,435,071
 
@@ -85,7 +94,7 @@ Imposed by available ports in TCP
 
 ### Slow startup for large databases
 
-Since part of what makes this DB fast is holding all the meta data in memory this DB takes longer to startup the more records it has. You can expect about 3s of startup time for every 10M records. This is because the database builds its hashmap structure into memory for the entire index ahead of time for maximum performance.
+Since part of what makes this DB fast is holding all the meta data in memory this DB takes longer to startup the more records it has. You can expect about 3s of startup time for every 10M records. This is because the database builds its hashmap structure into memory for the entire collection ahead of time for maximum performance.
 
 ### Binary only
 
@@ -107,7 +116,11 @@ This DB has great performance at the cost of memory while staying persistent. Th
 
 ### High performance medium scale nosql database:
 
-This DB can also be used as the only nosql database in a system. The memory use or index size limit may not be a concern if you do not plan to scale beyond 20 ~ 80 million records.
+This DB can also be used as the only nosql database in a system. The memory use or collection size limit may not be a concern if you do not plan to scale beyond 20 ~ 80 million records.
+
+### Metrics Database:
+
+The time series collection type is perfect for storing metrics or other statistics relevant data especially if it's being read and written at extreme speeds and in extreme quantities because FerrumDB does not slow down based on the size of its content.
 
 ## Clients
 
@@ -133,7 +146,7 @@ Support to add content to an existing record without having to rewrite the entir
 
 ### Multithreading
 
-Collections are fully isolated from each other allowing each index to use their own CPU thread. This may be completely futile though because TCP will prevent you from being able to max out the CPU of the Database anyway unless you have a lot of clients.
+Collections are fully isolated from each other allowing each collection to use their own CPU thread. This may be completely futile though because TCP will prevent you from being able to max out the CPU of the Database anyway unless you have a lot of clients.
 
 ### Observability
 
@@ -147,6 +160,18 @@ Page files currently only get deleted if they had a single record or on restart.
 ### Defragmentation
 
 With defragmentation we could shrink page files that have only a few deleted records instead of having to hope that all of them get deleted eventually. Defragmentation would have to run in a background thread, check through the references to find gaps and then lock the index while moving the data inside the page then truncating the file. This would avoid the situation where junk piles up because of sporadic deletes that never fully clear a page file
+
+### New collection type: Tree
+
+A special collection type specifically made to represent tree structures with ways of querying the tree at high speed and automatic management of child parent relationships (e.g. delete child on parent deletion)
+
+### New collection type: Searchable Index
+
+A type of key value storage where you can have multiple keys that are either strings or numbers (or both) and different ways to query on those keys. E.g. full text search, fuzzy search. Going to necessarily be more memory intensive than the other collections since FerrumDB does not compromise on performance
+
+### New collection type: Blockchain
+
+A collection that represents data as a set of changes from the previous version. Not unlike git this would allow all versions of the data that have ever been written to that collection to be seen and allows reverting back to prior versions
 
 ## Running ferrum db
 
