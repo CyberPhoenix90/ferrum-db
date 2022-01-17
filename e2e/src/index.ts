@@ -14,7 +14,7 @@ async function testKillCorruption(): Promise<void> {
     let index = await dbRemote.createIndex('test', 'json', 'gzip');
 
     const data = [];
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 10000; i++) {
         data.push({ a: 1, b: 'test string value' });
     }
 
@@ -103,12 +103,12 @@ async function testTimeSeries(): Promise<void> {
 
     assert.equal(entriesG.a, 2);
 
-    const entriesH = await series.getFullSerie('a.c');
+    const entriesH = await series.getFullSerieEntries('a.c');
 
     assert.equal(entriesH.length, 1);
     assert.equal(entriesH[0].a, 1);
 
-    const entriesI = await series.getFullSerie('a.b');
+    const entriesI = await series.getFullSerieEntries('a.b');
 
     assert.equal(entriesI.length, 3);
     assert.equal(entriesI[0].a, 0);
@@ -146,7 +146,43 @@ async function startServer(): Promise<ChildProcess> {
     return cp;
 }
 
+async function testTags(): Promise<void> {
+    await clearDatabase();
+
+    let server = await startServer();
+    let client = await ferrumConnect('localhost', 3000);
+
+    let dbRemote = await client.createDatabase('test');
+    console.log('Created Database');
+
+    const index = await dbRemote.createIndex('test');
+    let tags = await index.getTags();
+
+    assert.equal(tags.length, 0);
+    assert.equal(await index.hasTag('tag1'), false);
+
+    await index.setTag('tag1', 'value1');
+
+    const tag = await index.getTagEntry('tag1');
+
+    tags = await index.getTags();
+    assert.equal(tags.length, 1);
+    assert.equal(tag, 'value1');
+
+    assert.equal(await index.hasTag('tag1'), true);
+
+    await index.deleteTag('tag1');
+
+    assert.equal(await index.hasTag('tag1'), false);
+
+    console.log('Tag test test: OK.');
+
+    client.disconnect();
+    server.kill();
+}
+
 (async () => {
     await testKillCorruption();
     await testTimeSeries();
+    await testTags();
 })();

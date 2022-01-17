@@ -224,6 +224,18 @@ namespace ferrum_db_server.src.server.protocol {
         }
     }
 
+    public class TimeSeriesGetFullSerieEntries : Message {
+        public readonly string database;
+        public readonly string timeSeries;
+        public readonly string key;
+
+        public TimeSeriesGetFullSerieEntries(uint id, string database, string timeSeries, string key) : base(ApiMessageType.TIME_SERIES_GET_FULL_SERIE_ENTRIES, id) {
+            this.database = database;
+            this.timeSeries = timeSeries;
+            this.key = key;
+        }
+    }
+
     public class TimeSeriesGetLastEntry : Message {
         public readonly string database;
         public readonly string timeSeries;
@@ -263,6 +275,34 @@ namespace ferrum_db_server.src.server.protocol {
             this.timeSeries = timeSeries;
             this.key = key;
             this.count = count;
+        }
+    }
+
+    public class TimeSeriesGetEntriesBefore : Message {
+        public readonly string database;
+        public readonly string timeSeries;
+        public readonly string key;
+        public readonly long timestamp;
+
+        public TimeSeriesGetEntriesBefore(uint id, string database, string timeSeries, string key, long timestamp) : base(ApiMessageType.TIME_SERIES_GET_ENTRIES_BEFORE_TIMESTAMP, id) {
+            this.database = database;
+            this.timeSeries = timeSeries;
+            this.key = key;
+            this.timestamp = timestamp;
+        }
+    }
+
+    public class TimeSeriesGetEntriesAfter : Message {
+        public readonly string database;
+        public readonly string timeSeries;
+        public readonly string key;
+        public readonly long timestamp;
+
+        public TimeSeriesGetEntriesAfter(uint id, string database, string timeSeries, string key, long timestamp) : base(ApiMessageType.TIME_SERIES_GET_ENTRIES_AFTER_TIMESTAMP, id) {
+            this.database = database;
+            this.timeSeries = timeSeries;
+            this.key = key;
+            this.timestamp = timestamp;
         }
     }
 }

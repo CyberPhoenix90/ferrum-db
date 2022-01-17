@@ -1,23 +1,18 @@
 import { Encoding } from 'csharp-binary-stream';
 import { FerrumServerClient } from './client';
+import { CollectionRemote, CollectionType } from './collection_remote';
 import { ApiMessageType } from './protcol';
 import { getBinaryReader, handleErrorResponse } from './utils';
 
-export class SetRemote {
-    private client: FerrumServerClient;
-    private setKey: string;
-    private database: string;
-
+export class SetRemote extends CollectionRemote {
     constructor(client: FerrumServerClient, database: string, setKey: string) {
-        this.client = client;
-        this.database = database;
-        this.setKey = setKey;
+        super(CollectionType.SET, client, database, setKey);
     }
 
     public async has(key: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_HAS, this.database.length + this.setKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_HAS, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.setKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -33,9 +28,9 @@ export class SetRemote {
     }
 
     public async getRecordCount(): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_GET_RECORD_COUNT, this.database.length + this.setKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_GET_RECORD_COUNT, this.database.length + this.collectionKey.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.setKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
@@ -56,9 +51,9 @@ export class SetRemote {
     }
 
     public async add(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_ADD, this.database.length + this.setKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_ADD, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.setKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -74,9 +69,9 @@ export class SetRemote {
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_CLEAR, this.database.length + this.setKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_CLEAR, this.database.length + this.collectionKey.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.setKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
@@ -91,9 +86,9 @@ export class SetRemote {
     }
 
     public async delete(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_DELETE, this.database.length + this.setKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_DELETE, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.setKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -109,9 +104,9 @@ export class SetRemote {
     }
 
     public async getKeys(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_GET_KEYS, this.database.length + this.setKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_GET_KEYS, this.database.length + this.collectionKey.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.setKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);

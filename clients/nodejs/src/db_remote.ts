@@ -123,7 +123,7 @@ export class FerrumDBRemote {
         }
     }
 
-    public async createSetfNotExist(set: string): Promise<SetRemote> {
+    public async createSetIfNotExist(set: string): Promise<SetRemote> {
         const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET_IF_NOT_EXIST, this.dbName.length + set.length);
         bw.writeString(this.dbName, Encoding.Utf8);
         bw.writeString(set, Encoding.Utf8);

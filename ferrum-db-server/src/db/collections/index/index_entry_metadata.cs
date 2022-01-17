@@ -1,6 +1,6 @@
 using System;
 
-namespace entry_metadata {
+namespace ferrum_db_server.src.db.collections {
     public class IndexEntryMetadata {
         public readonly uint pageFile;
         public readonly uint pos;

@@ -1,9 +1,9 @@
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Newtonsoft.Json.Linq;
 
-namespace page_file {
+namespace ferrum_db_server.src.db.collections {
     class PageFile {
         public uint size;
         public long usedBytes;

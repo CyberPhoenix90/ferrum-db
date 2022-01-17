@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ferrum_db_server.db;
+using ferrum_db_server.src.db.collections;
+using Index = ferrum_db_server.src.db.collections.Index;
 
 namespace master_record {
 
@@ -16,6 +18,7 @@ namespace master_record {
         private string folder;
         private Set transactionSet;
         private Index transactionIdIndex;
+        private Index collectionTags;
 
         public DatabaseManager(string path) {
             this.path = path;
@@ -23,10 +26,11 @@ namespace master_record {
 
             this.databases = new Dictionary<string, Database>();
             Directory.CreateDirectory(Path.Join(this.folder, "$$internal"));
-            this.internalDatabase = new Database(Path.Join(this.folder, "$$internal"), "$$internal", 0, null);
+            this.internalDatabase = new Database(Path.Join(this.folder, "$$internal"), "$$internal", 0, null, null);
             this.internalDatabase.initializeDatabase();
             this.transactionSet = this.internalDatabase.addSetIfNotExist("transactions");
             this.transactionIdIndex = this.internalDatabase.addIndexIfNotExist("transactionIds", 0);
+            this.collectionTags = this.internalDatabase.addIndexIfNotExist("collectionTags", 0);
 
 
             if (File.Exists(path)) {
@@ -149,7 +153,7 @@ namespace master_record {
             this.writer.BaseStream.Seek(0, SeekOrigin.End);
             var pos = this.writer.BaseStream.Position;
 
-            var database = new Database(Path.Join(this.folder, name), name, pos, this.transactionSet);
+            var database = new Database(Path.Join(this.folder, name), name, pos, this.transactionSet, this.collectionTags);
             database.initializeDatabase();
             this.databases.TryAdd(name, database);
             this.writer.Write(false);
@@ -194,7 +198,7 @@ namespace master_record {
             if (!isAlive) {
                 return;
             }
-            this.databases.TryAdd(name, new Database(Path.Join(this.folder, name), name, pos, this.transactionSet));
+            this.databases.TryAdd(name, new Database(Path.Join(this.folder, name), name, pos, this.transactionSet, this.collectionTags));
         }
 
         public void dispose() {

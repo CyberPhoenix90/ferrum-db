@@ -1,27 +1,23 @@
 import { Encoding } from 'csharp-binary-stream';
 import { FerrumServerClient } from './client';
+import { CollectionRemote, CollectionType } from './collection_remote';
 import { ApiMessageType } from './protcol';
 import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData, SupportedCompressionTypes, SupportedEncodingTypes } from './utils';
 
-export class IndexRemote<T> {
-    private client: FerrumServerClient;
-    private indexKey: string;
+export class IndexRemote<T> extends CollectionRemote {
     private encoding: SupportedEncodingTypes;
     private compression: SupportedCompressionTypes;
-    private database: string;
 
     constructor(client: FerrumServerClient, database: string, indexKey: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        this.client = client;
-        this.database = database;
+        super(CollectionType.INDEX, client, database, indexKey);
         this.encoding = encoding;
         this.compression = compression;
-        this.indexKey = indexKey;
     }
 
     public async has(key: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_HAS, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_HAS, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -37,9 +33,9 @@ export class IndexRemote<T> {
     }
 
     public async getRecordSize(key: string): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_SIZE, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_SIZE, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -56,9 +52,9 @@ export class IndexRemote<T> {
     }
 
     public async getRecordCount(): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_COUNT, this.database.length + this.indexKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_COUNT, this.database.length + this.collectionKey.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
@@ -74,9 +70,9 @@ export class IndexRemote<T> {
     }
 
     public async get(key: string): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -90,15 +86,15 @@ export class IndexRemote<T> {
             try {
                 return readEncodedData(br, this.encoding, this.compression);
             } catch (e) {
-                throw new Error(`Failed to get ${key} from ${this.indexKey} \n\nCaused by: ${e}`);
+                throw new Error(`Failed to get ${key} from ${this.collectionKey} \n\nCaused by: ${e}`);
             }
         }
     }
 
     public async delete(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_DELETE, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_DELETE, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -114,9 +110,9 @@ export class IndexRemote<T> {
     }
 
     public async readChunk(key: string, offset: number, size: number): Promise<Buffer> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.indexKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         bw.writeLong(offset);
         bw.writeUnsignedInt(size);
@@ -143,14 +139,15 @@ export class IndexRemote<T> {
     public async set(key: string, value: T): Promise<void> {
         const encodedData = await encodeData(value, this.encoding, this.compression);
 
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_SET, this.database.length + this.indexKey.length + key.length + encodedData.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_SET,
+            this.database.length + this.collectionKey.length + key.length + encodedData.length,
+        );
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
         bw.writeInt(encodedData.length);
-        for (const byte of encodedData) {
-            bw.writeByte(byte);
-        }
+        bw.writeBytes(encodedData as any);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
@@ -165,9 +162,9 @@ export class IndexRemote<T> {
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_CLEAR, this.database.length + this.indexKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_CLEAR, this.database.length + this.collectionKey.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);
@@ -182,9 +179,9 @@ export class IndexRemote<T> {
     }
 
     public async getKeys(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_KEYS, this.database.length + this.indexKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_KEYS, this.database.length + this.collectionKey.length);
         bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.indexKey, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
 
         const response = await this.client.getResponse(myId);

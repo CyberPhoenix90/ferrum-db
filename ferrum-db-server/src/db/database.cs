@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ferrum_db_server.src.db.collections;
+using ferrum_db_server.src.server.protocol;
+using Index = ferrum_db_server.src.db.collections.Index;
 
 namespace master_record {
 
@@ -17,8 +20,9 @@ namespace master_record {
         public string name;
         public readonly long pos;
         private Set? transactionSet;
+        private Index? collectionTags;
 
-        public Database(string path, string name, long pos, Set? transactionSet) {
+        public Database(string path, string name, long pos, Set? transactionSet, Index? collectionTags) {
             bool isNew;
             this.path = Path.Join(path, "indexes.bin");
             this.folder = path;
@@ -27,6 +31,8 @@ namespace master_record {
             this.indexes = new Dictionary<string, Index>();
             this.sets = new Dictionary<string, Set>();
             this.timeSeries = new Dictionary<string, TimeSeries>();
+            this.transactionSet = transactionSet;
+            this.collectionTags = collectionTags;
         }
 
         public void initializeDatabase() {
@@ -156,7 +162,7 @@ namespace master_record {
             }
 
             var pos = this.writer.BaseStream.Position;
-            var timeSeries = new TimeSeries(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet);
+            var timeSeries = new TimeSeries(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet, this.collectionTags);
             this.timeSeries.TryAdd(name, timeSeries);
             this.writer.Write(false);
             this.writer.Write(name);
@@ -179,7 +185,7 @@ namespace master_record {
             }
 
             var pos = this.writer.BaseStream.Position;
-            var set = new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet);
+            var set = new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet, this.collectionTags);
             this.sets.TryAdd(name, set);
             this.writer.Write(false);
             this.writer.Write(name);
@@ -203,7 +209,7 @@ namespace master_record {
             }
 
             var pos = this.writer.BaseStream.Position;
-            var index = new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet);
+            var index = new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet, this.collectionTags);
             this.indexes.TryAdd(name, index);
             this.writer.Write(false);
             this.writer.Write(name);
@@ -218,6 +224,19 @@ namespace master_record {
             this.writer.Flush();
 
             return index;
+        }
+
+        public AbstractCollection? getCollection(string collectionKey, CollectionType type) {
+            switch (type) {
+                case CollectionType.INDEX:
+                    return this.getIndex(collectionKey);
+                case CollectionType.SET:
+                    return this.getSet(collectionKey);
+                case CollectionType.TIME_SERIES:
+                    return this.getTimeSeries(collectionKey);
+                default:
+                    return null;
+            }
         }
 
         public Index? getIndex(string name) {
@@ -301,18 +320,18 @@ namespace master_record {
             if (type == 0) {
                 var pageSize = reader.ReadUInt32();
                 if (isAlive) {
-                    this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet));
+                    this.indexes.TryAdd(name, new Index(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet, this.collectionTags));
                 }
             }
             else if (type == 1) {
                 if (isAlive) {
-                    this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet));
+                    this.sets.TryAdd(name, new Set(Path.Join(this.folder, pos.ToString()), pos, name, this.transactionSet, this.collectionTags));
                 }
             }
             else if (type == 2) {
                 var pageSize = reader.ReadUInt32();
                 if (isAlive) {
-                    this.timeSeries.TryAdd(name, new TimeSeries(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet));
+                    this.timeSeries.TryAdd(name, new TimeSeries(Path.Join(this.folder, pos.ToString()), pos, name, pageSize, this.transactionSet, this.collectionTags));
                 }
             }
         }
