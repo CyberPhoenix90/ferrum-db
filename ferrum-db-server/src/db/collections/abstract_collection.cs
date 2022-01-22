@@ -24,10 +24,11 @@ namespace ferrum_db_server.src.db.collections {
         private readonly Index? collectionTags;
 
         private string collectionTagKey;
-        public AbstractCollection(string recordFileName, CollectionType type, Index? collectionTags) {
+        public AbstractCollection(string recordFileName, CollectionType type, string name, Index? collectionTags) {
             this.collectionTags = collectionTags;
             this.recordFileName = recordFileName;
             this.type = type;
+            this.name = name;
             this.collectionTagKey = this.type.ToString() + '_' + this.name + '_';
         }
 
@@ -103,6 +104,9 @@ namespace ferrum_db_server.src.db.collections {
                 }
             }
 
+#if DEBUG
+            Console.WriteLine($"New writer at {Path.Join(path, this.recordFileName)}");
+#endif
             this.writer = new BinaryWriter(File.Open(Path.Join(path, this.recordFileName), FileMode.OpenOrCreate));
             this.writer.BaseStream.Seek(0, SeekOrigin.End);
         }

@@ -12,12 +12,11 @@ namespace ferrum_db_server.src.db.collections {
         private PageFile? activePageFile;
         private uint nextPageFile;
 
-        public Index(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.index", CollectionType.INDEX, collectionTags) {
+        public Index(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.index", CollectionType.INDEX, name, collectionTags) {
             this.pageFiles = new Dictionary<uint, PageFile>();
             this.contentMap = new Dictionary<string, IndexEntryMetadata>(10000);
             this.path = path;
             this.pos = pos;
-            this.name = name;
             this.pageSize = pageSize;
             initialize(transactionSet);
         }
@@ -49,16 +48,6 @@ namespace ferrum_db_server.src.db.collections {
                     this.pageFiles.Remove(uint.Parse(unusedPage));
                 }
             }
-
-            //tmpFile.Flush();
-            //tmpFile.Close();
-            //File.Move(Path.Join(path, "tmprecords.index"), Path.Join(path, "records.index"), true);
-            //foreach (var page in this.pageFiles) {
-            //    page.Value.Clear();
-            //}
-            //this.pageFiles.Clear();
-            //this.contentMap.Clear();
-            //this.initialize();
         }
 
         protected override void readRecords(BinaryReader reader, Set? transactionSet) {
@@ -89,6 +78,7 @@ namespace ferrum_db_server.src.db.collections {
         public void dispose() {
             this.contentMap.Clear();
             this.writer.Close();
+            this.activePageFile = null;
             foreach (var pageFile in this.pageFiles.Values) {
                 pageFile.dispose();
             }
@@ -107,6 +97,7 @@ namespace ferrum_db_server.src.db.collections {
         public void clear() {
             this.contentMap.Clear();
             this.writer.Close();
+            this.activePageFile = null;
             foreach (var pageFile in this.pageFiles.Values) {
                 pageFile.delete();
             }
@@ -115,7 +106,6 @@ namespace ferrum_db_server.src.db.collections {
             this.initialize(null);
             this.pageFiles.Clear();
             this.nextPageFile = 0;
-
         }
 
         public void delete(string key, long transactionId) {

@@ -12,12 +12,11 @@ namespace ferrum_db_server.src.db.collections {
         private PageFile? activePageFile;
         private uint nextPageFile;
 
-        public TimeSeries(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.timeseries", CollectionType.TIME_SERIES, collectionTags) {
+        public TimeSeries(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.timeseries", CollectionType.TIME_SERIES, name, collectionTags) {
             this.pageFiles = new Dictionary<uint, PageFile>();
             this.contentMap = new Dictionary<string, SortedDictionary<long, IndexEntryMetadata>>(10000);
             this.path = path;
             this.pos = pos;
-            this.name = name;
             this.pageSize = pageSize;
             initialize(transactionSet);
         }
@@ -56,6 +55,7 @@ namespace ferrum_db_server.src.db.collections {
         public void dispose() {
             this.contentMap.Clear();
             this.writer.Close();
+            this.activePageFile = null;
             foreach (var pageFile in this.pageFiles.Values) {
                 pageFile.dispose();
             }
@@ -83,6 +83,7 @@ namespace ferrum_db_server.src.db.collections {
         public void clear() {
             this.contentMap.Clear();
             this.writer.Close();
+            this.activePageFile = null;
             foreach (var pageFile in this.pageFiles.Values) {
                 pageFile.delete();
             }
@@ -486,6 +487,15 @@ namespace ferrum_db_server.src.db.collections {
             return array;
         }
 
+        public bool hasEntry(string key, long timestamp) {
+            if (!this.contentMap.ContainsKey(key)) {
+                return false;
+            }
+
+            var entries = this.contentMap[key];
+            return entries.ContainsKey(timestamp);
+        }
+
         public byte[]? get(string key, long timestamp) {
 #if DEBUG
             Console.WriteLine($"Getting record {key} from time series {this.name}");
@@ -675,6 +685,5 @@ namespace ferrum_db_server.src.db.collections {
 
             return entry.length;
         }
-
     }
 }

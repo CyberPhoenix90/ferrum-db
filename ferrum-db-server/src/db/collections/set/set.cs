@@ -8,11 +8,10 @@ namespace ferrum_db_server.src.db.collections {
     public class Set : AbstractCollection {
         private Dictionary<string, long> contentSet;
 
-        public Set(string path, long pos, string name, Set? transactionSet, Index? collectionTags) : base("records.set", CollectionType.SET, collectionTags) {
+        public Set(string path, long pos, string name, Set? transactionSet, Index? collectionTags) : base("records.set", CollectionType.SET, name, collectionTags) {
             this.contentSet = new Dictionary<string, long>(5000);
             this.path = path;
             this.pos = pos;
-            this.name = name;
             initialize(transactionSet);
         }
 

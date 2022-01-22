@@ -28,7 +28,6 @@ async function testKillCorruption(): Promise<void> {
     server.kill();
 
     server = await startServer();
-    await sleep(2500);
 
     client = await ferrumConnect('localhost', 3000);
     dbRemote = client.getDatabase('test');
@@ -175,14 +174,42 @@ async function testTags(): Promise<void> {
 
     assert.equal(await index.hasTag('tag1'), false);
 
-    console.log('Tag test test: OK.');
+    console.log('Tag test: OK.');
 
     client.disconnect();
     server.kill();
 }
 
+async function clearTest(): Promise<void> {
+    await clearDatabase();
+
+    let server = await startServer();
+    let client = await ferrumConnect('localhost', 3000);
+
+    let dbRemote = await client.createDatabase('test');
+    console.log('Created Database');
+
+    const index = await dbRemote.createIndex('test');
+    await index.set('key1', 'value1');
+
+    assert.equal(await index.has('key1'), true);
+
+    await index.clear();
+
+    assert.equal(await index.has('key1'), false);
+
+    await index.set('key1', 'value1');
+
+    assert.equal(await index.has('key1'), true);
+
+    console.log('Clear test: OK.');
+
+    client.disconnect();
+    server.kill();
+}
 (async () => {
     await testKillCorruption();
     await testTimeSeries();
     await testTags();
+    await clearTest();
 })();

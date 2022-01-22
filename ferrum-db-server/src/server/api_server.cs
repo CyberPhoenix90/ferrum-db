@@ -617,10 +617,7 @@ namespace api_server {
                         else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesClear.timeSeries}"));
                         }
-
-                        APIWriter.sendList(client, command.id, db.getTimeSeries());
                         break;
-
                     case ApiMessageType.TIME_SERIES_DELETE_ENTRY:
                         var timeSeriesDeleteEntry = (TimeSeriesDeleteEntry)command;
 
@@ -638,8 +635,24 @@ namespace api_server {
                         else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesDeleteEntry.timeSeries}"));
                         }
+                        break;
+                    case ApiMessageType.TIME_SERIES_HAS_ENTRY:
+                        var timeSeriesHasEntry = (TimeSeriesHasEntry)command;
 
-                        APIWriter.sendList(client, command.id, db.getTimeSeries());
+                        db = this.getDbOrFail(timeSeriesHasEntry.database, timeSeriesHasEntry.id, client, ferrumDb);
+                        if (db == null) {
+                            return;
+                        }
+
+                        timeSeries = db.getTimeSeries(timeSeriesHasEntry.timeSeries);
+
+                        if (timeSeries != null) {
+                            APIWriter.sendBool(client, command.id, timeSeries.hasEntry(timeSeriesHasEntry.key, timeSeriesHasEntry.timestamp));
+                        }
+                        else {
+                            APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesHasEntry.timeSeries}"));
+                        }
+
                         break;
                     case ApiMessageType.TIME_SERIES_GET_ENTRY:
                         var timeSeriesGetEntry = (TimeSeriesGetEntry)command;
@@ -659,7 +672,6 @@ namespace api_server {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntry.timeSeries}"));
                         }
 
-                        APIWriter.sendList(client, command.id, db.getTimeSeries());
                         break;
                     case ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_AFTER_TIMESTAMP:
                         var timeSeriesGetFirstEntryAfterTimestamp = (TimeSeriesGetFirstEntryAfter)command;
@@ -678,8 +690,6 @@ namespace api_server {
                         else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFirstEntryAfterTimestamp.timeSeries}"));
                         }
-
-                        APIWriter.sendList(client, command.id, db.getTimeSeries());
                         break;
                     case ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_BEFORE_TIMESTAMP:
                         var timeSeriesGetLastEntryBeforeTimestamp = (TimeSeriesGetFirstEntryBefore)command;
@@ -698,8 +708,6 @@ namespace api_server {
                         else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLastEntryBeforeTimestamp.timeSeries}"));
                         }
-
-                        APIWriter.sendList(client, command.id, db.getTimeSeries());
                         break;
                     case ApiMessageType.TIME_SERIES_GET_ENTRIES_BETWEEN_TIMESTAMPS:
                         var timeSeriesGetEntriesBetweenTimestamps = (TimeSeriesGetEntriesBetween)command;
@@ -718,8 +726,6 @@ namespace api_server {
                         else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntriesBetweenTimestamps.timeSeries}"));
                         }
-
-                        APIWriter.sendList(client, command.id, db.getTimeSeries());
                         break;
                     case ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES:
                         var timeSeriesGetLastNEntries = (TimeSeriesGetLastNEntries)command;

@@ -66,6 +66,50 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         }
     }
 
+    public async hasEntry(serie: string, timestamp: number): Promise<boolean> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.TIME_SERIES_HAS_ENTRY,
+            this.database.length + this.collectionKey.length + 8 + serie.length,
+        );
+        bw.writeString(this.database, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
+        bw.writeString(serie, Encoding.Utf8);
+        bw.writeLong(timestamp);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        } else {
+            return br.readBoolean();
+        }
+    }
+
+    public async deleteEntry(serie: string, timestamp: number): Promise<void> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.TIME_SERIES_DELETE_ENTRY,
+            this.database.length + this.collectionKey.length + 8 + serie.length,
+        );
+        bw.writeString(this.database, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
+        bw.writeString(serie, Encoding.Utf8);
+        bw.writeLong(timestamp);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readBoolean();
+        if (!success) {
+            return handleErrorResponse(br);
+        }
+
+        return;
+    }
+
     public async getFullSerie(serie: string): Promise<number[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_FULL_SERIE,

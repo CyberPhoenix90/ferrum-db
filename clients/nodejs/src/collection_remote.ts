@@ -41,7 +41,7 @@ export class CollectionRemote {
         }
     }
 
-    public async getTagEntry(tag: string = '', encoding: SupportedEncodingTypes = 'json', compression: SupportedCompressionTypes = 'gzip'): Promise<boolean> {
+    public async getTagEntry<T>(tag: string = '', encoding: SupportedEncodingTypes = 'json', compression: SupportedCompressionTypes = 'gzip'): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.COLLECTION_GET_TAG_ENTRY,
             this.database.length + this.collectionKey.length + 1 + tag.length,
