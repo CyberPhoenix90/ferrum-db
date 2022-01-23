@@ -8,6 +8,11 @@ namespace ferrum_db_server.src.db.collections {
         public readonly long deleteBytePosInRecord;
 
         public IndexEntryMetadata(uint pageFile, uint pos, long length, long deleteBytePosInRecord) {
+#if DEBUG
+            if (deleteBytePosInRecord < 0) {
+                throw new Exception("Illegal delete byte pos");
+            }
+#endif
             this.pageFile = pageFile;
             this.pos = pos;
             this.length = length;

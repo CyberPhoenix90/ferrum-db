@@ -1,3 +1,7 @@
 {
-    "FSharp.suggestGitignore": false
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#555",
+        "statusBar.background": "#555"
+      },
+      "FSharp.suggestGitignore": false
 }

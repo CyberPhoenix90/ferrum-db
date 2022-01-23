@@ -130,6 +130,9 @@ namespace ferrum_db_server.src.db.collections {
                 this.writer.Write((byte)2);
             }
             else {
+#if DEBUG
+                Console.WriteLine($"Attempting to set delete byte. Writer size {this.writer.BaseStream.Length}. Attempting to seek to: {entry.deleteBytePosInRecord}");
+#endif
                 this.writer.BaseStream.Seek(entry.deleteBytePosInRecord, SeekOrigin.Begin);
                 this.writer.Write(false);
             }
@@ -647,7 +650,7 @@ namespace ferrum_db_server.src.db.collections {
                 if (!this.contentMap.ContainsKey(key)) {
                     this.contentMap.TryAdd(key, new SortedDictionary<long, IndexEntryMetadata>());
                 }
-                this.contentMap[key].Add(timestamp, new IndexEntryMetadata(pageFileId, posInPage, length, -1));
+                this.contentMap[key].Add(timestamp, new IndexEntryMetadata(pageFileId, posInPage, length, reader.BaseStream.Position - 1));
             }
         }
         public int getRecordCount() {

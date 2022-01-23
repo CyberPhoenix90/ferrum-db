@@ -114,6 +114,14 @@ async function testTimeSeries(): Promise<void> {
     assert.equal(entriesI[1].a, 1);
     assert.equal(entriesI[2].a, 2);
 
+    await series.deleteEntry('a.b', 10);
+    await series.deleteEntry('a.b', 40);
+    await series.deleteEntry('a.b', 20);
+
+    const entriesJ = await series.getFullSerieEntries('a.b');
+
+    assert.equal(entriesJ.length, 0);
+
     console.log('Time series test: OK.');
 
     client.disconnect();
