@@ -128,7 +128,13 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
             return handleErrorResponse(br);
         } else {
             try {
-                return readEncodedDataArray(br, this.encoding, this.compression);
+                const count = br.readInt();
+                const result = [];
+                for (let i = 0; i < count; i++) {
+                    result.push(br.readLong());
+                }
+
+                return result;
             } catch (e) {
                 throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
             }

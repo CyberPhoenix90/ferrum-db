@@ -7,7 +7,7 @@ import { getBinaryReader, handleErrorResponse } from './utils';
 
 export { FerrumDBRemote } from './db_remote';
 export { IndexRemote } from './index_remote';
-
+export { CollectionType } from './collection_remote';
 export { SetRemote } from './set_remote';
 
 export function ferrumConnect(ip: string, port: number): Promise<FerrumServerConnection> {

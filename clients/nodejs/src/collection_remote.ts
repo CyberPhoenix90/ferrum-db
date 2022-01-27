@@ -10,10 +10,13 @@ export enum CollectionType {
 }
 
 export class CollectionRemote {
-    protected type: CollectionType;
+    public readonly type: CollectionType;
+    public readonly database: string;
+    public get name(): string {
+        return this.collectionKey;
+    }
     protected client: FerrumServerClient;
     protected collectionKey: string;
-    protected database: string;
 
     constructor(type: CollectionType, client: FerrumServerClient, database: string, collectionkey: string) {
         this.type = type;
