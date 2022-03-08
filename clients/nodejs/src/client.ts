@@ -9,7 +9,6 @@ export class FerrumServerClient {
     protected id: number = 0;
     public socket: Socket;
     protected pending: Map<number, (buffer: Buffer) => void>;
-    private writeBuffer: Buffer;
     private lengthBuffer: Buffer;
     private heartBeatPending: boolean = false;
     public disposed: boolean;
@@ -29,7 +28,6 @@ export class FerrumServerClient {
         this.socket = socket;
         this.ip = socket.remoteAddress;
         this.port = socket.remotePort;
-        this.writeBuffer = Buffer.alloc(8192);
         this.lengthBuffer = Buffer.alloc(4);
         this.socket = socket;
         this.pending = new Map();
@@ -153,11 +151,7 @@ export class FerrumServerClient {
     }
 
     public getSendWriter(messageType: ApiMessageType, payloadSize: number): { bw: BinaryWriter; myId: number } {
-        while (payloadSize > this.writeBuffer.length) {
-            this.writeBuffer = this.expandBuffer(this.writeBuffer, MAX_BUFFER_SIZE);
-        }
-
-        const buffer = this.writeBuffer;
+        const buffer = Buffer.alloc(payloadSize + 24);
 
         //Hack to skip the constructor of BinaryWriter because it does unecessairy and expensive copying
         const bw = new BinaryWriter();

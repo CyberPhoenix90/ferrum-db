@@ -23,7 +23,6 @@ namespace master_record {
         private Index? collectionTags;
 
         public Database(string path, string name, long pos, Set? transactionSet, Index? collectionTags) {
-            bool isNew;
             this.path = Path.Join(path, "indexes.bin");
             this.folder = path;
             this.name = name;
@@ -51,6 +50,9 @@ namespace master_record {
                 }
             }
             else {
+                if (!Directory.Exists(this.folder)) {
+                    Directory.CreateDirectory(this.folder);
+                }
                 isNew = true;
 #if DEBUG
                 Console.WriteLine($"New database {name} at {pos}");

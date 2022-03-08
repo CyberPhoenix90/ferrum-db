@@ -43,7 +43,7 @@ export class FerrumServerConnection {
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST, dbName.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST, dbName.length + 4);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -59,7 +59,7 @@ export class FerrumServerConnection {
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE, dbName.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE, dbName.length + 4);
         bw.writeString(dbName, Encoding.Utf8);
         this.client.sendMsg(bw);
 

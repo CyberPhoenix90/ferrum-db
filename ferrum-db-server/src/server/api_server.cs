@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using ferrum_db;
+using ferrum_db_server.src;
 using ferrum_db_server.src.db.collections;
 using ferrum_db_server.src.server;
 using ferrum_db_server.src.server.protocol;
@@ -20,18 +22,26 @@ namespace api_server {
         private readonly ConcurrentQueue<IoEvent> ioEventCallbacks;
         private readonly TcpListener server;
         public APIServer(IPAddress ip, int port, FerrumDb ferrumDb) {
+            Thread.CurrentThread.Name = "API";
             this.server = new TcpListener(ip, port);
             this.server.Start();
             this.ioEventCallbacks = new ConcurrentQueue<IoEvent>();
             this.ioEvents = new AutoResetEvent(false);
             this.listenForConnections();
 
+            var time = new Stopwatch();
+
             while (true) {
                 this.ioEvents.WaitOne();
                 while (!ioEventCallbacks.IsEmpty) {
                     this.ioEventCallbacks.TryDequeue(out IoEvent? task);
                     if (task != null) {
+                        time.Restart();
                         task(ferrumDb);
+                        time.Stop();
+                        if (time.ElapsedMilliseconds > 100) {
+                            Logger.Warn($"IO Event took {time.ElapsedMilliseconds}ms");
+                        }
                     }
                 }
             }
@@ -39,35 +49,37 @@ namespace api_server {
         }
 
         private void handleClient(TcpClient client) {
-            Console.WriteLine("New Client connected. ");
+            Logger.Info($"New Client connected. Client");
             byte[] sizeBytes = new byte[4];
             byte[] buffer = new byte[1048576];
             client.ReceiveBufferSize = 1048576;
             var stream = client.GetStream();
+            int immutableSize;
             while (client.Connected) {
                 try {
                     if (!client.Connected) {
-                        Console.WriteLine("Client disconnected");
+                        Logger.Info("Client disconnected");
                         break;
                     }
 
                     var read = stream.Read(sizeBytes, 0, 4);
                     var size = BitConverter.ToInt32(sizeBytes, 0);
+                    immutableSize = size;
 
                     if (size < 0) {
-                        Console.WriteLine("Invalid size. Potentially corrupt data");
+                        Logger.Error("Invalid size. Potentially corrupt data");
                         break;
                     }
 
-                    if (size > 1048576 * 512) {
-                        Console.WriteLine("Error: Msg Buffer overflow");
+                    if (size > 1048576 * 768) {
+                        Logger.Error($"Error: Msg Buffer overflow. Max Size : 768MB. Size: {size / 1048576} MB");
                         break;
                     }
                     else if (size > buffer.Length) {
                         buffer = new byte[size];
                     }
                     if (read == 0) {
-                        Console.WriteLine("Client disconnected. No data read");
+                        Logger.Error("Client disconnected. No data read");
                         break;
                     }
                     var offset = 0;
@@ -76,24 +88,30 @@ namespace api_server {
                         size -= read;
                     }
                     if (size != 0) {
-                        Console.WriteLine("Client disconnected. Not all data received");
+                        Logger.Error("Client disconnected. Not all data received");
                         break;
                     }
                 }
                 catch (Exception e) {
-                    Console.WriteLine(e);
+                    Logger.Error("Exception in network thread", e);
                     break;
                 }
 
                 var command = MessageDecoder.decode(buffer);
                 if (command != null) {
+                    if (this.ioEventCallbacks.Count > 0) {
+                        Logger.Debug($"Command {command.GetType().Name}. Size {immutableSize / 1048576} MB. Queue size {this.ioEventCallbacks.Count}");
+                    }
+                    else {
+                        Logger.Debug($"Command {command.GetType().Name}. Size {immutableSize / 1048576} MB");
+                    }
                     this.ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
                         this.handleCommand(command, stream, ferrumDb);
                     });
                     ioEvents.Set();
                 }
             }
-            Console.WriteLine("Client dropped");
+            Logger.Info("Client dropped");
         }
 
         private void handleCommand(Message command, NetworkStream client, FerrumDb ferrumDb) {
@@ -1061,11 +1079,14 @@ namespace api_server {
 
 
         private async void listenForConnections() {
+            var id = 0;
             while (true) {
                 var client = await server.AcceptTcpClientAsync();
                 if (client != null) {
                     this.ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
-                        new Thread(() => this.handleClient(client)).Start();
+                        var thread = new Thread(() => this.handleClient(client));
+                        thread.Name = "Network " + id++;
+                        thread.Start();
                     });
                     ioEvents.Set();
                 }

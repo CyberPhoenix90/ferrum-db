@@ -21,7 +21,7 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<IndexRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX_IF_NOT_EXIST, this.name.length + index.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX_IF_NOT_EXIST, this.name.length + index.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
         bw.writeUnsignedInt(pageFileSize);
@@ -44,7 +44,7 @@ export class FerrumDBRemote {
     }
 
     public async deleteIndex(index: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_INDEX, index.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_INDEX, index.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
 
@@ -67,7 +67,7 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<IndexRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX, index.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX, index.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
         bw.writeUnsignedInt(pageFileSize);
@@ -86,7 +86,7 @@ export class FerrumDBRemote {
     }
 
     public async hasIndex(index: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_INDEX, index.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_INDEX, index.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(index, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -103,7 +103,7 @@ export class FerrumDBRemote {
     }
 
     public async getIndexes(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_INDEXES, 0);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_INDEXES, this.name.length + 4);
         bw.writeString(this.name, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -124,7 +124,7 @@ export class FerrumDBRemote {
     }
 
     public async createSetIfNotExist(set: string): Promise<SetRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET_IF_NOT_EXIST, this.name.length + set.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET_IF_NOT_EXIST, this.name.length + set.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(set, Encoding.Utf8);
 
@@ -146,7 +146,7 @@ export class FerrumDBRemote {
     }
 
     public async deleteSet(set: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_SET, set.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_SET, set.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(set, Encoding.Utf8);
 
@@ -164,7 +164,7 @@ export class FerrumDBRemote {
     }
 
     public async createSet(set: string): Promise<SetRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET, set.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET, set.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(set, Encoding.Utf8);
 
@@ -182,7 +182,7 @@ export class FerrumDBRemote {
     }
 
     public async hasSet(set: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_SET, set.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_SET, set.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(set, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -199,7 +199,7 @@ export class FerrumDBRemote {
     }
 
     public async getSets(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_SETS, 0);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_SETS, this.name.length + 4);
         bw.writeString(this.name, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -225,7 +225,7 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<TimeSeriesRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES_IF_NOT_EXIST, this.name.length + name.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES_IF_NOT_EXIST, this.name.length + name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(name, Encoding.Utf8);
         bw.writeUnsignedInt(pageFileSize);
@@ -248,7 +248,7 @@ export class FerrumDBRemote {
     }
 
     public async deleteTimeSeries(name: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_TIME_SERIES, name.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_TIME_SERIES, name.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(name, Encoding.Utf8);
 
@@ -271,7 +271,7 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<TimeSeriesRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES, name.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES, name.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(name, Encoding.Utf8);
         bw.writeUnsignedInt(pageFileSize);
@@ -290,7 +290,7 @@ export class FerrumDBRemote {
     }
 
     public async hasTimeSeries(name: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_TIME_SERIES, name.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_TIME_SERIES, name.length + this.name.length + 8);
         bw.writeString(this.name, Encoding.Utf8);
         bw.writeString(name, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -307,7 +307,7 @@ export class FerrumDBRemote {
     }
 
     public async getListOfTimeSeries(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_TIME_SERIES, 0);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_TIME_SERIES, this.name.length + 4);
         bw.writeString(this.name, Encoding.Utf8);
         this.client.sendMsg(bw);
 
@@ -327,7 +327,7 @@ export class FerrumDBRemote {
         }
     }
     public async compact(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COMPACT, 0);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COMPACT, this.name.length + 4);
         bw.writeString(this.name, Encoding.Utf8);
         this.client.sendMsg(bw);
 

@@ -1,5 +1,8 @@
 {
     "ip": "127.0.0.1",
     "port": 3000,
-    "dbFolder": "./db"
+    "dbFolder": "./db",
+    "stdout": false,
+    "fileOut": "./logs.txt",
+    "logLevel": "debug"
 }

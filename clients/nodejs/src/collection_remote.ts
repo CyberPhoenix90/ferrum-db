@@ -26,7 +26,10 @@ export class CollectionRemote {
     }
 
     public async hasTag(tag: string = ''): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COLLECTION_HAS_TAG, this.database.length + this.collectionKey.length + 1 + tag.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.COLLECTION_HAS_TAG,
+            this.database.length + this.collectionKey.length + 1 + tag.length + 12,
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeByte(this.type);
@@ -47,7 +50,7 @@ export class CollectionRemote {
     public async getTagEntry<T>(tag: string = '', encoding: SupportedEncodingTypes = 'json', compression: SupportedCompressionTypes = 'gzip'): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.COLLECTION_GET_TAG_ENTRY,
-            this.database.length + this.collectionKey.length + 1 + tag.length,
+            this.database.length + this.collectionKey.length + 1 + tag.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -71,7 +74,10 @@ export class CollectionRemote {
     }
 
     public async deleteTag(tag: string = ''): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COLLECTION_DELETE_TAG, this.database.length + this.collectionKey.length + 1 + tag.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.COLLECTION_DELETE_TAG,
+            this.database.length + this.collectionKey.length + 1 + tag.length + 12,
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeByte(this.type);
@@ -90,7 +96,7 @@ export class CollectionRemote {
     }
 
     public async getTags(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COLLECTION_GET_TAGS, this.database.length + this.collectionKey.length + 1);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COLLECTION_GET_TAGS, this.database.length + this.collectionKey.length + 1 + 8);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeByte(this.type);
@@ -117,7 +123,7 @@ export class CollectionRemote {
 
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.COLLECTION_SET_TAG,
-            this.database.length + this.collectionKey.length + key.length + encodedData.length,
+            this.database.length + this.collectionKey.length + key.length + encodedData.length + 16,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);

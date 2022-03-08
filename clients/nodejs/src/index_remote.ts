@@ -15,7 +15,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async has(key: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_HAS, this.database.length + this.collectionKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_HAS, this.database.length + this.collectionKey.length + key.length + 12);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -33,7 +33,10 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async getRecordSize(key: string): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_SIZE, this.database.length + this.collectionKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.INDEX_GET_RECORD_SIZE,
+            this.database.length + this.collectionKey.length + key.length + 12,
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -52,7 +55,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async getRecordCount(): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_COUNT, this.database.length + this.collectionKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_COUNT, this.database.length + this.collectionKey.length + 8);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -70,7 +73,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async get(key: string): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length + 12);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -92,7 +95,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async delete(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_DELETE, this.database.length + this.collectionKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_DELETE, this.database.length + this.collectionKey.length + key.length + 12);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -110,7 +113,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async readChunk(key: string, offset: number, size: number): Promise<Buffer> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length + 12);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(key, Encoding.Utf8);
@@ -141,7 +144,7 @@ export class IndexRemote<T> extends CollectionRemote {
 
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.INDEX_SET,
-            this.database.length + this.collectionKey.length + key.length + encodedData.length,
+            this.database.length + this.collectionKey.length + key.length + encodedData.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -162,7 +165,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_CLEAR, this.database.length + this.collectionKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_CLEAR, this.database.length + this.collectionKey.length + 8);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -179,7 +182,7 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async getKeys(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_KEYS, this.database.length + this.collectionKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_KEYS, this.database.length + this.collectionKey.length + 8);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);

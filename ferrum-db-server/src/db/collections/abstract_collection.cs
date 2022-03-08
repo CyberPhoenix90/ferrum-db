@@ -11,6 +11,7 @@ namespace ferrum_db_server.src.db.collections {
         INDEX = 0,
         SET = 1,
         TIME_SERIES = 2,
+        SEARCHABLE_INDEX = 3,
     }
 
     public abstract class AbstractCollection {

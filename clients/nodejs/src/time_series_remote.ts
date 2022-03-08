@@ -23,7 +23,10 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     }
 
     public async hasSerie(serie: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_HAS_SERIE, this.database.length + this.collectionKey.length + serie.length);
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.TIME_SERIES_HAS_SERIE,
+            this.database.length + this.collectionKey.length + serie.length + 12,
+        );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         bw.writeString(serie, Encoding.Utf8);
@@ -43,7 +46,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getEntry(serie: string, timestamp: number): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -69,7 +72,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async hasEntry(serie: string, timestamp: number): Promise<boolean> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_HAS_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -91,7 +94,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async deleteEntry(serie: string, timestamp: number): Promise<void> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_DELETE_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -113,7 +116,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getFullSerie(serie: string): Promise<number[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_FULL_SERIE,
-            this.database.length + this.collectionKey.length + serie.length,
+            this.database.length + this.collectionKey.length + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -144,7 +147,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getFullSerieEntries(serie: string): Promise<T[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_FULL_SERIE_ENTRIES,
-            this.database.length + this.collectionKey.length + serie.length,
+            this.database.length + this.collectionKey.length + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -169,7 +172,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getNearestEntryToTimestamp(serie: string, timestamp: number): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_NEAREST_ENTRY_TO_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -194,7 +197,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getFirstEntryBeforeTimestamp(serie: string, timestamp: number): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_BEFORE_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -220,7 +223,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getFirstEntryAfterTimestamp(serie: string, timestamp: number): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_AFTER_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -246,7 +249,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getLastEntry(serie: string): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_LATEST_ENTRY,
-            this.database.length + this.collectionKey.length + serie.length,
+            this.database.length + this.collectionKey.length + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -271,7 +274,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getFirstEntry(serie: string): Promise<T> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_EARLIEST_ENTRY,
-            this.database.length + this.collectionKey.length + serie.length,
+            this.database.length + this.collectionKey.length + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -296,7 +299,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getLastNEntries(serie: string, count: number): Promise<T[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES,
-            this.database.length + this.collectionKey.length + serie.length + 4,
+            this.database.length + this.collectionKey.length + serie.length + 4 + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -322,7 +325,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getEntriesBeforeTimestamp(serie: string, timestamp: number): Promise<T[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_ENTRIES_BEFORE_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -348,7 +351,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getEntriesAfterTimestamp(serie: string, timestamp: number): Promise<T[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_ENTRIES_AFTER_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -374,7 +377,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async getEntriesBetween(serie: string, start: number, end: number): Promise<T[]> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_GET_ENTRIES_BETWEEN_TIMESTAMPS,
-            this.database.length + this.collectionKey.length + 16 + serie.length,
+            this.database.length + this.collectionKey.length + 16 + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -401,7 +404,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     public async deleteSerie(serie: string): Promise<void> {
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_DELETE_SERIE,
-            this.database.length + this.collectionKey.length + serie.length,
+            this.database.length + this.collectionKey.length + serie.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -429,7 +432,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
 
         const { bw, myId } = this.client.getSendWriter(
             ApiMessageType.TIME_SERIES_PUT_ENTRY,
-            this.database.length + this.collectionKey.length + serie.length + 8 + encodedData.length,
+            this.database.length + this.collectionKey.length + serie.length + 8 + encodedData.length + 12,
         );
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
@@ -451,7 +454,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_CLEAR, this.database.length + this.collectionKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_CLEAR, this.database.length + this.collectionKey.length + 8);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
@@ -468,7 +471,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     }
 
     public async getSeries(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_GET_SERIES, this.database.length + this.collectionKey.length);
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_GET_SERIES, this.database.length + this.collectionKey.length + 8);
         bw.writeString(this.database, Encoding.Utf8);
         bw.writeString(this.collectionKey, Encoding.Utf8);
         this.client.sendMsg(bw);
