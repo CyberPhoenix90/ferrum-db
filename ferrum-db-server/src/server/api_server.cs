@@ -99,12 +99,6 @@ namespace api_server {
 
                 var command = MessageDecoder.decode(buffer);
                 if (command != null) {
-                    if (this.ioEventCallbacks.Count > 0) {
-                        Logger.Debug($"Command {command.GetType().Name}. Size {immutableSize / 1048576} MB. Queue size {this.ioEventCallbacks.Count}");
-                    }
-                    else {
-                        Logger.Debug($"Command {command.GetType().Name}. Size {immutableSize / 1048576} MB");
-                    }
                     this.ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
                         this.handleCommand(command, stream, ferrumDb);
                     });
