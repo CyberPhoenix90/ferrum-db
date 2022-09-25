@@ -4,7 +4,6 @@ import { ApiMessageType } from './protcol';
 import { getBinaryReader, handleErrorResponse } from './utils';
 
 const MAX_BUFFER_SIZE = 512 * 1024 * 1024;
-
 export class FerrumServerClient {
     protected id: number = 0;
     public socket: Socket;
@@ -16,12 +15,14 @@ export class FerrumServerClient {
     private heartBeatInterval: NodeJS.Timeout;
     private ip: string;
     private port: number;
+    private hearBeatTimeout: number;
 
-    constructor(socket: Socket) {
+    constructor(socket: Socket, heartBeatTimeout: number) {
         this.initialize(socket);
+        this.hearBeatTimeout = heartBeatTimeout;
         this.heartBeatInterval = setInterval(() => {
             this.heartbeat();
-        }, 2000);
+        }, Math.ceil(this.hearBeatTimeout / 2.5));
     }
 
     private initialize(socket: Socket) {
@@ -117,7 +118,7 @@ export class FerrumServerClient {
     }
 
     public async heartbeat(): Promise<void> {
-        if (Date.now() - this.lastResponse > 12000) {
+        if (Date.now() - this.lastResponse > this.hearBeatTimeout) {
             this.socket.destroy(new Error('Heartbeat timeout'));
             return;
         }

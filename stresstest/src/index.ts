@@ -3,42 +3,30 @@ import * as dummy from 'cluster';
 import { rm } from 'fs/promises';
 import { join } from 'path';
 import { ferrumConnect } from '../../clients/nodejs';
+
+const WORKERS = 15;
+const WORK_ITEMS = 1000;
+const ITEM_SIZE = 1024 * 1024;
+const ROUNDS = 2;
+
 //@ts-ignore
 const cluster: typeof import('cluster').default = dummy;
-let val = 'test string value';
-for (let i = 0; i < 17; i++) {
-    val += val;
-}
 
 async function stressTest(): Promise<void> {
-    console.log('START');
+    console.log('WORKER START');
     let client = await ferrumConnect('localhost', 3000);
     console.log('Client connected');
 
     let dbRemote = client.getDatabase('test');
-    let testIndex = dbRemote.getIndex<{ a: number; b: string }>('test', 'bson', 'none');
+    let testIndex = dbRemote.getIndex<string>('test', 'bson', 'none');
 
-    const promises = [];
-    for (let i = 0; i < Math.random() * 1000 + 100; i++) {
-        promises.push(testIndex.put(Math.random().toString().substring(0, 4), { a: 1, b: val }));
-    }
+    const item = `a`.repeat(ITEM_SIZE);
 
-    try {
-        await Promise.all(promises);
-    } catch (e) {
-        console.error(`[ERROR] Failed to put ${promises.length} items: ${e}`);
-        client.disconnect();
-        process.exit();
-    }
-
-    for (let i = 0; i < Math.random() * 600 + 50; i++) {
-        const key = Math.random().toString().substring(0, 4);
+    for (let i = 0; i < WORK_ITEMS; i++) {
         try {
-            if (await testIndex.has(key)) {
-                await testIndex.get(key);
-            }
+            await testIndex.put(Math.random().toString().substring(0, 4), item);
         } catch (e) {
-            console.error(`[ERROR] Failed to get ${key}: ${e}`);
+            console.error(`[ERROR] Failed to put item: ${e.stack}`);
             client.disconnect();
             process.exit();
         }
@@ -80,12 +68,12 @@ if (cluster.isPrimary) {
         let server = await startServer();
         let client = await ferrumConnect('localhost', 3000);
         const dbRemote = await client.createDatabase('test');
-        await dbRemote.createIndex<{ a: number; b: string }>('test', 'bson', 'none');
+        await dbRemote.createIndex<string>('test', 'bson', 'none');
 
         client.disconnect();
 
-        let iterations = 500;
-        for (let i = 0; i < 1; i++) {
+        let iterations = ROUNDS;
+        for (let i = 0; i < WORKERS; i++) {
             cluster.fork();
         }
 

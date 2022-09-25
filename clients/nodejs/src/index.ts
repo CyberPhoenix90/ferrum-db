@@ -10,7 +10,9 @@ export { IndexRemote } from './index_remote';
 export { CollectionType } from './collection_remote';
 export { SetRemote } from './set_remote';
 
-export function ferrumConnect(ip: string, port: number): Promise<FerrumServerConnection> {
+const HEARTBEAT_TIMEOUT = 1000 * 30;
+
+export function ferrumConnect(ip: string, port: number, options?: { heartbeatTimeout: number }): Promise<FerrumServerConnection> {
     return new Promise((resolve, reject) => {
         const socket = new Socket();
         socket.setNoDelay(true);
@@ -18,7 +20,7 @@ export function ferrumConnect(ip: string, port: number): Promise<FerrumServerCon
         let client: FerrumServerClient;
 
         socket.once('connect', () => {
-            client = new FerrumServerClient(socket);
+            client = new FerrumServerClient(socket, options?.heartbeatTimeout ?? HEARTBEAT_TIMEOUT);
             resolve(new FerrumServerConnection(client));
         });
         socket.once('error', (e) => {
