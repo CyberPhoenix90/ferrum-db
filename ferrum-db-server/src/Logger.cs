@@ -47,6 +47,7 @@ namespace ferrum_db_server.src {
                     }
                     if (logFileWriter != null) {
                         logFileWriter.WriteLine($"[{DateTime.Now.ToString("HH:mm:ss")}][{Thread.CurrentThread.Name}]{message}");
+                        logFileWriter.Flush();
                     }
                 }
             }

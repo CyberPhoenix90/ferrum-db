@@ -4,9 +4,10 @@ import { rm } from 'fs/promises';
 import { join } from 'path';
 import { ferrumConnect } from '../../clients/nodejs';
 
-const WORKERS = 15;
+const WORKERS = 10;
 const WORK_ITEMS = 1000;
-const ITEM_SIZE = 1024 * 1024;
+const ITEM_SIZE = 1024 * 1024 * 40;
+const BATCH_SIZE = 40;
 const ROUNDS = 2;
 
 //@ts-ignore
@@ -18,13 +19,24 @@ async function stressTest(): Promise<void> {
     console.log('Client connected');
 
     let dbRemote = client.getDatabase('test');
-    let testIndex = dbRemote.getIndex<string>('test', 'bson', 'none');
+    let testIndex = dbRemote.getIndex<{ payload: string }>('test', 'json', 'gzip');
 
-    const item = `a`.repeat(ITEM_SIZE);
+    let payload = '';
+    for (let i = 0; i < ITEM_SIZE; i++) {
+        payload += String.fromCharCode(Math.floor(Math.random() * 26) + 97);
+    }
+
+    const item = { payload };
+    const batch = [];
 
     for (let i = 0; i < WORK_ITEMS; i++) {
         try {
-            await testIndex.put(Math.random().toString().substring(0, 4), item);
+            batch.push(testIndex.put(Math.random().toString().substring(0, 4), item));
+            if (batch.length >= BATCH_SIZE) {
+                await Promise.all(batch);
+                console.log(`[Worker ${process.pid}] Put ${i + 1} items`);
+                batch.length = 0;
+            }
         } catch (e) {
             console.error(`[ERROR] Failed to put item: ${e.stack}`);
             client.disconnect();
@@ -68,7 +80,7 @@ if (cluster.isPrimary) {
         let server = await startServer();
         let client = await ferrumConnect('localhost', 3000);
         const dbRemote = await client.createDatabase('test');
-        await dbRemote.createIndex<string>('test', 'bson', 'none');
+        await dbRemote.createIndex<{ payload: string }>('test', 'json', 'gzip');
 
         client.disconnect();
 
