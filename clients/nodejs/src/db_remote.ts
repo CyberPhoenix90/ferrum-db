@@ -31,8 +31,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return this.getIndex(index, encoding, compression);
@@ -53,8 +53,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -77,8 +77,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return this.getIndex(index, encoding, compression);
@@ -94,8 +94,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -110,8 +110,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
@@ -133,8 +133,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return this.getSet(set);
@@ -155,8 +155,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -173,8 +173,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return this.getSet(set);
@@ -190,8 +190,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -206,8 +206,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
@@ -235,8 +235,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return this.getTimeSeries(name, encoding, compression);
@@ -257,8 +257,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -281,8 +281,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return this.getTimeSeries(name, encoding, compression);
@@ -298,8 +298,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -314,8 +314,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
@@ -334,8 +334,8 @@ export class FerrumDBRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;

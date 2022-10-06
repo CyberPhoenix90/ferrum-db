@@ -39,8 +39,8 @@ export class CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -61,8 +61,8 @@ export class CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -87,8 +87,8 @@ export class CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return;
@@ -105,8 +105,8 @@ export class CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
@@ -136,8 +136,8 @@ export class CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;

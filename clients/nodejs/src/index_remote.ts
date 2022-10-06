@@ -24,8 +24,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -45,8 +45,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readLong();
@@ -63,12 +63,36 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
             return len;
+        }
+    }
+
+    public async getOrNull(key: string): Promise<T | null> {
+        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length + 12);
+        bw.writeString(this.database, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
+        bw.writeString(key, Encoding.Utf8);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readByte();
+        if (success === 0) {
+            return handleErrorResponse(br);
+        } else if (success === 1) {
+            try {
+                return readEncodedData(br, this.encoding, this.compression);
+            } catch (e) {
+                throw new Error(`Failed to get ${key} from ${this.collectionKey} \n\nCaused by: ${e}`);
+            }
+        } else {
+            return null;
         }
     }
 
@@ -82,8 +106,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -104,8 +128,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -124,8 +148,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();
@@ -156,8 +180,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -173,8 +197,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -190,8 +214,8 @@ export class IndexRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();

@@ -21,8 +21,7 @@ namespace ferrum_db_server.src.server {
 #if DEBUG
                 Console.WriteLine($"Sent {buffer.Length} bytes");
 #endif
-            }
-            catch (Exception) {
+            } catch (Exception) {
             }
         }
 
@@ -39,6 +38,13 @@ namespace ferrum_db_server.src.server {
             s.Write(id);
             s.Write(true);
             s.Write(value);
+            APIWriter.endSend(client, s);
+        }
+
+        public static void sendNotFound(NetworkStream client, uint id) {
+            var s = APIWriter.startSend();
+            s.Write(id);
+            s.Write((byte)2);
             APIWriter.endSend(client, s);
         }
 
@@ -110,8 +116,7 @@ namespace ferrum_db_server.src.server {
             foreach (var item in list) {
                 if (item == null) {
                     s.Write(0);
-                }
-                else {
+                } else {
                     s.Write(item.Length);
                     s.Write(item);
 
@@ -129,8 +134,7 @@ namespace ferrum_db_server.src.server {
             s.Write(true);
             if (data == null) {
                 s.Write(0);
-            }
-            else {
+            } else {
                 s.Write(data.Length);
                 s.Write(data);
             }

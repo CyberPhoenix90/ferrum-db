@@ -35,11 +35,39 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
+        }
+    }
+
+    public async getEntryOrNull(serie: string, timestamp: number): Promise<T | null> {
+        const { bw, myId } = this.client.getSendWriter(
+            ApiMessageType.TIME_SERIES_GET_ENTRY,
+            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
+        );
+        bw.writeString(this.database, Encoding.Utf8);
+        bw.writeString(this.collectionKey, Encoding.Utf8);
+        bw.writeString(serie, Encoding.Utf8);
+        bw.writeLong(timestamp);
+        this.client.sendMsg(bw);
+
+        const response = await this.client.getResponse(myId);
+
+        const br = getBinaryReader(response);
+        const success = br.readByte();
+        if (success === 0) {
+            return handleErrorResponse(br);
+        } else if (success === 1) {
+            try {
+                return readEncodedData(br, this.encoding, this.compression);
+            } catch (e) {
+                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
+            }
+        } else {
+            return null;
         }
     }
 
@@ -57,8 +85,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -83,8 +111,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -105,8 +133,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         }
 
@@ -126,8 +154,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -157,8 +185,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -183,8 +211,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -208,8 +236,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -234,8 +262,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -259,8 +287,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -284,8 +312,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -310,8 +338,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -336,8 +364,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -362,8 +390,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -389,8 +417,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             try {
@@ -414,8 +442,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -445,8 +473,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -462,8 +490,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -479,8 +507,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const response = await this.client.getResponse(myId);
 
         const br = getBinaryReader(response);
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();

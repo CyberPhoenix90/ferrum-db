@@ -52,8 +52,8 @@ export class FerrumServerConnection {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return new FerrumDBRemote(this.client, dbName);
@@ -68,8 +68,8 @@ export class FerrumServerConnection {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return new FerrumDBRemote(this.client, dbName);
@@ -84,8 +84,8 @@ export class FerrumServerConnection {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return br.readBoolean();
@@ -100,8 +100,8 @@ export class FerrumServerConnection {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             return undefined;
@@ -116,8 +116,8 @@ export class FerrumServerConnection {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         }
         return undefined;
@@ -130,8 +130,8 @@ export class FerrumServerConnection {
         const response = await this.client.getResponse(myId);
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         } else {
             const len = br.readInt();

@@ -133,8 +133,8 @@ export class FerrumServerClient {
         this.heartBeatPending = false;
         const br = getBinaryReader(response);
 
-        const success = br.readBoolean();
-        if (!success) {
+        const success = br.readByte();
+        if (success !== 1) {
             return handleErrorResponse(br);
         }
     }

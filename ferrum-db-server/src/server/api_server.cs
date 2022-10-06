@@ -74,8 +74,7 @@ namespace api_server {
                     if (size > 1048576 * 768) {
                         Logger.Error($"Error: Msg Buffer overflow. Max Size : 768MB. Size: {size / 1048576} MB");
                         break;
-                    }
-                    else if (size > buffer.Length) {
+                    } else if (size > buffer.Length) {
                         buffer = new byte[size];
                     }
                     if (read == 0) {
@@ -91,8 +90,7 @@ namespace api_server {
                         Logger.Error("Client disconnected. Not all data received");
                         break;
                     }
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     Logger.Error("Exception in network thread", e);
                     break;
                 }
@@ -217,8 +215,7 @@ namespace api_server {
                         if (index != null) {
                             index.clear();
                             APIWriter.sendOk(client, indexClear.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexClear.id, new Exception($"No Index found for key {indexClear.index}"));
                         }
                         break;
@@ -234,8 +231,7 @@ namespace api_server {
                         if (index != null) {
                             index.delete(indexDelete.key, -1);
                             APIWriter.sendOk(client, indexDelete.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexDelete.id, new Exception($"No Index found for key {indexDelete.index}"));
                         }
                         break;
@@ -252,15 +248,13 @@ namespace api_server {
                             var data = index.get(indexGet.key);
                             if (data != null) {
 #if DEBUG
-                                Console.WriteLine($"IndexGet: {indexGet.key} -> { data.Length } bytes");
+                                Console.WriteLine($"IndexGet: {indexGet.key} -> {data.Length} bytes");
 #endif
                                 APIWriter.sendBinary(client, indexGet.id, data);
+                            } else {
+                                APIWriter.sendNotFound(client, command.id);
                             }
-                            else {
-                                APIWriter.sendError(client, indexGet.id, new Exception($"No Record found for key {indexGet.key} in index {indexGet.index}"));
-                            }
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexGet.id, new Exception($"No Index found for key {indexGet.index}"));
                         }
                         break;
@@ -276,8 +270,7 @@ namespace api_server {
                         if (index != null) {
                             var count = index.getRecordCount();
                             APIWriter.sendInt(client, indexRecordCount.id, count);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexRecordCount.id, new Exception($"No Index found for key {indexRecordCount.index}"));
                         }
                         break;
@@ -293,13 +286,11 @@ namespace api_server {
                         if (index != null) {
                             var size = index.getRecordSize(indexRecordSize.key);
                             if (size == null) {
-                                APIWriter.sendError(client, indexRecordSize.id, new Exception($"No Record found for key {indexRecordSize.key} in index {indexRecordSize.index}"));
-                            }
-                            else {
+                                APIWriter.sendNotFound(client, command.id);
+                            } else {
                                 APIWriter.sendLong(client, indexRecordSize.id, ((long)size));
                             }
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexRecordSize.id, new Exception($"No Index found for key {indexRecordSize.index}"));
                         }
                         break;
@@ -314,8 +305,7 @@ namespace api_server {
                         index = db.getIndex(indexHas.index);
                         if (index != null) {
                             APIWriter.sendBool(client, indexHas.id, index.has(indexHas.key));
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexHas.id, new Exception($"No Index found for key {indexHas.index}"));
                         }
                         break;
@@ -329,8 +319,7 @@ namespace api_server {
                         index = db.getIndex(indexGetKeys.index);
                         if (index != null) {
                             APIWriter.sendList(client, indexGetKeys.id, index.getKeys());
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexGetKeys.id, new Exception($"No Index found for key {indexGetKeys.index}"));
                         }
                         break;
@@ -344,12 +333,11 @@ namespace api_server {
                         index = db.getIndex(indexSet.index);
                         if (index != null) {
 #if DEBUG
-                            Console.WriteLine($"IndexSet: {indexSet.key} -> { indexSet.value.Length } bytes");
+                            Console.WriteLine($"IndexSet: {indexSet.key} -> {indexSet.value.Length} bytes");
 #endif
                             index.set(indexSet.key, indexSet.value, -1);
                             APIWriter.sendOk(client, indexSet.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexSet.id, new Exception($"No Index found for key {indexSet.index}"));
                         }
                         break;
@@ -364,13 +352,11 @@ namespace api_server {
                         if (index != null) {
                             var data = index.readChunk(indexReadChunk.key, indexReadChunk.offset, indexReadChunk.size);
                             if (data == null) {
-                                APIWriter.sendError(client, indexReadChunk.id, new Exception($"No Record found for key {indexReadChunk.key} in index {indexReadChunk.index}"));
-                            }
-                            else {
+                                APIWriter.sendNotFound(client, command.id);
+                            } else {
                                 APIWriter.sendBinary(client, indexReadChunk.id, data);
                             }
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexReadChunk.id, new Exception($"No Index found for key {indexReadChunk.index}"));
                         }
                         break;
@@ -385,13 +371,11 @@ namespace api_server {
                         if (index != null) {
                             var data = index.readUntil(indexReadUntil.key, indexReadUntil.offset, indexReadUntil.until);
                             if (data == null) {
-                                APIWriter.sendError(client, indexReadUntil.id, new Exception($"No Record found for key {indexReadUntil.key} in index {indexReadUntil.index}"));
-                            }
-                            else {
+                                APIWriter.sendNotFound(client, command.id);
+                            } else {
                                 APIWriter.sendBinary(client, indexReadUntil.id, data);
                             }
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, indexReadUntil.id, new Exception($"No Index found for key {indexReadUntil.index}"));
                         }
                         break;
@@ -463,8 +447,7 @@ namespace api_server {
                         if (set != null) {
                             set.clear();
                             APIWriter.sendOk(client, setClear.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, setClear.id, new Exception($"No Set found for key {setClear.set}"));
                         }
                         break;
@@ -480,8 +463,7 @@ namespace api_server {
                         if (set != null) {
                             set.delete(setDelete.key, -1);
                             APIWriter.sendOk(client, setDelete.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, setDelete.id, new Exception($"No Set found for key {setDelete.set}"));
                         }
                         break;
@@ -496,8 +478,7 @@ namespace api_server {
                         set = db.getSet(setHas.set);
                         if (set != null) {
                             APIWriter.sendBool(client, setHas.id, set.has(setHas.key));
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, setHas.id, new Exception($"No Set found for key {setHas.set}"));
                         }
                         break;
@@ -511,8 +492,7 @@ namespace api_server {
                         set = db.getSet(setGetKeys.set);
                         if (set != null) {
                             APIWriter.sendList(client, setGetKeys.id, set.getKeys());
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, setGetKeys.id, new Exception($"No Set found for key {setGetKeys.set}"));
                         }
                         break;
@@ -533,8 +513,7 @@ namespace api_server {
 #endif
                             set.add(setAdd.key, -1);
                             APIWriter.sendOk(client, setAdd.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, setAdd.id, new Exception($"No Set found for key {setAdd.set}"));
                         }
                         break;
@@ -550,8 +529,7 @@ namespace api_server {
                         if (set != null) {
                             var count = set.getRecordCount();
                             APIWriter.sendInt(client, setRecordCount.id, count);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, setRecordCount.id, new Exception($"No Set found for key {setRecordCount.set}"));
                         }
                         break;
@@ -625,8 +603,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             timeSeries.clear();
                             APIWriter.sendOk(client, command.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesClear.timeSeries}"));
                         }
                         break;
@@ -643,8 +620,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             timeSeries.delete(timeSeriesDeleteEntry.key, timeSeriesDeleteEntry.timestamp, -1);
                             APIWriter.sendOk(client, command.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesDeleteEntry.timeSeries}"));
                         }
                         break;
@@ -660,8 +636,7 @@ namespace api_server {
 
                         if (timeSeries != null) {
                             APIWriter.sendBool(client, command.id, timeSeries.hasEntry(timeSeriesHasEntry.key, timeSeriesHasEntry.timestamp));
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesHasEntry.timeSeries}"));
                         }
 
@@ -679,9 +654,8 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entry = timeSeries.get(timeSeriesGetEntry.key, timeSeriesGetEntry.timestamp);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
-                            APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntry.timeSeries}"));
+                        } else {
+                            APIWriter.sendNotFound(client, command.id);
                         }
 
                         break;
@@ -698,8 +672,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entry = timeSeries.getFirstEntryAfterTimestamp(timeSeriesGetFirstEntryAfterTimestamp.key, timeSeriesGetFirstEntryAfterTimestamp.timestamp);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFirstEntryAfterTimestamp.timeSeries}"));
                         }
                         break;
@@ -716,8 +689,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entry = timeSeries.getFirstEntryBeforeTimestamp(timeSeriesGetLastEntryBeforeTimestamp.key, timeSeriesGetLastEntryBeforeTimestamp.timestamp);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLastEntryBeforeTimestamp.timeSeries}"));
                         }
                         break;
@@ -734,8 +706,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getEntriesBetweenTimestamps(timeSeriesGetEntriesBetweenTimestamps.key, timeSeriesGetEntriesBetweenTimestamps.start, timeSeriesGetEntriesBetweenTimestamps.end);
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntriesBetweenTimestamps.timeSeries}"));
                         }
                         break;
@@ -752,8 +723,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getLastNEntries(timeSeriesGetLastNEntries.key, timeSeriesGetLastNEntries.count);
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLastNEntries.timeSeries}"));
                         }
                         break;
@@ -770,8 +740,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entry = timeSeries.getEarliestEntry(timeSeriesGetEarliestEntry.key);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEarliestEntry.timeSeries}"));
                         }
                         break;
@@ -788,8 +757,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entry = timeSeries.getLatestEntry(timeSeriesGetLatestEntry.key);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetLatestEntry.timeSeries}"));
                         }
                         break;
@@ -807,8 +775,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             timeSeries.deleteSerie(timeSeriesDeleteSerie.key, -1);
                             APIWriter.sendOk(client, command.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesDeleteSerie.timeSeries}"));
                         }
                         break;
@@ -826,8 +793,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entry = timeSeries.getNearestMatch(timeSeriesGetNearestEntryToTimestamp.key, timeSeriesGetNearestEntryToTimestamp.timestamp);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetNearestEntryToTimestamp.timeSeries}"));
                         }
                         break;
@@ -845,8 +811,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             timeSeries.set(timeSeriesPutEntry.key, timeSeriesPutEntry.timestamp, timeSeriesPutEntry.value, -1);
                             APIWriter.sendOk(client, command.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesPutEntry.timeSeries}"));
                         }
 
@@ -864,8 +829,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getFullSerie(timeSeriesGetFullSerie.key);
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFullSerie.timeSeries}"));
                         }
                         break;
@@ -882,8 +846,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getFullSerieEntries(timeSeriesGetFullSerieEntries.key);
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetFullSerieEntries.timeSeries}"));
                         }
 
@@ -901,8 +864,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getKeys();
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetSeries.timeSeries}"));
                         }
 
@@ -920,8 +882,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getEntriesBeforeTimestamp(timeSeriesGetEntriesBeforeTimestamp.key, timeSeriesGetEntriesBeforeTimestamp.timestamp);
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntriesBeforeTimestamp.timeSeries}"));
                         }
 
@@ -940,8 +901,7 @@ namespace api_server {
                         if (timeSeries != null) {
                             var entries = timeSeries.getEntriesAfterTimestamp(timeSeriesGetEntriesAfterTimestamp.key, timeSeriesGetEntriesAfterTimestamp.timestamp);
                             APIWriter.sendList(client, command.id, entries);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No TimeSeries found for key {timeSeriesGetEntriesAfterTimestamp.timeSeries}"));
                         }
 
@@ -962,8 +922,7 @@ namespace api_server {
                         if (collection != null) {
                             collection.deleteCollectionTag(collectionDeleteTag.tag);
                             APIWriter.sendOk(client, command.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No Collection found for key {collectionDeleteTag.collectionKey}"));
                         }
 
@@ -983,8 +942,7 @@ namespace api_server {
                         if (collection != null) {
                             var entry = collection.getCollectionTag(collectionGetTagEntry.tag);
                             APIWriter.sendBinary(client, command.id, entry);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No Collection found for key {collectionGetTagEntry.collectionKey}"));
                         }
 
@@ -1004,8 +962,7 @@ namespace api_server {
                         if (collection != null) {
                             var tags = collection.getCollectionTags();
                             APIWriter.sendList(client, command.id, tags);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No Collection found for key {collectionGetTags.collectionKey}"));
                         }
 
@@ -1025,8 +982,7 @@ namespace api_server {
                         if (collection != null) {
                             var hasTag = collection.hasCollectionTag(collectionHasTag.tag);
                             APIWriter.sendBool(client, command.id, hasTag);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No Collection found for key {collectionHasTag.collectionKey}"));
                         }
 
@@ -1046,8 +1002,7 @@ namespace api_server {
                         if (collection != null) {
                             collection.setCollectionTag(collectionSetTag.tag, collectionSetTag.value);
                             APIWriter.sendOk(client, command.id);
-                        }
-                        else {
+                        } else {
                             APIWriter.sendError(client, command.id, new Exception($"No Collection found for key {collectionSetTag.collectionKey}"));
                         }
 
@@ -1056,8 +1011,7 @@ namespace api_server {
                         APIWriter.sendError(client, command.id, new Exception($"Command not implemented: {command.type}"));
                         break;
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 APIWriter.sendError(client, command.id, e);
             }
         }
