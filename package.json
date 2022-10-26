@@ -7,6 +7,7 @@
         "test": "cd ferrum-db-server-tests && dotnet test --collect:\"XPlat Code Coverage\""
     },
     "dependencies": {
-        "@types/node": "^17.0.8"
+        "@types/node": "^17.0.8",
+        "aurumjs": "^0.8.11"
     }
 }

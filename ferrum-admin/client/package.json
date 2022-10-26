@@ -1,0 +1,17 @@
+{
+    "name": "ferrum-admin-client",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "vite --host"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "aurum-components": "^0.2.1",
+        "aurumjs": "^0.8.11",
+        "vite": "^3.1.8"
+    }
+}

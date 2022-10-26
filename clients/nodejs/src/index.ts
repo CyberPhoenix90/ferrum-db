@@ -12,25 +12,9 @@ export { SetRemote } from './set_remote';
 
 const HEARTBEAT_TIMEOUT = 1000 * 30;
 
-export function ferrumConnect(ip: string, port: number, options?: { heartbeatTimeout: number }): Promise<FerrumServerConnection> {
-    return new Promise((resolve, reject) => {
-        const socket = new Socket();
-        socket.setNoDelay(true);
-        socket.connect(port, ip);
-        let client: FerrumServerClient;
-
-        socket.once('connect', () => {
-            client = new FerrumServerClient(socket, options?.heartbeatTimeout ?? HEARTBEAT_TIMEOUT);
-            resolve(new FerrumServerConnection(client));
-        });
-        socket.once('error', (e) => {
-            reject(e);
-        });
-
-        socket.once('timeout', () => {
-            reject(new Error('Connection timeout'));
-        });
-    });
+export async function ferrumConnect(ip: string, port: number, options?: { heartbeatTimeout: number }): Promise<FerrumServerConnection> {
+    const client = await makeNewSocket(port, ip, options);
+    return new FerrumServerConnection(client);
 }
 
 export class FerrumServerConnection {
@@ -38,6 +22,13 @@ export class FerrumServerConnection {
 
     constructor(client: FerrumServerClient) {
         this.client = client;
+    }
+
+    public async reconnect(): Promise<void> {
+        this.client.disconnect();
+        this.client = await makeNewSocket(this.client.port, this.client.ip, {
+            heartbeatTimeout: this.client.hearBeatTimeout,
+        });
     }
 
     public disconnect(): void {
@@ -146,4 +137,22 @@ export class FerrumServerConnection {
     public getDatabase(dbName: string): FerrumDBRemote {
         return new FerrumDBRemote(this.client, dbName);
     }
+}
+function makeNewSocket(port: number, ip: string, options: { heartbeatTimeout: number }): Promise<FerrumServerClient> {
+    return new Promise<FerrumServerClient>((resolve, reject) => {
+        const socket = new Socket();
+        socket.setNoDelay(true);
+        socket.connect(port, ip);
+        socket.once('connect', () => {
+            const client = new FerrumServerClient(socket, options?.heartbeatTimeout ?? HEARTBEAT_TIMEOUT);
+            resolve(client);
+        });
+        socket.once('error', (e) => {
+            reject(e);
+        });
+
+        socket.once('timeout', () => {
+            reject(new Error('Connection timeout'));
+        });
+    });
 }

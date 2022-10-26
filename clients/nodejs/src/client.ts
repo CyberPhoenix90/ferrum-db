@@ -12,11 +12,13 @@ export class FerrumServerClient {
     public disposed: boolean;
     private lastResponse: number = Date.now();
     private heartBeatInterval: NodeJS.Timeout;
-    private ip: string;
-    private port: number;
-    private hearBeatTimeout: number;
+    public readonly ip: string;
+    public readonly port: number;
+    public readonly hearBeatTimeout: number;
 
     constructor(socket: Socket, heartBeatTimeout: number) {
+        this.ip = socket.remoteAddress;
+        this.port = socket.remotePort;
         this.initialize(socket);
         this.hearBeatTimeout = heartBeatTimeout;
         this.heartBeatInterval = setInterval(() => {
@@ -26,8 +28,6 @@ export class FerrumServerClient {
 
     private initialize(socket: Socket) {
         this.socket = socket;
-        this.ip = socket.remoteAddress;
-        this.port = socket.remotePort;
         this.socket = socket;
         this.pending = new Map();
         this.disposed = false;

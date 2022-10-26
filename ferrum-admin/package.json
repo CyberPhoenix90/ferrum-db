@@ -1,0 +1,7 @@
+{
+    "name": "ferrum-admin",
+    "version": "0.0.1",
+    "description": "Admin tools to manage ferrum database server",
+    "author": "Joao Santos (CyberPhoenix)",
+    "license": "MIT"
+}
