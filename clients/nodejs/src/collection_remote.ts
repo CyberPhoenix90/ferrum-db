@@ -1,146 +1,122 @@
-import { Encoding } from 'csharp-binary-stream';
-import { FerrumServerClient } from './client';
-import { ApiMessageType } from './protcol';
-import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData, SupportedCompressionTypes, SupportedEncodingTypes } from './utils';
-
-export enum CollectionType {
-    INDEX = 0,
-    SET = 1,
-    TIME_SERIES = 2,
-}
+import { ChannelCredentials } from '@grpc/grpc-js';
+import { CollectionClient } from './proto/collection_grpc_pb';
+import { CollectionType, DeleteTagRequest, GetTagRequest, HasTagRequest, ListTagsRequest, SetTagRequest } from './proto/collection_pb';
+import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 
 export class CollectionRemote {
     public readonly type: CollectionType;
     public readonly database: string;
+
+    private ip: string;
+    private port: number;
+    protected collectionKey: string;
+    private collectionClient: CollectionClient;
+
     public get name(): string {
         return this.collectionKey;
     }
-    protected client: FerrumServerClient;
-    protected collectionKey: string;
 
-    constructor(type: CollectionType, client: FerrumServerClient, database: string, collectionkey: string) {
+    constructor(ip: string, port: number, type: CollectionType, database: string, collectionkey: string) {
+        this.collectionClient = new CollectionClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {});
         this.type = type;
-        this.client = client;
         this.database = database;
         this.collectionKey = collectionkey;
+        this.ip = ip;
+        this.port = port;
     }
 
     public async hasTag(tag: string = ''): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.COLLECTION_HAS_TAG,
-            this.database.length + this.collectionKey.length + 1 + tag.length + 12,
+        const msg = new HasTagRequest();
+        msg.setDatabase(this.database);
+        msg.setCollection(this.collectionKey);
+        msg.setCollectiontype(this.type);
+        msg.setTag(tag);
+
+        const res = await promisify<CallbackReturnType<typeof this.collectionClient.hasTag>, HasTagRequest>(
+            this.collectionClient.hasTag.bind(this.collectionClient),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeByte(this.type);
-        bw.writeString(tag, Encoding.Utf8);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHastag();
     }
 
     public async getTagEntry<T>(tag: string = '', encoding: SupportedEncodingTypes = 'json', compression: SupportedCompressionTypes = 'gzip'): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.COLLECTION_GET_TAG_ENTRY,
-            this.database.length + this.collectionKey.length + 1 + tag.length + 12,
+        const msg = new GetTagRequest();
+
+        msg.setDatabase(this.database);
+        msg.setCollection(this.collectionKey);
+        msg.setCollectiontype(this.type);
+        msg.setTag(tag);
+
+        const res = await promisify<CallbackReturnType<typeof this.collectionClient.getTag>, GetTagRequest>(
+            this.collectionClient.getTag.bind(this.collectionClient),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeByte(this.type);
-        bw.writeString(tag, Encoding.Utf8);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, encoding, compression);
-            } catch (e) {
-                throw new Error(`Failed to get tag ${tag} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getValue_asU8(), encoding, compression);
     }
 
     public async deleteTag(tag: string = ''): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.COLLECTION_DELETE_TAG,
-            this.database.length + this.collectionKey.length + 1 + tag.length + 12,
+        const msg = new DeleteTagRequest();
+
+        msg.setDatabase(this.database);
+        msg.setCollection(this.collectionKey);
+        msg.setCollectiontype(this.type);
+        msg.setTag(tag);
+
+        const res = await promisify<CallbackReturnType<typeof this.collectionClient.deleteTag>, DeleteTagRequest>(
+            this.collectionClient.deleteTag.bind(this.collectionClient),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeByte(this.type);
-        bw.writeString(tag, Encoding.Utf8);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
     public async getTags(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COLLECTION_GET_TAGS, this.database.length + this.collectionKey.length + 1 + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeByte(this.type);
-        this.client.sendMsg(bw);
+        const msg = new ListTagsRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setCollection(this.collectionKey);
+        msg.setCollectiontype(this.type);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.collectionClient.listTags>, ListTagsRequest>(
+            this.collectionClient.listTags.bind(this.collectionClient),
+            msg,
+        );
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getTagsList();
     }
 
     public async setTag(key: string, value: any, encoding: SupportedEncodingTypes = 'json', compression: SupportedCompressionTypes = 'gzip'): Promise<void> {
-        const encodedData = await encodeData(value, encoding, compression);
+        const msg = new SetTagRequest();
 
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.COLLECTION_SET_TAG,
-            this.database.length + this.collectionKey.length + key.length + encodedData.length + 16,
+        msg.setDatabase(this.database);
+        msg.setCollection(this.collectionKey);
+        msg.setCollectiontype(this.type);
+        msg.setTag(key);
+        msg.setValue(await encodeValue(value, encoding, compression));
+
+        const res = await promisify<CallbackReturnType<typeof this.collectionClient.setTag>, SetTagRequest>(
+            this.collectionClient.setTag.bind(this.collectionClient),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeByte(this.type);
-        bw.writeString(key, Encoding.Utf8);
-        bw.writeInt(encodedData.length);
-        bw.writeBytes(encodedData as any);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 }

@@ -9,7 +9,7 @@ Ferrum DB is a NOSQL database server with a focus on high throughput at the expe
 
 ### How does it work?
 
-Ferrum DB is persisted and atomic, the way it achieves high performance is by holding all record meta data in memory at runtime. This means that record metadata querying is nearly instanteous as no disk access is needed to respond and access to data is quicker as no expensive disk lookups are needed to find out where a record is located on disk. The meta data is not exclusively held in memory, a record is kept on disk for persistence.
+Ferrum DB is persisted and atomic, the way it achieves high performance is by holding all record meta data in memory at runtime. This means that record metadata querying is nearly instanteous as no disk access is needed to respond and access to data is quicker as no expensive disk lookups are needed to find out where a record is located on disk. The meta data is not exclusively held in memory, a record is kept on disk for persistence. This means that larger tham RAM databases are possible but the maximum database size does on the RAM at about the ratio of 1 GB per 10 million records of any size
 
 ## Main features
 
@@ -46,7 +46,7 @@ Index (key-value)
 Set (key)
 Time Series (key-value but with queryable number as key)
 
-This increases the flexibility of the database without shoehorning all the features into one type at the cost of performance or memory. Each collection is specially crafted for performance in their respective use cases
+This setup allows you to pick the best collection type for your use case and only pay the price for the complexity you need. Each collection is specially crafted for performance in their respective use cases
 
 ## Limitations
 
@@ -98,7 +98,7 @@ Since part of what makes this DB fast is holding all the meta data in memory thi
 
 ### Binary only
 
-The database only works with binary data; it holds no encoding information and accepts nothing but binary. The encoding responsibility is moved to the client as the client knows best what encoding types are useful to the environment that it serves.
+The database only works with binary data; it doesn't encode your data and accepts nothing but binary. The encoding responsibility is moved to the client as the client knows best what encoding types are useful to the environment that it serves.
 
 ### No compression
 
@@ -124,7 +124,17 @@ The time series collection type is perfect for storing metrics or other statisti
 
 ## Clients
 
-Currently only a nodejs client exists. It has support for bson, json, ndjson, string and binary records. Making it possible to store objects into the DB, or store json in a streamable way with ndjson. The client also supports gzip compression
+### NodeJS
+
+The NodeJS client has support for bson, json, ndjson, string and binary records. Making it possible to store objects into the DB, or store json in a streamable way with ndjson. The client also supports gzip compression
+
+### C#
+
+The C# Client has support for json, string, number and binary records.
+
+### GRPC
+
+Using the protobuf files in this repo you can compile your own client and use it via GRPC
 
 ## Future expansion:
 

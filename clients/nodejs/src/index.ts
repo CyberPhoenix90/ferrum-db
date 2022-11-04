@@ -1,158 +1,111 @@
-import { Encoding } from 'csharp-binary-stream';
-import { Socket } from 'net';
-import { FerrumServerClient } from './client';
+import { ChannelCredentials } from '@grpc/grpc-js';
 import { FerrumDBRemote } from './db_remote';
-import { ApiMessageType } from './protcol';
-import { getBinaryReader, handleErrorResponse } from './utils';
+import { DatabaseServerClient } from './proto/database_server_grpc_pb';
+import { CreateDatabaseRequest } from './proto/database_server_pb';
+import { EmptyRequest } from './proto/shared_pb';
+import { CallbackReturnType, promisify } from './util';
 
 export { FerrumDBRemote } from './db_remote';
 export { IndexRemote } from './index_remote';
-export { CollectionType } from './collection_remote';
 export { SetRemote } from './set_remote';
 
-const HEARTBEAT_TIMEOUT = 1000 * 30;
-
-export async function ferrumConnect(ip: string, port: number, options?: { heartbeatTimeout: number }): Promise<FerrumServerConnection> {
-    const client = await makeNewSocket(port, ip, options);
-    return new FerrumServerConnection(client);
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+export async function ferrumConnect(ip: string, port: number): Promise<FerrumServerConnection> {
+    return new FerrumServerConnection(ip, port);
 }
 
 export class FerrumServerConnection {
-    private client: FerrumServerClient;
+    private ip: string;
+    private port: number;
+    private client: DatabaseServerClient;
 
-    constructor(client: FerrumServerClient) {
-        this.client = client;
-    }
-
-    public async reconnect(): Promise<void> {
-        this.client.disconnect();
-        this.client = await makeNewSocket(this.client.port, this.client.ip, {
-            heartbeatTimeout: this.client.hearBeatTimeout,
-        });
-    }
-
-    public disconnect(): void {
-        this.client.disconnect();
+    constructor(ip: string, port: number) {
+        this.ip = ip;
+        this.port = port;
+        this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {});
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE_IF_NOT_EXIST, dbName.length + 4);
-        bw.writeString(dbName, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new CreateDatabaseRequest();
+        msg.setName(dbName);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createDatabaseIfNotExist>, CreateDatabaseRequest>(
+            this.client.createDatabaseIfNotExist.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return new FerrumDBRemote(this.client, dbName);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return new FerrumDBRemote(this.ip, this.port, dbName);
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_DATABASE, dbName.length + 4);
-        bw.writeString(dbName, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new CreateDatabaseRequest();
+        msg.setName(dbName);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createDatabase>, CreateDatabaseRequest>(
+            this.client.createDatabase.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return new FerrumDBRemote(this.client, dbName);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return new FerrumDBRemote(this.ip, this.port, dbName);
     }
 
     public async hasDatabase(dbName: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_DATABASE, dbName.length);
-        bw.writeString(dbName, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new CreateDatabaseRequest();
+        msg.setName(dbName);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.hasDatabase>, CreateDatabaseRequest>(this.client.hasDatabase.bind(this.client), msg);
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHasdatabase();
     }
 
     public async dropDatabase(dbName: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DROP_DATABASE, dbName.length);
-        bw.writeString(dbName, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new CreateDatabaseRequest();
+        msg.setName(dbName);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.dropDatabase>, CreateDatabaseRequest>(
+            this.client.dropDatabase.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
     public async clearDatabase(dbName: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CLEAR_DATABASE, dbName.length);
-        bw.writeString(dbName, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new CreateDatabaseRequest();
+        msg.setName(dbName);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.clearDatabase>, CreateDatabaseRequest>(
+            this.client.clearDatabase.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
-        return undefined;
     }
 
     public async getDatabaseNames(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.LIST_DATABASES, 0);
-        this.client.sendMsg(bw);
+        const msg = new EmptyRequest();
+        const res = await promisify<CallbackReturnType<typeof this.client.listDatabases>, EmptyRequest>(this.client.listDatabases.bind(this.client), msg);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
-
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
-    }
 
-    public getDatabase(dbName: string): FerrumDBRemote {
-        return new FerrumDBRemote(this.client, dbName);
+        return res.getDatabasesList();
     }
-}
-function makeNewSocket(port: number, ip: string, options: { heartbeatTimeout: number }): Promise<FerrumServerClient> {
-    return new Promise<FerrumServerClient>((resolve, reject) => {
-        const socket = new Socket();
-        socket.setNoDelay(true);
-        socket.connect(port, ip);
-        socket.once('connect', () => {
-            const client = new FerrumServerClient(socket, options?.heartbeatTimeout ?? HEARTBEAT_TIMEOUT);
-            resolve(client);
-        });
-        socket.once('error', (e) => {
-            reject(e);
-        });
-
-        socket.once('timeout', () => {
-            reject(new Error('Connection timeout'));
-        });
-    });
 }

@@ -137,3 +137,18 @@ export const getIndexValue = getRemoteFunction<
     },
     CancellationToken.forever,
 );
+
+export const kickConnection = getRemoteFunction<
+    {
+        serverIP: string;
+        serverPort: number;
+        connectionId: string;
+    },
+    void
+>(
+    {
+        id: '/api/kick-connection',
+        host: `${location.host}/ws`,
+    },
+    CancellationToken.forever,
+);

@@ -1,5 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -12,12 +11,22 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.40.0" />
   </ItemGroup>
+
+<ItemGroup>
+  <Protobuf Include="..\grpc_protocol\shared.proto" GrpcServices="Server" />
+  <Protobuf Include="..\grpc_protocol\database.proto" GrpcServices="Server" />
+  <Protobuf Include="..\grpc_protocol\database_server.proto" GrpcServices="Server" />
+  <Protobuf Include="..\grpc_protocol\index.proto" GrpcServices="Server" />
+  <Protobuf Include="..\grpc_protocol\set.proto" GrpcServices="Server" />
+  <Protobuf Include="..\grpc_protocol\timeseries.proto" GrpcServices="Server" />
+  <Protobuf Include="..\grpc_protocol\collection.proto" GrpcServices="Server" />
+</ItemGroup>
 
   <ItemGroup>
     <None Update="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
 </Project>

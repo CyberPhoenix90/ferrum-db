@@ -1,8 +1,9 @@
 {
     "ip": "127.0.0.1",
-    "port": 3000,
+    "tcpPort": 3000,
+    "grpcPort": 3001,
     "dbFolder": "./db",
-    "stdout": false,
+    "stdout": true,
     "fileOut": "./logs.txt",
     "logLevel": "debug"
 }

@@ -2,6 +2,7 @@ import { AurumServer } from 'aurum-server';
 import express from 'express';
 import { createServer } from 'http';
 import { getConnectionFor } from './connection_pool.mjs';
+import { connections } from './state.mjs';
 
 const app = express();
 const server = createServer(app);
@@ -54,6 +55,15 @@ as.exposeFunction('/api/get-index-value', async (msg: { serverIP: string; server
     const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
     const value = await connection.getDatabase(msg.database).getIndex(msg.index, 'json', 'none').get(msg.key);
     return value;
+});
+
+as.exposeArrayDataSource('/api/connections', connections);
+
+as.exposeFunction('/api/kick-connection', async (msg: { serverIP: string; serverPort: number; connectionId: string }) => {
+    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
+    try {
+        await connection.kickConnection(msg.connectionId);
+    } catch {}
 });
 
 server.listen(8080, 'localhost', () => {});

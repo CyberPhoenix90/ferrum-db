@@ -1,161 +1,152 @@
-import { Encoding } from 'csharp-binary-stream';
-import { FerrumServerClient } from './client';
-import { CollectionRemote, CollectionType } from './collection_remote';
-import { ApiMessageType } from './protcol';
-import { encodeData, getBinaryReader, handleErrorResponse, readEncodedData, SupportedCompressionTypes, SupportedEncodingTypes } from './utils';
+import { ChannelCredentials } from '@grpc/grpc-js';
+import { CollectionRemote } from './collection_remote';
+import { CollectionType } from './proto/collection_pb';
+import { IndexClient } from './proto/index_grpc_pb';
+import {
+    ClearRequest,
+    DeleteRequest,
+    GetChunkRequest,
+    GetRecordCountRequest,
+    GetRecordSizeRequest,
+    GetRequest,
+    HasRequest,
+    ListKeysRequest,
+    PutRequest,
+} from './proto/index_pb';
+import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 
 export class IndexRemote<T> extends CollectionRemote {
     private encoding: SupportedEncodingTypes;
     private compression: SupportedCompressionTypes;
+    private client: IndexClient;
 
-    constructor(client: FerrumServerClient, database: string, indexKey: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        super(CollectionType.INDEX, client, database, indexKey);
+    constructor(ip: string, port: number, database: string, indexName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
+        super(ip, port, CollectionType.INDEX, database, indexName);
+        this.client = new IndexClient(`${ip}:${port}`, ChannelCredentials.createSsl(), null);
         this.encoding = encoding;
         this.compression = compression;
     }
 
     public async has(key: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_HAS, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new HasRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.has>, HasRequest>(this.client.has.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHas();
     }
 
     public async getRecordSize(key: string): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.INDEX_GET_RECORD_SIZE,
-            this.database.length + this.collectionKey.length + key.length + 12,
+        const msg = new GetRecordSizeRequest();
+
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getRecordSize>, GetRecordSizeRequest>(
+            this.client.getRecordSize.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readLong();
-            return len;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getSize();
     }
 
     public async getRecordCount(): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_RECORD_COUNT, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new GetRecordCountRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            return len;
+        const res = await promisify<CallbackReturnType<typeof this.client.getRecordCount>, GetRecordCountRequest>(
+            this.client.getRecordCount.bind(this.client),
+            msg,
+        );
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
-    }
 
-    public async getOrNull(key: string): Promise<T | null> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
-
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success === 0) {
-            return handleErrorResponse(br);
-        } else if (success === 1) {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${key} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
-        } else {
-            return null;
-        }
+        return res.getCount();
     }
 
     public async get(key: string): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new GetRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${key} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        const res = await promisify<CallbackReturnType<typeof this.client.get>, GetRequest>(this.client.get.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getValue_asU8(), this.encoding, this.compression);
+    }
+
+    public async getOrNull(key: string): Promise<T | null> {
+        const msg = new GetRequest();
+
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.get>, GetRequest>(this.client.get.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
+        }
+
+        if (res.getNotfound()) {
+            return null;
+        }
+
+        return decodeValue(res.getValue_asU8(), this.encoding, this.compression);
     }
 
     public async delete(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_DELETE, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new DeleteRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.delete>, DeleteRequest>(this.client.delete.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return;
     }
 
     public async readChunk(key: string, offset: number, size: number): Promise<Buffer> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        bw.writeLong(offset);
-        bw.writeUnsignedInt(size);
-        this.client.sendMsg(bw);
+        const msg = new GetChunkRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
+        msg.setOffset(offset);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = Buffer.from(br.readBytes(len));
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.getChunk>, GetChunkRequest>(this.client.getChunk.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return Buffer.from(res.getChunk_asU8());
     }
 
     // Alias for set
@@ -164,66 +155,49 @@ export class IndexRemote<T> extends CollectionRemote {
     }
 
     public async set(key: string, value: T): Promise<void> {
-        const encodedData = await encodeData(value, this.encoding, this.compression);
+        const msg = new PutRequest();
 
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.INDEX_SET,
-            this.database.length + this.collectionKey.length + key.length + encodedData.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        bw.writeInt(encodedData.length);
-        bw.writeBytes(encodedData as any);
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
+        msg.setKey(key);
+        msg.setValue(await encodeValue(value, this.encoding, this.compression));
 
-        const response = await this.client.getResponse(myId);
+        const res = await promisify<CallbackReturnType<typeof this.client.put>, PutRequest>(this.client.put.bind(this.client), msg);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return;
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_CLEAR, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new ClearRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.clear>, ClearRequest>(this.client.clear.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return;
     }
 
     public async getKeys(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.INDEX_GET_KEYS, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new ListKeysRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setIndexname(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.listKeys>, ListKeysRequest>(this.client.listKeys.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getKeysList();
     }
 }

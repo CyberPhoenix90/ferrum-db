@@ -237,6 +237,31 @@ namespace ferrum_db_server.src.db.collections {
             return get(key, timestamp.Value);
         }
 
+        public List<long> getFirstNTimestamps(string key, int n) {
+            if (!this.contentMap.ContainsKey(key)) {
+                return new List<long>();
+            }
+
+            var entries = this.contentMap[key];
+            if (entries.Count() == 0) {
+                return new List<long>();
+            }
+
+            var result = new List<long>();
+            var i = 0;
+            foreach (var entry in entries) {
+                if (i < n) {
+                    result.Add(entry.Key);
+                }
+                else {
+                    break;
+                }
+                i++;
+            }
+
+            return result;
+        }
+
         public List<long> getLastNTimestamps(string key, int n) {
             if (!this.contentMap.ContainsKey(key)) {
                 return new List<long>();
@@ -255,6 +280,20 @@ namespace ferrum_db_server.src.db.collections {
                     result.Add(entry.Key);
                 }
                 i++;
+            }
+
+            return result;
+        }
+
+        public List<byte[]> getFirstNEntries(string key, int n) {
+            var timestamps = getFirstNTimestamps(key, n);
+
+            var result = new List<byte[]>();
+            foreach (var timestamp in timestamps) {
+                var entry = get(key, timestamp);
+                if (entry != null) {
+                    result.Add(entry);
+                }
             }
 
             return result;

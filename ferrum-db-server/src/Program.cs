@@ -6,11 +6,15 @@ using System.Threading;
 using api_server;
 using ferrum_db;
 using ferrum_db_server.src;
+using ferrum_db_server.src.server.grpc_api;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
 class Config {
     public string ip;
-    public int port;
+    public int tcpPort;
+    public int grpcPort;
     public string dbFolder;
     public bool stdout;
     public string fileOut;
@@ -31,10 +35,13 @@ namespace ferrum_db_server {
             FerrumDb ferrumDb = new FerrumDb(Path.Join(config.dbFolder, "ferrum_db_server.mr"));
             stopWatch.Stop();
             new Thread(() => {
-                new APIServer(IPAddress.Parse(config.ip), config.port, ferrumDb);
+                new GRPCServer(config.ip, config.grpcPort, ferrumDb);
+            }).Start();
+            new Thread(() => {
+                new APIServer(IPAddress.Parse(config.ip), config.tcpPort, ferrumDb);
             }).Start();
             Logger.Info($"Starting DB took {stopWatch.ElapsedMilliseconds}ms");
-            Logger.Info($"Ferrum DB Running @ {config.ip}:{config.port}");
+            Logger.Info($"Ferrum DB Server Running with TCP API @ {config.ip}:{config.tcpPort} and GRPC API @ {config.ip}:{config.grpcPort}");
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs args) {
@@ -57,9 +64,14 @@ namespace ferrum_db_server {
                 config!.fileOut = args[Array.IndexOf(args, "--fileout") + 1];
             }
 
-            if (Array.Exists(args, (item) => item == "--port")) {
-                config!.port = int.Parse(args[Array.IndexOf(args, "--port") + 1]);
-                Console.WriteLine($"Port overriden by command line flag: {config.port}");
+            if (Array.Exists(args, (item) => item == "--grpcport")) {
+                config!.grpcPort = int.Parse(args[Array.IndexOf(args, "--grpcport") + 1]);
+                Console.WriteLine($"Port overriden by command line flag: {config.grpcPort}");
+            }
+
+            if (Array.Exists(args, (item) => item == "--tcpport")) {
+                config!.tcpPort = int.Parse(args[Array.IndexOf(args, "--tcpport") + 1]);
+                Console.WriteLine($"Port overriden by command line flag: {config.tcpPort}");
             }
 
             if (Array.Exists(args, (item) => item == "--db")) {

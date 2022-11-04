@@ -1,452 +1,330 @@
-import { Encoding } from 'csharp-binary-stream';
-import { FerrumServerClient } from './client';
-import { CollectionRemote, CollectionType } from './collection_remote';
-import { ApiMessageType } from './protcol';
+import { ChannelCredentials } from '@grpc/grpc-js';
+import { CollectionRemote } from './collection_remote';
+import { CollectionType } from './proto/collection_pb';
+import { TimeSeriesClient } from './proto/timeseries_grpc_pb';
 import {
-    encodeData,
-    getBinaryReader,
-    handleErrorResponse,
-    readEncodedData,
-    readEncodedDataArray,
-    SupportedCompressionTypes,
-    SupportedEncodingTypes,
-} from './utils';
+    ClearSerieRequest,
+    DeleteEntryRequest,
+    DeleteSerieRequest,
+    GetEntriesAfterRequest,
+    GetEntriesBeforeRequest,
+    GetEntriesBetweenRequest,
+    GetEntriesRequest,
+    GetEntryRequest,
+    GetFirstEntryAfterRequest,
+    GetFirstEntryBeforeRequest,
+    GetFirstEntryRequest,
+    GetLastEntryRequest,
+    GetLastNEntriesRequest,
+    GetNearestEntryRequest,
+    HasEntryRequest,
+    HasSerieRequest,
+    ListEntriesRequest,
+    ListSeriesRequest,
+    PutEntryRequest,
+} from './proto/timeseries_pb';
+import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 
 export class TimeSeriesRemote<T> extends CollectionRemote {
     private encoding: SupportedEncodingTypes;
     private compression: SupportedCompressionTypes;
+    private client: TimeSeriesClient;
 
-    constructor(client: FerrumServerClient, database: string, timeSeriesKey: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        super(CollectionType.TIME_SERIES, client, database, timeSeriesKey);
+    constructor(ip: string, port: number, database: string, timeSeriesName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
+        super(ip, port, CollectionType.TIMESERIES, database, timeSeriesName);
+        this.client = new TimeSeriesClient(`${ip}:${port}`, ChannelCredentials.createSsl(), null);
         this.encoding = encoding;
         this.compression = compression;
     }
 
     public async hasSerie(serie: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_HAS_SERIE,
-            this.database.length + this.collectionKey.length + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new HasSerieRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.hasSerie>, HasSerieRequest>(this.client.hasSerie.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
-    }
 
-    public async getEntryOrNull(serie: string, timestamp: number): Promise<T | null> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
-
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success === 0) {
-            return handleErrorResponse(br);
-        } else if (success === 1) {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
-        } else {
-            return null;
-        }
+        return res.getHasserie();
     }
 
     public async getEntry(serie: string, timestamp: number): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
+        const msg = new GetEntryRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        const res = await promisify<CallbackReturnType<typeof this.client.getEntry>, GetEntryRequest>(this.client.getEntry.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
+    }
+
+    public async getEntryOrNull(serie: string, timestamp: number): Promise<T | null> {
+        const msg = new GetEntryRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getEntry>, GetEntryRequest>(this.client.getEntry.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
+        }
+
+        if (res.getNotfound()) {
+            return null;
+        }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
     public async hasEntry(serie: string, timestamp: number): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_HAS_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
+        const msg = new HasEntryRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.hasEntry>, HasEntryRequest>(this.client.hasEntry.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHasentry();
     }
 
     public async deleteEntry(serie: string, timestamp: number): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_DELETE_ENTRY,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
+        const msg = new DeleteEntryRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
+        const res = await promisify<CallbackReturnType<typeof this.client.deleteEntry>, DeleteEntryRequest>(this.client.deleteEntry.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
-
-        return;
     }
 
-    public async getFullSerie(serie: string): Promise<number[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_FULL_SERIE,
-            this.database.length + this.collectionKey.length + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        this.client.sendMsg(bw);
+    public async ListEntries(serie: string): Promise<number[]> {
+        const msg = new ListEntriesRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                const count = br.readInt();
-                const result = [];
-                for (let i = 0; i < count; i++) {
-                    result.push(br.readLong());
-                }
+        const res = await promisify<CallbackReturnType<typeof this.client.listEntries>, ListEntriesRequest>(this.client.listEntries.bind(this.client), msg);
 
-                return result;
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getTimestampsList();
     }
 
     public async getFullSerieEntries(serie: string): Promise<T[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_FULL_SERIE_ENTRIES,
-            this.database.length + this.collectionKey.length + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new GetEntriesRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedDataArray(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        const res = await promisify<CallbackReturnType<typeof this.client.getEntries>, GetEntriesRequest>(this.client.getEntries.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return Promise.all(res.getEntriesList_asU8().map((entry) => decodeValue<T>(entry, this.encoding, this.compression)));
     }
 
     public async getNearestEntryToTimestamp(serie: string, timestamp: number): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_NEAREST_ENTRY_TO_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
+        const msg = new GetNearestEntryRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getNearestEntry>, GetNearestEntryRequest>(
+            this.client.getNearestEntry.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
+
     public async getFirstEntryBeforeTimestamp(serie: string, timestamp: number): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_BEFORE_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
+        const msg = new GetFirstEntryBeforeRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntryBefore>, GetFirstEntryBeforeRequest>(
+            this.client.getFirstEntryBefore.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
     public async getFirstEntryAfterTimestamp(serie: string, timestamp: number): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_FIRST_ENTRY_AFTER_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
+        const msg = new GetFirstEntryAfterRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntryAfter>, GetFirstEntryAfterRequest>(
+            this.client.getFirstEntryAfter.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
     public async getLastEntry(serie: string): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_LATEST_ENTRY,
-            this.database.length + this.collectionKey.length + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new GetLastEntryRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        const res = await promisify<CallbackReturnType<typeof this.client.getLastEntry>, GetLastEntryRequest>(this.client.getLastEntry.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
     public async getFirstEntry(serie: string): Promise<T> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_EARLIEST_ENTRY,
-            this.database.length + this.collectionKey.length + serie.length + 12,
+        const msg = new GetFirstEntryRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntry>, GetFirstEntryRequest>(
+            this.client.getFirstEntry.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedData(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
     public async getLastNEntries(serie: string, count: number): Promise<T[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_LAST_N_ENTRIES,
-            this.database.length + this.collectionKey.length + serie.length + 4 + 12,
+        const msg = new GetLastNEntriesRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setN(count);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getLastNEntries>, GetLastNEntriesRequest>(
+            this.client.getLastNEntries.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeInt(count);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedDataArray(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return Promise.all(res.getEntriesList_asU8().map((entry) => decodeValue<T>(entry, this.encoding, this.compression)));
     }
 
     public async getEntriesBeforeTimestamp(serie: string, timestamp: number): Promise<T[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_ENTRIES_BEFORE_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
+        const msg = new GetEntriesBeforeRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getEntriesBefore>, GetEntriesBeforeRequest>(
+            this.client.getEntriesBefore.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedDataArray(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return Promise.all(res.getEntriesList_asU8().map((entry) => decodeValue<T>(entry, this.encoding, this.compression)));
     }
 
     public async getEntriesAfterTimestamp(serie: string, timestamp: number): Promise<T[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_ENTRIES_AFTER_TIMESTAMP,
-            this.database.length + this.collectionKey.length + 8 + serie.length + 12,
+        const msg = new GetEntriesAfterRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getEntriesAfter>, GetEntriesAfterRequest>(
+            this.client.getEntriesAfter.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedDataArray(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return Promise.all(res.getEntriesList_asU8().map((entry) => decodeValue<T>(entry, this.encoding, this.compression)));
     }
 
     public async getEntriesBetween(serie: string, start: number, end: number): Promise<T[]> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_GET_ENTRIES_BETWEEN_TIMESTAMPS,
-            this.database.length + this.collectionKey.length + 16 + serie.length + 12,
+        const msg = new GetEntriesBetweenRequest();
+
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setFrom(start);
+        msg.setTo(end);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.getEntriesBetween>, GetEntriesBetweenRequest>(
+            this.client.getEntriesBetween.bind(this.client),
+            msg,
         );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(start);
-        bw.writeLong(end);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            try {
-                return readEncodedDataArray(br, this.encoding, this.compression);
-            } catch (e) {
-                throw new Error(`Failed to get ${serie} from ${this.collectionKey} \n\nCaused by: ${e}`);
-            }
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return Promise.all(res.getEntriesList_asU8().map((entry) => decodeValue<T>(entry, this.encoding, this.compression)));
     }
 
     public async deleteSerie(serie: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_DELETE_SERIE,
-            this.database.length + this.collectionKey.length + serie.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new DeleteSerieRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.deleteSerie>, DeleteSerieRequest>(this.client.deleteSerie.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
@@ -456,67 +334,45 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     }
 
     public async set(serie: string, timestamp: number, value: T): Promise<void> {
-        let encodedData: Buffer = await encodeData(value, this.encoding, this.compression);
+        const msg = new PutEntryRequest();
 
-        const { bw, myId } = this.client.getSendWriter(
-            ApiMessageType.TIME_SERIES_PUT_ENTRY,
-            this.database.length + this.collectionKey.length + serie.length + 8 + encodedData.length + 12,
-        );
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(serie, Encoding.Utf8);
-        bw.writeLong(timestamp);
-        bw.writeInt(encodedData.length);
-        bw.writeBytes(encodedData as any);
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.database);
+        msg.setSerie(serie);
+        msg.setTimestamp(timestamp);
+        msg.setEntry(await encodeValue(value, this.encoding, this.compression));
 
-        const response = await this.client.getResponse(myId);
+        const res = await promisify<CallbackReturnType<typeof this.client.putEntry>, PutEntryRequest>(this.client.putEntry.bind(this.client), msg);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return;
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_CLEAR, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new ClearSerieRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.clearSerie>, ClearSerieRequest>(this.client.clearSerie.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
-    public async getSeries(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.TIME_SERIES_GET_SERIES, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+    public async listSeries(): Promise<string[]> {
+        const msg = new ListSeriesRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.listSeries>, ListSeriesRequest>(this.client.listSeries.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getSeriesList();
     }
 }

@@ -4,7 +4,8 @@
     "scripts": {
         "build": "cd ferrum-db-server && dotnet publish --runtime linux-x64 -c Release --self-contained=true ferrum-db-server.csproj",
         "build-debug": "cd ferrum-db-server && dotnet publish --runtime linux-x64 -c Debug --self-contained=true ferrum-db-server.csproj",
-        "test": "cd ferrum-db-server-tests && dotnet test --collect:\"XPlat Code Coverage\""
+        "test": "cd ferrum-db-server-tests && dotnet test --collect:\"XPlat Code Coverage\"",
+        "codegen:buf": "buf generate grpc_protocol"
     },
     "dependencies": {
         "@types/node": "^17.0.8",

@@ -1,48 +1,47 @@
-import { Encoding } from 'csharp-binary-stream';
-import { FerrumServerClient } from './client';
-import { CollectionRemote, CollectionType } from './collection_remote';
-import { ApiMessageType } from './protcol';
-import { getBinaryReader, handleErrorResponse } from './utils';
+import { ChannelCredentials } from '@grpc/grpc-js';
+import { CollectionRemote } from './collection_remote';
+import { CollectionType } from './proto/collection_pb';
+import { SetClient } from './proto/set_grpc_pb';
+import { ClearRequest, DeleteRequest, HasRequest, ListKeysRequest, PutRequest, SizeRequest } from './proto/set_pb';
+import { CallbackReturnType, promisify } from './util';
 
 export class SetRemote extends CollectionRemote {
-    constructor(client: FerrumServerClient, database: string, setKey: string) {
-        super(CollectionType.SET, client, database, setKey);
+    private client: SetClient;
+
+    constructor(ip: string, port: number, database: string, setName: string) {
+        super(ip, port, CollectionType.SET, database, setName);
+        this.client = new SetClient(`${ip}:${port}`, ChannelCredentials.createSsl(), null);
     }
 
     public async has(key: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_HAS, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new HasRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSetname(this.name);
+        msg.setKey(key);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.has>, HasRequest>(this.client.has.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHas();
     }
 
     public async getRecordCount(): Promise<number> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_GET_RECORD_COUNT, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new SizeRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSetname(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            return len;
+        const res = await promisify<CallbackReturnType<typeof this.client.size>, SizeRequest>(this.client.size.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getSize();
     }
 
     // Alias for add
@@ -51,77 +50,62 @@ export class SetRemote extends CollectionRemote {
     }
 
     public async add(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_ADD, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new PutRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSetname(this.name);
+        msg.setKey(key);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.put>, PutRequest>(this.client.put.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
     public async clear(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_CLEAR, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new ClearRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSetname(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.clear>, ClearRequest>(this.client.clear.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return;
     }
 
     public async delete(key: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_DELETE, this.database.length + this.collectionKey.length + key.length + 12);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        bw.writeString(key, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new DeleteRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSetname(this.name);
+        msg.setKey(key);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        const res = await promisify<CallbackReturnType<typeof this.client.delete>, DeleteRequest>(this.client.delete.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return;
     }
 
     public async getKeys(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.SET_GET_KEYS, this.database.length + this.collectionKey.length + 8);
-        bw.writeString(this.database, Encoding.Utf8);
-        bw.writeString(this.collectionKey, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new ListKeysRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.database);
+        msg.setSetname(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.listKeys>, ListKeysRequest>(this.client.listKeys.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getKeysList();
     }
 }

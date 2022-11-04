@@ -1,0 +1,33 @@
+[20:56:04][Main]Starting Database Server
+[20:56:04][Main]Starting DB took 18ms
+[20:56:04][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[08:11:09][Main]Starting Database Server
+[08:11:09][Main]Starting DB took 34ms
+[08:11:09][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[08:55:31][Main]Starting Database Server
+[08:55:31][Main]Starting DB took 32ms
+[08:55:31][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[13:40:13][Main]Starting Database Server
+[13:40:13][Main]Starting DB took 53ms
+[13:40:13][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[13:51:07][Main]Starting Database Server
+[13:51:07][Main]Starting DB took 43ms
+[13:51:07][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[13:52:51][Main]Starting Database Server
+[13:52:51][Main]Starting DB took 49ms
+[13:52:51][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[13:54:17][Main]Starting Database Server
+[13:54:17][Main]Starting DB took 37ms
+[13:54:17][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[13:58:10][Main]Starting Database Server
+[13:58:10][Main]Starting DB took 22ms
+[13:58:10][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[10:33:25][Main]Starting Database Server
+[10:33:25][Main]Starting DB took 18ms
+[10:33:25][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001
+[10:51:12][.NET ThreadPool Worker]New Client connected. Client
+[10:51:25][Network 0]Client disconnected. Not all data received
+[10:51:25][Network 0]Client dropped
+[11:03:09][Main]Starting Database Server
+[11:03:09][Main]Starting DB took 68ms
+[11:03:09][Main]Ferrum DB Server Running with TCP API @ 127.0.0.1:3000 and GRPC API @ 127.0.0.1:3001

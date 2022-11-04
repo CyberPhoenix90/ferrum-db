@@ -1,10 +1,34 @@
-import { Aurum, AurumComponentAPI, DataSource, dsMap, Renderable } from 'aurumjs';
-import { getIndexValue, listDatabases, listIndexes, listIndexKeys, listSetKeys, listSets, listTimeSeries, listTimeSeriesKeys } from '../utils/api';
+import { ArrayDataSource, Aurum, AurumComponentAPI, DataSource, dsMap, Renderable } from 'aurumjs';
+import {
+    getIndexValue,
+    kickConnection,
+    listDatabases,
+    listIndexes,
+    listIndexKeys,
+    listSetKeys,
+    listSets,
+    listTimeSeries,
+    listTimeSeriesKeys,
+} from '../utils/api';
 import { urlDatabase, urlFocusedCollection, urlServerIP, urlServerPort } from '../utils/url_state';
 import { JSONRenderer } from 'aurum-components';
 
+interface Connection {
+    id: string;
+    connectedSince: number;
+    messagesSent: number;
+    messagesPerMinute: number;
+}
+
 export async function HomePage(props: {}, children: [], api: AurumComponentAPI): Promise<Renderable> {
     const viewerSource = new DataSource<any>();
+    const connections = ArrayDataSource.fromRemoteSource<Connection>(
+        {
+            id: '/api/connections',
+            host: `${location.host}/ws`,
+        },
+        api.cancellationToken,
+    );
 
     urlDatabase.listen(() => viewerSource.update({}), api.cancellationToken);
     urlFocusedCollection.listen(() => viewerSource.update({}), api.cancellationToken);
@@ -22,7 +46,30 @@ export async function HomePage(props: {}, children: [], api: AurumComponentAPI):
                     api.cancellationToken,
                 )}
             </h1>
-            <p>Databases:</p>
+            <h3>Connections</h3>
+            <ul>
+                {connections.map(
+                    (c) => (
+                        <li>
+                            {c.id} {c.connectedSince} {c.messagesSent} {c.messagesPerMinute}{' '}
+                            <button
+                                onClick={async () => {
+                                    kickConnection({
+                                        serverIP: urlServerIP.value,
+                                        serverPort: urlServerPort.value,
+                                        connectionId: c.id,
+                                    });
+                                }}>
+                                Kick
+                            </button>
+                        </li>
+                    ),
+                    [],
+                    api.cancellationToken,
+                )}
+            </ul>
+
+            <h3>Databases</h3>
             <ul>
                 {(
                     await listDatabases({

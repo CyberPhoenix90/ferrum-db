@@ -1,0 +1,12 @@
+version: v1beta1
+plugins:
+  - name: js
+    out: clients/nodejs/dist/proto
+    opt: import_style=commonjs,binary
+  - name: grpc
+    out: clients/nodejs/dist/proto
+    opt: grpc_js
+    path: grpc_tools_node_protoc_plugin
+  - name: ts
+    out: clients/nodejs/src/proto
+    opt: grpc_js

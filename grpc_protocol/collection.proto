@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcAPI.collection";
+
+import "shared.proto";
+
+package collection;
+
+service Collection {
+    rpc ListTags (ListTagsRequest) returns (ListTagsResponse);
+    rpc DeleteTag (DeleteTagRequest) returns (DeleteTagResponse);
+    rpc HasTag (HasTagRequest) returns (HasTagResponse);
+    rpc GetTag (GetTagRequest) returns (GetTagResponse);
+    rpc SetTag (SetTagRequest) returns (SetTagResponse);
+}
+
+enum CollectionType {
+    Index = 0;
+    Set = 1;
+    TimeSeries = 2;
+}
+
+message ListTagsRequest {
+    string database = 1;
+    CollectionType collectionType = 2;
+    string collection = 3;
+    string key = 4;
+}
+
+message ListTagsResponse {
+    repeated string tags = 1;
+    optional string error = 2;
+}
+
+message DeleteTagRequest {
+    string database = 1;
+    CollectionType collectionType = 2;
+    string collection = 3;
+    string key = 4;
+    string tag = 5;
+}
+
+message DeleteTagResponse {
+    optional string error = 1;
+}
+
+message HasTagRequest {
+    string database = 1;
+    CollectionType collectionType = 2;
+    string collection = 3;
+    string key = 4;
+    string tag = 5;
+}
+
+message HasTagResponse {
+    optional bool hasTag = 1;
+    optional string error = 2;
+}
+
+message GetTagRequest {
+    string database = 1;
+    CollectionType collectionType = 2;
+    string collection = 3;
+    string tag = 4;
+}
+
+message GetTagResponse {
+    bytes value = 1;
+    optional string error = 2;
+}
+
+message SetTagRequest {
+    string database = 1;
+    CollectionType collectionType = 2;
+    string collection = 3;
+    string tag = 4;
+    bytes value = 5;
+}
+
+message SetTagResponse {
+    optional string error = 1;
+}

@@ -1,14 +1,16 @@
 {
     "name": "ferrum-db-client",
-    "version": "0.2.14",
+    "version": "0.3.0",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
     "description": "Client for Ferrum Database Server",
     "author": "Joao Santos (CyberPhoenix)",
     "license": "MIT",
     "dependencies": {
+        "@grpc/grpc-js": "^1.7.3",
         "@types/node": "14.14.34",
-        "csharp-binary-stream": "1.0.3",
-        "bson": "4.4.0"
-    }
+        "bson": "4.4.0",
+        "google-protobuf": "^3.21.2"
+    },
+    "scripts": {}
 }

@@ -5,3 +5,4 @@ dist
 node_modules
 coverage.cobertura.xml
 test-data
+ferrum-db-server/db

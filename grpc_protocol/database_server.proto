@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcAPI";
+
+import "shared.proto";
+
+service DatabaseServer {
+  rpc CreateDatabase (CreateDatabaseRequest) returns (SuccessResponse);
+  rpc CreateDatabaseIfNotExist (CreateDatabaseRequest) returns (SuccessResponse);
+  rpc HasDatabase (HasDatabaseRequest) returns (HasDatabaseResponse);
+  rpc DropDatabase (DropDatabaseRequest) returns (SuccessResponse);
+  rpc ClearDatabase (ClearDatabaseRequest) returns (SuccessResponse);
+  rpc ListDatabases (EmptyRequest) returns (ListDatabasesResponse);
+  rpc CompactDatabase (CompactDatabaseRequest) returns (SuccessResponse);
+}
+
+message CreateDatabaseRequest {
+  string name = 1;
+}
+
+message HasDatabaseRequest {
+  string name = 1;
+}
+
+message HasDatabaseResponse {
+  bool hasDatabase = 1;
+  optional string error = 2;
+}
+
+message DropDatabaseRequest {
+  string name = 1;
+}
+
+message ClearDatabaseRequest {
+  string name = 1;
+}
+
+
+message ListDatabasesResponse {
+  repeated string databases = 1;
+  optional string error = 2;
+}
+
+message CompactDatabaseRequest {
+  string name = 1;
+}

@@ -1,18 +1,35 @@
-import { Encoding } from 'csharp-binary-stream';
-import { FerrumServerClient } from './client';
+import { ChannelCredentials } from '@grpc/grpc-js';
 import { IndexRemote } from './index_remote';
-import { ApiMessageType } from './protcol';
+import { DatabaseClient } from './proto/database_grpc_pb';
+import {
+    CreateIndexRequest,
+    CreateSetRequest,
+    CreateTimeSeriesRequest,
+    DeleteIndexRequest,
+    DeleteSetRequest,
+    DeleteTimeSeriesRequest,
+    HasIndexRequest,
+    HasSetRequest,
+    HasTimeSeriesRequest,
+    ListIndexesRequest,
+    ListSetsRequest,
+    ListTimeSeriesRequest,
+} from './proto/database_pb';
 import { SetRemote } from './set_remote';
 import { TimeSeriesRemote } from './time_series_remote';
-import { getBinaryReader, handleErrorResponse, SupportedCompressionTypes, SupportedEncodingTypes } from './utils';
+import { SupportedCompressionTypes, SupportedEncodingTypes, CallbackReturnType, promisify } from './util';
 
 export class FerrumDBRemote {
-    private client: FerrumServerClient;
+    private ip: string;
+    private port: number;
+    private client: DatabaseClient;
     public readonly name: string;
 
-    constructor(client: FerrumServerClient, dbName: string) {
-        this.client = client;
+    constructor(ip: string, port: number, dbName: string) {
+        this.ip = ip;
+        this.port = port;
         this.name = dbName;
+        this.client = new DatabaseClient(`${ip}:${port}`, ChannelCredentials.createSsl());
     }
 
     public async createIndexIfNotExist<T>(
@@ -21,43 +38,33 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<IndexRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX_IF_NOT_EXIST, this.name.length + index.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(index, Encoding.Utf8);
-        bw.writeUnsignedInt(pageFileSize);
+        const msg = new CreateIndexRequest();
+        msg.setDatabase(this.name);
+        msg.setIndexname(index);
+        msg.setPagesize(pageFileSize);
 
-        this.client.sendMsg(bw);
+        await promisify<CallbackReturnType<typeof this.client.createIndexIfNotExist>, CreateIndexRequest>(
+            this.client.createIndexIfNotExist.bind(this.client),
+            msg,
+        );
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
-
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return this.getIndex(index, encoding, compression);
-        }
+        return this.getIndex(index, encoding, compression);
     }
 
     public getIndex<T>(index: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): IndexRemote<T> {
-        return new IndexRemote<T>(this.client, this.name, index, encoding, compression);
+        return new IndexRemote<T>(this.ip, this.port, this.name, index, encoding, compression);
     }
 
     public async deleteIndex(index: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_INDEX, index.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(index, Encoding.Utf8);
+        const msg = new DeleteIndexRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setIndexname(index);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.deleteIndex>, DeleteIndexRequest>(this.client.deleteIndex.bind(this.client), msg);
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
@@ -67,156 +74,127 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<IndexRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_INDEX, index.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(index, Encoding.Utf8);
-        bw.writeUnsignedInt(pageFileSize);
+        const msg = new CreateIndexRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setIndexname(index);
+        msg.setPagesize(pageFileSize);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createIndex>, CreateIndexRequest>(this.client.createIndex.bind(this.client), msg);
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return this.getIndex(index, encoding, compression);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return this.getIndex(index, encoding, compression);
     }
 
     public async hasIndex(index: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_INDEX, index.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(index, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new HasIndexRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.name);
+        msg.setIndexname(index);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.hasIndex>, HasIndexRequest>(this.client.hasIndex.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHasindex();
     }
 
-    public async getIndexes(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_INDEXES, this.name.length + 4);
-        bw.writeString(this.name, Encoding.Utf8);
-        this.client.sendMsg(bw);
+    public async listIndexes(): Promise<string[]> {
+        const msg = new ListIndexesRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.listIndexes>, ListIndexesRequest>(this.client.listIndexes.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getIndexnamesList();
     }
 
     public async createSetIfNotExist(set: string): Promise<SetRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET_IF_NOT_EXIST, this.name.length + set.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(set, Encoding.Utf8);
+        const msg = new CreateSetRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setSetname(set);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createSetIfNotExist>, CreateSetRequest>(
+            this.client.createSetIfNotExist.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return this.getSet(set);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return this.getSet(set);
     }
 
     public getSet(set: string): SetRemote {
-        return new SetRemote(this.client, this.name, set);
+        return new SetRemote(this.ip, this.port, this.name, set);
     }
 
     public async deleteSet(set: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_SET, set.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(set, Encoding.Utf8);
+        const msg = new DeleteSetRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setSetname(set);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.deleteSet>, DeleteSetRequest>(this.client.deleteSet.bind(this.client), msg);
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
     public async createSet(set: string): Promise<SetRemote> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_SET, set.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(set, Encoding.Utf8);
+        const msg = new CreateSetRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setSetname(set);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createSet>, CreateSetRequest>(this.client.createSet.bind(this.client), msg);
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return this.getSet(set);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return this.getSet(set);
     }
 
     public async hasSet(set: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_SET, set.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(set, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new HasSetRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.name);
+        msg.setSetname(set);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.hasSet>, HasSetRequest>(this.client.hasSet.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHasset();
     }
 
-    public async getSets(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_SETS, this.name.length + 4);
-        bw.writeString(this.name, Encoding.Utf8);
-        this.client.sendMsg(bw);
+    public async listSets(): Promise<string[]> {
+        const msg = new ListSetsRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.listSets>, ListSetsRequest>(this.client.listSets.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getSetnamesList();
     }
 
     public async createTimeSeriesIfNotExist<T>(
@@ -225,43 +203,41 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<TimeSeriesRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES_IF_NOT_EXIST, this.name.length + name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(name, Encoding.Utf8);
-        bw.writeUnsignedInt(pageFileSize);
+        const msg = new CreateTimeSeriesRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setTimeseriesname(name);
+        msg.setPagesize(pageFileSize);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createTimeSeriesIfNotExist>, CreateTimeSeriesRequest>(
+            this.client.createTimeSeriesIfNotExist.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return this.getTimeSeries(name, encoding, compression);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return this.getTimeSeries(name, encoding, compression);
     }
 
     public getTimeSeries<T>(name: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): TimeSeriesRemote<T> {
-        return new TimeSeriesRemote<T>(this.client, this.name, name, encoding, compression);
+        return new TimeSeriesRemote<T>(this.ip, this.port, this.name, name, encoding, compression);
     }
 
     public async deleteTimeSeries(name: string): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.DELETE_TIME_SERIES, name.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(name, Encoding.Utf8);
+        const msg = new DeleteTimeSeriesRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setTimeseriesname(name);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.deleteTimeSeries>, DeleteTimeSeriesRequest>(
+            this.client.deleteTimeSeries.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
     }
 
@@ -271,74 +247,56 @@ export class FerrumDBRemote {
         compression: SupportedCompressionTypes = 'gzip',
         pageFileSize: number = 0,
     ): Promise<TimeSeriesRemote<T>> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.CREATE_TIME_SERIES, name.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(name, Encoding.Utf8);
-        bw.writeUnsignedInt(pageFileSize);
+        const msg = new CreateTimeSeriesRequest();
 
-        this.client.sendMsg(bw);
+        msg.setDatabase(this.name);
+        msg.setTimeseriesname(name);
+        msg.setPagesize(pageFileSize);
 
-        const response = await this.client.getResponse(myId);
-        const br = getBinaryReader(response);
+        const res = await promisify<CallbackReturnType<typeof this.client.createTimeSeries>, CreateTimeSeriesRequest>(
+            this.client.createTimeSeries.bind(this.client),
+            msg,
+        );
 
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return this.getTimeSeries(name, encoding, compression);
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return this.getTimeSeries(name, encoding, compression);
     }
 
     public async hasTimeSeries(name: string): Promise<boolean> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.HAS_TIME_SERIES, name.length + this.name.length + 8);
-        bw.writeString(this.name, Encoding.Utf8);
-        bw.writeString(name, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new HasTimeSeriesRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.name);
+        msg.setTimeseriesname(name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return br.readBoolean();
+        const res = await promisify<CallbackReturnType<typeof this.client.hasTimeSeries>, HasTimeSeriesRequest>(
+            this.client.hasTimeSeries.bind(this.client),
+            msg,
+        );
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
+
+        return res.getHastimeseries();
     }
 
     public async getListOfTimeSeries(): Promise<string[]> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.GET_TIME_SERIES, this.name.length + 4);
-        bw.writeString(this.name, Encoding.Utf8);
-        this.client.sendMsg(bw);
+        const msg = new ListTimeSeriesRequest();
 
-        const response = await this.client.getResponse(myId);
+        msg.setDatabase(this.name);
 
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            const len = br.readInt();
-            const result = new Array(len);
-            for (let i = 0; i < len; i++) {
-                result[i] = br.readString(Encoding.Utf8);
-            }
-            return result;
+        const res = await promisify<CallbackReturnType<typeof this.client.listTimeSeries>, ListTimeSeriesRequest>(
+            this.client.listTimeSeries.bind(this.client),
+            msg,
+        );
+
+        if (res.getError()) {
+            throw new Error(res.getError());
         }
-    }
-    public async compact(): Promise<void> {
-        const { bw, myId } = this.client.getSendWriter(ApiMessageType.COMPACT, this.name.length + 4);
-        bw.writeString(this.name, Encoding.Utf8);
-        this.client.sendMsg(bw);
 
-        const response = await this.client.getResponse(myId);
-
-        const br = getBinaryReader(response);
-        const success = br.readByte();
-        if (success !== 1) {
-            return handleErrorResponse(br);
-        } else {
-            return undefined;
-        }
+        return res.getTimeseriesnamesList();
     }
 }
