@@ -1,20 +1,24 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { FerrumDBRemote } from './db_remote';
 import { DatabaseServerClient } from './proto/database_server_grpc_pb';
-import { CreateDatabaseRequest } from './proto/database_server_pb';
+import { CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from './proto/database_server_pb';
 import { EmptyRequest } from './proto/shared_pb';
 import { CallbackReturnType, promisify } from './util';
 
 export { FerrumDBRemote } from './db_remote';
 export { IndexRemote } from './index_remote';
 export { SetRemote } from './set_remote';
+export { TimeSeriesRemote } from './time_series_remote';
+export { SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
-export async function ferrumConnect(ip: string, port: number): Promise<FerrumServerConnection> {
-    return new FerrumServerConnection(ip, port);
+export async function ferrumConnect(ip: string, port: number): Promise<FerrumServerClient> {
+    return new FerrumServerClient(ip, port);
 }
 
-export class FerrumServerConnection {
+export { CollectionType } from './proto/collection_pb';
+
+export class FerrumServerClient {
     private ip: string;
     private port: number;
     private client: DatabaseServerClient;
@@ -57,8 +61,17 @@ export class FerrumServerConnection {
         return new FerrumDBRemote(this.ip, this.port, dbName);
     }
 
+    public async getDatabase(dbName: string): Promise<FerrumDBRemote> {
+        const has = await this.hasDatabase(dbName);
+        if (!has) {
+            throw new Error(`Database ${dbName} does not exist`);
+        }
+
+        return new FerrumDBRemote(this.ip, this.port, dbName);
+    }
+
     public async hasDatabase(dbName: string): Promise<boolean> {
-        const msg = new CreateDatabaseRequest();
+        const msg = new HasDatabaseRequest();
         msg.setName(dbName);
 
         const res = await promisify<CallbackReturnType<typeof this.client.hasDatabase>, CreateDatabaseRequest>(this.client.hasDatabase.bind(this.client), msg);
@@ -71,7 +84,7 @@ export class FerrumServerConnection {
     }
 
     public async dropDatabase(dbName: string): Promise<void> {
-        const msg = new CreateDatabaseRequest();
+        const msg = new DropDatabaseRequest();
         msg.setName(dbName);
 
         const res = await promisify<CallbackReturnType<typeof this.client.dropDatabase>, CreateDatabaseRequest>(
@@ -107,5 +120,12 @@ export class FerrumServerConnection {
         }
 
         return res.getDatabasesList();
+    }
+
+    public async getGrpcAPIVersion(): Promise<string> {
+        const msg = new EmptyRequest();
+        const res = await promisify<CallbackReturnType<typeof this.client.grpcAPIVersion>, EmptyRequest>(this.client.grpcAPIVersion.bind(this.client), msg);
+
+        return res.getVersion();
     }
 }

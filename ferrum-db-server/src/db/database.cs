@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ferrum_db_server.src.db.collections;
 using ferrum_db_server.src.server.protocol;
+using GrpcAPI.collection;
 using Index = ferrum_db_server.src.db.collections.Index;
 
 namespace master_record {
@@ -230,11 +231,11 @@ namespace master_record {
 
         public AbstractCollection? getCollection(string collectionKey, CollectionType type) {
             switch (type) {
-                case CollectionType.INDEX:
+                case CollectionType.Index:
                     return this.getIndex(collectionKey);
-                case CollectionType.SET:
+                case CollectionType.Set:
                     return this.getSet(collectionKey);
-                case CollectionType.TIME_SERIES:
+                case CollectionType.TimeSeries:
                     return this.getTimeSeries(collectionKey);
                 default:
                     return null;

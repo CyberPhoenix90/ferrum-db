@@ -12,13 +12,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
 class Config {
-    public string ip;
-    public int tcpPort;
-    public int grpcPort;
-    public string dbFolder;
-    public bool stdout;
-    public string fileOut;
-    public string logLevel;
+    public string? ip;
+    public int? tcpPort;
+    public int? grpcPort;
+    public string? dbFolder;
+    public bool? stdout;
+    public string? fileOut;
+    public string? logLevel;
 
 }
 
@@ -35,10 +35,10 @@ namespace ferrum_db_server {
             FerrumDb ferrumDb = new FerrumDb(Path.Join(config.dbFolder, "ferrum_db_server.mr"));
             stopWatch.Stop();
             new Thread(() => {
-                new GRPCServer(config.ip, config.grpcPort, ferrumDb);
+                new GRPCServer(config.ip, (int)config.grpcPort, ferrumDb);
             }).Start();
             new Thread(() => {
-                new APIServer(IPAddress.Parse(config.ip), config.tcpPort, ferrumDb);
+                new APIServer(IPAddress.Parse(config.ip), (int)config.tcpPort, ferrumDb);
             }).Start();
             Logger.Info($"Starting DB took {stopWatch.ElapsedMilliseconds}ms");
             Logger.Info($"Ferrum DB Server Running with TCP API @ {config.ip}:{config.tcpPort} and GRPC API @ {config.ip}:{config.grpcPort}");
@@ -50,7 +50,19 @@ namespace ferrum_db_server {
         }
 
         private static Config LoadConfig(string[] args) {
-            Config? config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+            Config? config;
+            if (File.Exists("config.json")) {
+                config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+            }
+            else {
+                config = new Config();
+            }
+            config.ip = config.ip ?? "127.0.0.1";
+            config.tcpPort = config.tcpPort ?? 3000;
+            config.grpcPort = config.grpcPort ?? 3001;
+            config.stdout = config.stdout ?? true;
+            config.logLevel = config.logLevel ?? "INFO";
+            config.stdout = config.stdout ?? true;
 
             if (Array.Exists(args, x => x == "--loglevel")) {
                 config!.logLevel = args[Array.IndexOf(args, "--loglevel") + 1];
@@ -84,7 +96,7 @@ namespace ferrum_db_server {
                 Console.WriteLine($"Ip overriden by command line flag: {config.ip}");
             }
 
-            Logger.stdOut = config.stdout;
+            Logger.stdOut = (bool)config.stdout;
             Logger.fileOut = config.fileOut;
 
             switch (config.logLevel.ToUpper()) {

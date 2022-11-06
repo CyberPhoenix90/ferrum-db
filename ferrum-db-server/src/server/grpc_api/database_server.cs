@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using ferrum_db;
+using ferrum_db_server.src;
 using Grpc.Core;
 using GrpcAPI;
 using static ferrum_db_server.src.server.grpc_api.GRPCServer;
@@ -21,6 +22,7 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error creating database: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -41,6 +43,7 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error creating database: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -61,6 +64,7 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error dropping database: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -80,6 +84,7 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.HasDatabase = ferrumDb.hasDatabase(request.Name);
             }
             catch (Exception e) {
+                Logger.Info($"Error checking if database exists: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -99,6 +104,7 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error clearing database: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -118,6 +124,7 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.Databases.AddRange(ferrumDb.getDatabases());
             }
             catch (Exception e) {
+                Logger.Info($"Error listing databases: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -137,9 +144,23 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error compacting database: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
+            promise.SetResult(response);
+        });
+        ioEvents.Set();
+
+        return promise.Task;
+    }
+
+    public override Task<GrpcAPIVersionResponse> GrpcAPIVersion(EmptyRequest request, ServerCallContext context) {
+        var promise = new TaskCompletionSource<GrpcAPIVersionResponse>();
+
+        DatabaseService.ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+            var response = new GrpcAPIVersionResponse();
+            response.Version = "1.0.0";
             promise.SetResult(response);
         });
         ioEvents.Set();

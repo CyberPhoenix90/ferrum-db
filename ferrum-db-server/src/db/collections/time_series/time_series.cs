@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GrpcAPI.collection;
 
 namespace ferrum_db_server.src.db.collections {
 
@@ -12,7 +13,7 @@ namespace ferrum_db_server.src.db.collections {
         private PageFile? activePageFile;
         private uint nextPageFile;
 
-        public TimeSeries(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.timeseries", CollectionType.TIME_SERIES, name, collectionTags) {
+        public TimeSeries(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.timeseries", CollectionType.TimeSeries, name, collectionTags) {
             this.pageFiles = new Dictionary<uint, PageFile>();
             this.contentMap = new Dictionary<string, SortedDictionary<long, IndexEntryMetadata>>(10000);
             this.path = path;
@@ -20,6 +21,7 @@ namespace ferrum_db_server.src.db.collections {
             this.pageSize = pageSize;
             initialize(transactionSet);
         }
+
         protected override void initialize(Set? transactionSet) {
             this.nextPageFile = 0;
             base.initialize(transactionSet);
@@ -79,6 +81,13 @@ namespace ferrum_db_server.src.db.collections {
             this.contentMap.Keys.CopyTo(array, 0);
             return array;
         }
+
+        public void clearSerie(string serie) {
+            if (this.contentMap.ContainsKey(serie)) {
+                this.contentMap[serie].Clear();
+            }
+        }
+
 
         public void clear() {
             this.contentMap.Clear();

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using ferrum_db;
+using ferrum_db_server.src;
 using Grpc.Core;
 using GrpcAPI;
 using GrpcAPI.set;
@@ -22,6 +23,7 @@ public class SetService : Set.SetBase {
                 response.Has = ferrumDb.getDatabase(request.Database).getSet(request.SetName).has(request.Key);
             }
             catch (Exception e) {
+                Logger.Info($"Error checking if set has key: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -41,6 +43,7 @@ public class SetService : Set.SetBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error putting key into set: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -61,6 +64,7 @@ public class SetService : Set.SetBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error clearing set: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -81,6 +85,7 @@ public class SetService : Set.SetBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error deleting key from set: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -100,6 +105,7 @@ public class SetService : Set.SetBase {
                 response.Size = ferrumDb.getDatabase(request.Database).getSet(request.SetName).getRecordCount();
             }
             catch (Exception e) {
+                Logger.Info($"Error getting set size: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -121,6 +127,7 @@ public class SetService : Set.SetBase {
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error listing keys in set: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);

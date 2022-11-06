@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using ferrum_db;
+using ferrum_db_server.src;
 using Grpc.Core;
 using GrpcAPI;
 using GrpcAPI.timeseries;
@@ -19,9 +20,10 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new ClearSerieResponse();
             try {
-                ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).clear();
+                ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).clearSerie(request.Serie);
             }
             catch (Exception e) {
+                Logger.Info($"Error clearing time series: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -37,9 +39,10 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new DeleteEntryResponse();
             try {
-                ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).delete(request.Serie, request.Timestamp, -1);
+                ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).delete(request.Serie, request.Timestamp, -1);
             }
             catch (Exception e) {
+                Logger.Info($"Error deleting time series entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -55,9 +58,10 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new DeleteSerieResponse();
             try {
-                ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).deleteSerie(request.Serie, -1);
+                ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).deleteSerie(request.Serie, -1);
             }
             catch (Exception e) {
+                Logger.Info($"Error deleting time series: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -73,12 +77,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetEntriesResponse();
             try {
-                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getFullSerieEntries(request.Serie);
+                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getFullSerieEntries(request.Serie);
                 foreach (var entry in entries) {
                     response.Entries.Add(Google.Protobuf.ByteString.CopyFrom(entry));
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series entries: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -94,12 +99,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetEntriesAfterResponse();
             try {
-                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getEntriesAfterTimestamp(request.Serie, request.Timestamp);
+                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getEntriesAfterTimestamp(request.Serie, request.Timestamp);
                 foreach (var entry in entries) {
                     response.Entries.Add(Google.Protobuf.ByteString.CopyFrom(entry));
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series entries after timestamp: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -115,12 +121,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetEntriesBeforeResponse();
             try {
-                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getEntriesBeforeTimestamp(request.Serie, request.Timestamp);
+                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getEntriesBeforeTimestamp(request.Serie, request.Timestamp);
                 foreach (var entry in entries) {
                     response.Entries.Add(Google.Protobuf.ByteString.CopyFrom(entry));
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series entries before timestamp: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -136,12 +143,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetEntriesBetweenResponse();
             try {
-                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getEntriesBetweenTimestamps(request.Serie, request.From, request.To);
+                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getEntriesBetweenTimestamps(request.Serie, request.From, request.To);
                 foreach (var entry in entries) {
                     response.Entries.Add(Google.Protobuf.ByteString.CopyFrom(entry));
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series entries between timestamps: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -157,10 +165,11 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetEntryResponse();
             try {
-                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).get(request.Serie, request.Timestamp);
+                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).get(request.Serie, request.Timestamp);
                 response.Entry = Google.Protobuf.ByteString.CopyFrom(entry);
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -176,10 +185,11 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetFirstEntryResponse();
             try {
-                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getEarliestEntry(request.Serie);
+                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getEarliestEntry(request.Serie);
                 response.Entry = Google.Protobuf.ByteString.CopyFrom(entry);
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series first entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -195,10 +205,11 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetFirstEntryAfterResponse();
             try {
-                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getFirstEntryAfterTimestamp(request.Serie, request.Timestamp);
+                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getFirstEntryAfterTimestamp(request.Serie, request.Timestamp);
                 response.Entry = Google.Protobuf.ByteString.CopyFrom(entry);
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series first entry after timestamp: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -214,10 +225,11 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetFirstEntryBeforeResponse();
             try {
-                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getFirstEntryBeforeTimestamp(request.Serie, request.Timestamp);
+                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getFirstEntryBeforeTimestamp(request.Serie, request.Timestamp);
                 response.Entry = Google.Protobuf.ByteString.CopyFrom(entry);
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series first entry before timestamp: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -233,12 +245,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetFirstNEntriesResponse();
             try {
-                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getLastNEntries(request.Serie, request.N);
+                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getLastNEntries(request.Serie, request.N);
                 foreach (var entry in entries) {
                     response.Entries.Add(Google.Protobuf.ByteString.CopyFrom(entry));
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series first N entries: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -254,10 +267,11 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetLastEntryResponse();
             try {
-                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getLatestEntry(request.Serie);
+                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getLatestEntry(request.Serie);
                 response.Entry = Google.Protobuf.ByteString.CopyFrom(entry);
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series last entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -273,12 +287,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetLastNEntriesResponse();
             try {
-                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getLastNEntries(request.Serie, request.N);
+                var entries = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getLastNEntries(request.Serie, request.N);
                 foreach (var entry in entries) {
                     response.Entries.Add(Google.Protobuf.ByteString.CopyFrom(entry));
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series last N entries: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -294,10 +309,11 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new GetNearestEntryResponse();
             try {
-                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getNearestMatch(request.Serie, request.Timestamp);
+                var entry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getNearestMatch(request.Serie, request.Timestamp);
                 response.Entry = Google.Protobuf.ByteString.CopyFrom(entry);
             }
             catch (Exception e) {
+                Logger.Info($"Error getting time series nearest entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -313,9 +329,10 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new HasEntryResponse();
             try {
-                response.HasEntry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).hasEntry(request.Serie, request.Timestamp);
+                response.HasEntry = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).hasEntry(request.Serie, request.Timestamp);
             }
             catch (Exception e) {
+                Logger.Info($"Error checking time series has entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -331,9 +348,10 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new HasSerieResponse();
             try {
-                response.HasSerie = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).hasSerie(request.Serie);
+                response.HasSerie = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).hasSerie(request.Serie);
             }
             catch (Exception e) {
+                Logger.Info($"Error checking time series has serie: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -349,12 +367,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new ListEntriesResponse();
             try {
-                var timestamps = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getFullSerie(request.Serie);
+                var timestamps = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getFullSerie(request.Serie);
                 foreach (var timestamp in timestamps) {
                     response.Timestamps.Add(timestamp);
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error listing time series entries: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -370,12 +389,13 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new ListSeriesResponse();
             try {
-                var series = ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).getKeys();
+                var series = ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).getKeys();
                 foreach (var serie in series) {
                     response.Series.Add(serie);
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error listing time series series: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -391,9 +411,10 @@ public class TimeSeriesService : TimeSeries.TimeSeriesBase {
         ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
             var response = new PutEntryResponse();
             try {
-                ferrumDb.getDatabase(request.Database).getTimeSeries(request.Serie).set(request.Serie, request.Timestamp, request.Entry.ToByteArray(), -1);
+                ferrumDb.getDatabase(request.Database).getTimeSeries(request.TimeSeries).set(request.Serie, request.Timestamp, request.Entry.ToByteArray(), -1);
             }
             catch (Exception e) {
+                Logger.Info($"Error putting time series entry: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);

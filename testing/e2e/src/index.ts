@@ -4,12 +4,11 @@ import { ferrumConnect } from '../../../clients/nodejs';
 import * as assert from 'assert';
 import { rm } from 'fs/promises';
 
-//@ts-ignore
 async function testKillCorruption(): Promise<void> {
     await clearDatabase();
     let server = await startServer();
 
-    let client = await ferrumConnect('localhost', 3000);
+    let client = await ferrumConnect('localhost', 3001);
     let dbRemote = await client.createDatabase('test');
     let index = await dbRemote.createIndex('test', 'json', 'gzip');
 
@@ -24,13 +23,12 @@ async function testKillCorruption(): Promise<void> {
     }
 
     await Promise.all(promises);
-    client.disconnect();
-    server.kill();
+    server.kill(9);
 
     server = await startServer();
 
-    client = await ferrumConnect('localhost', 3000);
-    dbRemote = client.getDatabase('test');
+    client = await ferrumConnect('localhost', 3001);
+    dbRemote = await client.getDatabase('test');
     index = dbRemote.getIndex('test', 'json', 'gzip');
 
     for (let i = 0; i < 100; i++) {
@@ -38,15 +36,14 @@ async function testKillCorruption(): Promise<void> {
         console.log(result);
     }
     console.log('Kill server and reopen corruption check: OK.');
-    client.disconnect();
-    server.kill();
+    server.kill(9);
 }
 
 async function testTimeSeries(): Promise<void> {
     await clearDatabase();
 
     let server = await startServer();
-    let client = await ferrumConnect('localhost', 3000);
+    let client = await ferrumConnect('localhost', 3001);
 
     let dbRemote = await client.createDatabase('test');
     console.log('Created Database');
@@ -60,12 +57,11 @@ async function testTimeSeries(): Promise<void> {
     await series.put('a.c', 0, { a: 1, b: 'test string value' });
 
     console.log('Inserted content');
-    client.disconnect();
-    server.kill();
+    server.kill(9);
 
     server = await startServer();
-    client = await ferrumConnect('localhost', 3000);
-    dbRemote = client.getDatabase('test');
+    client = await ferrumConnect('localhost', 3001);
+    dbRemote = await client.getDatabase('test');
 
     series = dbRemote.getTimeSeries<{ a: number; b: string }>('test', 'json', 'gzip');
 
@@ -124,8 +120,7 @@ async function testTimeSeries(): Promise<void> {
 
     console.log('Time series test: OK.');
 
-    client.disconnect();
-    server.kill();
+    server.kill(9);
 }
 
 function sleep(ms: number) {
@@ -140,15 +135,12 @@ async function clearDatabase(): Promise<void> {
 }
 
 async function startServer(): Promise<ChildProcess> {
-    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Debug/net6.0/linux-x64/ferrum-db-server'), [], {
+    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Debug/net6.0/linux-x64/ferrum-db-server'), ['--stdout'], {
+        stdio: 'inherit',
         cwd: join(__dirname, '../../../ferrum-db-server/bin/Debug/net6.0/linux-x64/'),
     });
 
-    cp.stdout.on('data', (msg) => {
-        console.log(`[Server]${msg.toString().trim()}`);
-    });
-
-    await sleep(2000);
+    await sleep(4000);
 
     return cp;
 }
@@ -157,7 +149,7 @@ async function testTags(): Promise<void> {
     await clearDatabase();
 
     let server = await startServer();
-    let client = await ferrumConnect('localhost', 3000);
+    let client = await ferrumConnect('localhost', 3001);
 
     let dbRemote = await client.createDatabase('test');
     console.log('Created Database');
@@ -184,15 +176,14 @@ async function testTags(): Promise<void> {
 
     console.log('Tag test: OK.');
 
-    client.disconnect();
-    server.kill();
+    server.kill(9);
 }
 
 async function clearTest(): Promise<void> {
     await clearDatabase();
 
     let server = await startServer();
-    let client = await ferrumConnect('localhost', 3000);
+    let client = await ferrumConnect('localhost', 3001);
 
     let dbRemote = await client.createDatabase('test');
     console.log('Created Database');
@@ -212,8 +203,7 @@ async function clearTest(): Promise<void> {
 
     console.log('Clear test: OK.');
 
-    client.disconnect();
-    server.kill();
+    server.kill(9);
 }
 (async () => {
     await testKillCorruption();

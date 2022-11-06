@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ferrum_db_server.src.db.collections;
+using GrpcAPI.collection;
+
 namespace ferrum_db_server.src.db.collections {
 
     public class Index : AbstractCollection {
@@ -12,7 +14,7 @@ namespace ferrum_db_server.src.db.collections {
         private PageFile? activePageFile;
         private uint nextPageFile;
 
-        public Index(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.index", CollectionType.INDEX, name, collectionTags) {
+        public Index(string path, long pos, string name, uint pageSize, Set? transactionSet, Index? collectionTags) : base("records.index", CollectionType.Index, name, collectionTags) {
             this.pageFiles = new Dictionary<uint, PageFile>();
             this.contentMap = new Dictionary<string, IndexEntryMetadata>(10000);
             this.path = path;

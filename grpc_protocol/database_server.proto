@@ -12,6 +12,7 @@ service DatabaseServer {
   rpc ClearDatabase (ClearDatabaseRequest) returns (SuccessResponse);
   rpc ListDatabases (EmptyRequest) returns (ListDatabasesResponse);
   rpc CompactDatabase (CompactDatabaseRequest) returns (SuccessResponse);
+  rpc GrpcAPIVersion (EmptyRequest) returns (GrpcAPIVersionResponse);
 }
 
 message CreateDatabaseRequest {
@@ -43,4 +44,8 @@ message ListDatabasesResponse {
 
 message CompactDatabaseRequest {
   string name = 1;
+}
+
+message GrpcAPIVersionResponse {
+  string version = 1;
 }

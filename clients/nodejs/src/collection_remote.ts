@@ -7,8 +7,6 @@ export class CollectionRemote {
     public readonly type: CollectionType;
     public readonly database: string;
 
-    private ip: string;
-    private port: number;
     protected collectionKey: string;
     private collectionClient: CollectionClient;
 
@@ -17,12 +15,10 @@ export class CollectionRemote {
     }
 
     constructor(ip: string, port: number, type: CollectionType, database: string, collectionkey: string) {
-        this.collectionClient = new CollectionClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {});
+        this.collectionClient = new CollectionClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {});
         this.type = type;
         this.database = database;
         this.collectionKey = collectionkey;
-        this.ip = ip;
-        this.port = port;
     }
 
     public async hasTag(tag: string = ''): Promise<boolean> {

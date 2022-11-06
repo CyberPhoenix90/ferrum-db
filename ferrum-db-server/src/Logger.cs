@@ -32,7 +32,12 @@ namespace ferrum_db_server.src {
                 }
 
                 if (_fileOut != "") {
-                    logFileWriter = new StreamWriter(File.Open(value, FileMode.Append));
+                    if (Directory.Exists(Path.GetDirectoryName(_fileOut))) {
+                        logFileWriter = new StreamWriter(File.Open(value, FileMode.Append));
+                    }
+                    else {
+                        Console.WriteLine($"Directory {Path.GetDirectoryName(_fileOut)} does not exist. Logging to file disabled.");
+                    }
                 }
             }
         }

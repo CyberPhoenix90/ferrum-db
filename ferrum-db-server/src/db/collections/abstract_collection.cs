@@ -4,15 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GrpcAPI.collection;
 
 namespace ferrum_db_server.src.db.collections {
-
-    public enum CollectionType : byte {
-        INDEX = 0,
-        SET = 1,
-        TIME_SERIES = 2,
-        SEARCHABLE_INDEX = 3,
-    }
 
     public abstract class AbstractCollection {
         protected CollectionType type;

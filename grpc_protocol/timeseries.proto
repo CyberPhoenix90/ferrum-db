@@ -31,7 +31,8 @@ service TimeSeries {
 
 message HasSerieRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message HasSerieResponse {
@@ -41,7 +42,8 @@ message HasSerieResponse {
 
 message DeleteSerieRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message DeleteSerieResponse {
@@ -50,7 +52,8 @@ message DeleteSerieResponse {
 
 message ClearSerieRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message ClearSerieResponse {
@@ -59,17 +62,20 @@ message ClearSerieResponse {
 
 message ListSeriesRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message ListSeriesResponse {
-    repeated string series = 1;
-    optional string error = 2;
+    string timeSeries = 1;
+    repeated string series = 2;
+    optional string error = 3;
 }
 
 message ListEntriesRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message ListEntriesResponse {
@@ -79,7 +85,8 @@ message ListEntriesResponse {
 
 message GetEntriesRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message GetEntriesResponse {
@@ -89,8 +96,9 @@ message GetEntriesResponse {
 
 message HasEntryRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message HasEntryResponse {
@@ -100,8 +108,9 @@ message HasEntryResponse {
 
 message GetEntryRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message GetEntryResponse {
@@ -112,9 +121,10 @@ message GetEntryResponse {
 
 message PutEntryRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
-    bytes entry = 4;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
+    bytes entry = 5;
 }
 
 message PutEntryResponse {
@@ -123,8 +133,9 @@ message PutEntryResponse {
 
 message DeleteEntryRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message DeleteEntryResponse {
@@ -133,8 +144,9 @@ message DeleteEntryResponse {
 
 message GetNearestEntryRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message GetNearestEntryResponse {
@@ -146,8 +158,9 @@ message GetNearestEntryResponse {
 
 message GetFirstEntryBeforeRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message GetFirstEntryBeforeResponse {
@@ -159,8 +172,9 @@ message GetFirstEntryBeforeResponse {
 
 message GetFirstEntryAfterRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message GetFirstEntryAfterResponse {
@@ -172,7 +186,8 @@ message GetFirstEntryAfterResponse {
 
 message GetFirstEntryRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message GetFirstEntryResponse {
@@ -184,7 +199,8 @@ message GetFirstEntryResponse {
 
 message GetLastEntryRequest {
     string database = 1;
-    string serie = 2;
+    string timeSeries = 2;
+    string serie = 3;
 }
 
 message GetLastEntryResponse {
@@ -196,9 +212,10 @@ message GetLastEntryResponse {
 
 message GetEntriesBetweenRequest {
     string database = 1;
-    string serie = 2;
-    int64 from = 3;
-    int64 to = 4;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 from = 4;
+    int64 to = 5;
 }
 
 message GetEntriesBetweenResponse {
@@ -209,8 +226,9 @@ message GetEntriesBetweenResponse {
 
 message GetFirstNEntriesRequest {
     string database = 1;
-    string serie = 2;
-    int32 n = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int32 n = 4;
 }
 
 message GetFirstNEntriesResponse {
@@ -221,8 +239,9 @@ message GetFirstNEntriesResponse {
 
 message GetLastNEntriesRequest {
     string database = 1;
-    string serie = 2;
-    int32 n = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int32 n = 4;
 }
 
 message GetLastNEntriesResponse {
@@ -233,8 +252,9 @@ message GetLastNEntriesResponse {
 
 message GetEntriesBeforeRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message GetEntriesBeforeResponse {
@@ -245,8 +265,9 @@ message GetEntriesBeforeResponse {
 
 message GetEntriesAfterRequest {
     string database = 1;
-    string serie = 2;
-    int64 timestamp = 3;
+    string timeSeries = 2;
+    string serie = 3;
+    int64 timestamp = 4;
 }
 
 message GetEntriesAfterResponse {

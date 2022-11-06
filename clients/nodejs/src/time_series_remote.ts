@@ -41,6 +41,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new HasSerieRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
         const res = await promisify<CallbackReturnType<typeof this.client.hasSerie>, HasSerieRequest>(this.client.hasSerie.bind(this.client), msg);
@@ -56,6 +57,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -72,6 +74,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -92,6 +95,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new HasEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -108,6 +112,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new DeleteEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -122,6 +127,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new ListEntriesRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
         const res = await promisify<CallbackReturnType<typeof this.client.listEntries>, ListEntriesRequest>(this.client.listEntries.bind(this.client), msg);
@@ -137,6 +143,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetEntriesRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
         const res = await promisify<CallbackReturnType<typeof this.client.getEntries>, GetEntriesRequest>(this.client.getEntries.bind(this.client), msg);
@@ -152,6 +159,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetNearestEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -171,6 +179,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetFirstEntryBeforeRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -190,6 +199,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetFirstEntryAfterRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -209,6 +219,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetLastEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
         const res = await promisify<CallbackReturnType<typeof this.client.getLastEntry>, GetLastEntryRequest>(this.client.getLastEntry.bind(this.client), msg);
@@ -224,6 +235,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetFirstEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
         const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntry>, GetFirstEntryRequest>(
@@ -242,6 +254,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetLastNEntriesRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setN(count);
 
@@ -261,6 +274,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetEntriesBeforeRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -280,6 +294,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetEntriesAfterRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
@@ -299,6 +314,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new GetEntriesBetweenRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setFrom(start);
         msg.setTo(end);
@@ -319,6 +335,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new DeleteSerieRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
         const res = await promisify<CallbackReturnType<typeof this.client.deleteSerie>, DeleteSerieRequest>(this.client.deleteSerie.bind(this.client), msg);
@@ -337,6 +354,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new PutEntryRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
         msg.setEntry(await encodeValue(value, this.encoding, this.compression));

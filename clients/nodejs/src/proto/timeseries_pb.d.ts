@@ -10,6 +10,8 @@ import * as shared_pb from "./shared_pb";
 export class HasSerieRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): HasSerieRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): HasSerieRequest;
     getSerie(): string;
     setSerie(value: string): HasSerieRequest;
 
@@ -26,6 +28,7 @@ export class HasSerieRequest extends jspb.Message {
 export namespace HasSerieRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -59,6 +62,8 @@ export namespace HasSerieResponse {
 export class DeleteSerieRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): DeleteSerieRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): DeleteSerieRequest;
     getSerie(): string;
     setSerie(value: string): DeleteSerieRequest;
 
@@ -75,6 +80,7 @@ export class DeleteSerieRequest extends jspb.Message {
 export namespace DeleteSerieRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -105,6 +111,8 @@ export namespace DeleteSerieResponse {
 export class ClearSerieRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): ClearSerieRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): ClearSerieRequest;
     getSerie(): string;
     setSerie(value: string): ClearSerieRequest;
 
@@ -121,6 +129,7 @@ export class ClearSerieRequest extends jspb.Message {
 export namespace ClearSerieRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -151,6 +160,8 @@ export namespace ClearSerieResponse {
 export class ListSeriesRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): ListSeriesRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): ListSeriesRequest;
     getSerie(): string;
     setSerie(value: string): ListSeriesRequest;
 
@@ -167,11 +178,14 @@ export class ListSeriesRequest extends jspb.Message {
 export namespace ListSeriesRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
 
 export class ListSeriesResponse extends jspb.Message { 
+    getTimeseries(): string;
+    setTimeseries(value: string): ListSeriesResponse;
     clearSeriesList(): void;
     getSeriesList(): Array<string>;
     setSeriesList(value: Array<string>): ListSeriesResponse;
@@ -194,6 +208,7 @@ export class ListSeriesResponse extends jspb.Message {
 
 export namespace ListSeriesResponse {
     export type AsObject = {
+        timeseries: string,
         seriesList: Array<string>,
         error?: string,
     }
@@ -202,6 +217,8 @@ export namespace ListSeriesResponse {
 export class ListEntriesRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): ListEntriesRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): ListEntriesRequest;
     getSerie(): string;
     setSerie(value: string): ListEntriesRequest;
 
@@ -218,6 +235,7 @@ export class ListEntriesRequest extends jspb.Message {
 export namespace ListEntriesRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -253,6 +271,8 @@ export namespace ListEntriesResponse {
 export class GetEntriesRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetEntriesRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetEntriesRequest;
     getSerie(): string;
     setSerie(value: string): GetEntriesRequest;
 
@@ -269,6 +289,7 @@ export class GetEntriesRequest extends jspb.Message {
 export namespace GetEntriesRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -306,6 +327,8 @@ export namespace GetEntriesResponse {
 export class HasEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): HasEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): HasEntryRequest;
     getSerie(): string;
     setSerie(value: string): HasEntryRequest;
     getTimestamp(): number;
@@ -324,6 +347,7 @@ export class HasEntryRequest extends jspb.Message {
 export namespace HasEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -358,6 +382,8 @@ export namespace HasEntryResponse {
 export class GetEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetEntryRequest;
     getSerie(): string;
     setSerie(value: string): GetEntryRequest;
     getTimestamp(): number;
@@ -376,6 +402,7 @@ export class GetEntryRequest extends jspb.Message {
 export namespace GetEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -415,6 +442,8 @@ export namespace GetEntryResponse {
 export class PutEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): PutEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): PutEntryRequest;
     getSerie(): string;
     setSerie(value: string): PutEntryRequest;
     getTimestamp(): number;
@@ -437,6 +466,7 @@ export class PutEntryRequest extends jspb.Message {
 export namespace PutEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
         entry: Uint8Array | string,
@@ -469,6 +499,8 @@ export namespace PutEntryResponse {
 export class DeleteEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): DeleteEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): DeleteEntryRequest;
     getSerie(): string;
     setSerie(value: string): DeleteEntryRequest;
     getTimestamp(): number;
@@ -487,6 +519,7 @@ export class DeleteEntryRequest extends jspb.Message {
 export namespace DeleteEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -518,6 +551,8 @@ export namespace DeleteEntryResponse {
 export class GetNearestEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetNearestEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetNearestEntryRequest;
     getSerie(): string;
     setSerie(value: string): GetNearestEntryRequest;
     getTimestamp(): number;
@@ -536,6 +571,7 @@ export class GetNearestEntryRequest extends jspb.Message {
 export namespace GetNearestEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -578,6 +614,8 @@ export namespace GetNearestEntryResponse {
 export class GetFirstEntryBeforeRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetFirstEntryBeforeRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetFirstEntryBeforeRequest;
     getSerie(): string;
     setSerie(value: string): GetFirstEntryBeforeRequest;
     getTimestamp(): number;
@@ -596,6 +634,7 @@ export class GetFirstEntryBeforeRequest extends jspb.Message {
 export namespace GetFirstEntryBeforeRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -638,6 +677,8 @@ export namespace GetFirstEntryBeforeResponse {
 export class GetFirstEntryAfterRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetFirstEntryAfterRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetFirstEntryAfterRequest;
     getSerie(): string;
     setSerie(value: string): GetFirstEntryAfterRequest;
     getTimestamp(): number;
@@ -656,6 +697,7 @@ export class GetFirstEntryAfterRequest extends jspb.Message {
 export namespace GetFirstEntryAfterRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -698,6 +740,8 @@ export namespace GetFirstEntryAfterResponse {
 export class GetFirstEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetFirstEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetFirstEntryRequest;
     getSerie(): string;
     setSerie(value: string): GetFirstEntryRequest;
 
@@ -714,6 +758,7 @@ export class GetFirstEntryRequest extends jspb.Message {
 export namespace GetFirstEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -755,6 +800,8 @@ export namespace GetFirstEntryResponse {
 export class GetLastEntryRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetLastEntryRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetLastEntryRequest;
     getSerie(): string;
     setSerie(value: string): GetLastEntryRequest;
 
@@ -771,6 +818,7 @@ export class GetLastEntryRequest extends jspb.Message {
 export namespace GetLastEntryRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
     }
 }
@@ -812,6 +860,8 @@ export namespace GetLastEntryResponse {
 export class GetEntriesBetweenRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetEntriesBetweenRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetEntriesBetweenRequest;
     getSerie(): string;
     setSerie(value: string): GetEntriesBetweenRequest;
     getFrom(): number;
@@ -832,6 +882,7 @@ export class GetEntriesBetweenRequest extends jspb.Message {
 export namespace GetEntriesBetweenRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         from: number,
         to: number,
@@ -876,6 +927,8 @@ export namespace GetEntriesBetweenResponse {
 export class GetFirstNEntriesRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetFirstNEntriesRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetFirstNEntriesRequest;
     getSerie(): string;
     setSerie(value: string): GetFirstNEntriesRequest;
     getN(): number;
@@ -894,6 +947,7 @@ export class GetFirstNEntriesRequest extends jspb.Message {
 export namespace GetFirstNEntriesRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         n: number,
     }
@@ -937,6 +991,8 @@ export namespace GetFirstNEntriesResponse {
 export class GetLastNEntriesRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetLastNEntriesRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetLastNEntriesRequest;
     getSerie(): string;
     setSerie(value: string): GetLastNEntriesRequest;
     getN(): number;
@@ -955,6 +1011,7 @@ export class GetLastNEntriesRequest extends jspb.Message {
 export namespace GetLastNEntriesRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         n: number,
     }
@@ -998,6 +1055,8 @@ export namespace GetLastNEntriesResponse {
 export class GetEntriesBeforeRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetEntriesBeforeRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetEntriesBeforeRequest;
     getSerie(): string;
     setSerie(value: string): GetEntriesBeforeRequest;
     getTimestamp(): number;
@@ -1016,6 +1075,7 @@ export class GetEntriesBeforeRequest extends jspb.Message {
 export namespace GetEntriesBeforeRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }
@@ -1059,6 +1119,8 @@ export namespace GetEntriesBeforeResponse {
 export class GetEntriesAfterRequest extends jspb.Message { 
     getDatabase(): string;
     setDatabase(value: string): GetEntriesAfterRequest;
+    getTimeseries(): string;
+    setTimeseries(value: string): GetEntriesAfterRequest;
     getSerie(): string;
     setSerie(value: string): GetEntriesAfterRequest;
     getTimestamp(): number;
@@ -1077,6 +1139,7 @@ export class GetEntriesAfterRequest extends jspb.Message {
 export namespace GetEntriesAfterRequest {
     export type AsObject = {
         database: string,
+        timeseries: string,
         serie: string,
         timestamp: number,
     }

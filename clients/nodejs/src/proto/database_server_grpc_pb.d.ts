@@ -16,6 +16,7 @@ interface IDatabaseServerService extends grpc.ServiceDefinition<grpc.UntypedServ
     clearDatabase: IDatabaseServerService_IClearDatabase;
     listDatabases: IDatabaseServerService_IListDatabases;
     compactDatabase: IDatabaseServerService_ICompactDatabase;
+    grpcAPIVersion: IDatabaseServerService_IGrpcAPIVersion;
 }
 
 interface IDatabaseServerService_ICreateDatabase extends grpc.MethodDefinition<database_server_pb.CreateDatabaseRequest, shared_pb.SuccessResponse> {
@@ -81,6 +82,15 @@ interface IDatabaseServerService_ICompactDatabase extends grpc.MethodDefinition<
     responseSerialize: grpc.serialize<shared_pb.SuccessResponse>;
     responseDeserialize: grpc.deserialize<shared_pb.SuccessResponse>;
 }
+interface IDatabaseServerService_IGrpcAPIVersion extends grpc.MethodDefinition<shared_pb.EmptyRequest, database_server_pb.GrpcAPIVersionResponse> {
+    path: "/DatabaseServer/GrpcAPIVersion";
+    requestStream: false;
+    responseStream: false;
+    requestSerialize: grpc.serialize<shared_pb.EmptyRequest>;
+    requestDeserialize: grpc.deserialize<shared_pb.EmptyRequest>;
+    responseSerialize: grpc.serialize<database_server_pb.GrpcAPIVersionResponse>;
+    responseDeserialize: grpc.deserialize<database_server_pb.GrpcAPIVersionResponse>;
+}
 
 export const DatabaseServerService: IDatabaseServerService;
 
@@ -92,6 +102,7 @@ export interface IDatabaseServerServer extends grpc.UntypedServiceImplementation
     clearDatabase: grpc.handleUnaryCall<database_server_pb.ClearDatabaseRequest, shared_pb.SuccessResponse>;
     listDatabases: grpc.handleUnaryCall<shared_pb.EmptyRequest, database_server_pb.ListDatabasesResponse>;
     compactDatabase: grpc.handleUnaryCall<database_server_pb.CompactDatabaseRequest, shared_pb.SuccessResponse>;
+    grpcAPIVersion: grpc.handleUnaryCall<shared_pb.EmptyRequest, database_server_pb.GrpcAPIVersionResponse>;
 }
 
 export interface IDatabaseServerClient {
@@ -116,6 +127,9 @@ export interface IDatabaseServerClient {
     compactDatabase(request: database_server_pb.CompactDatabaseRequest, callback: (error: grpc.ServiceError | null, response: shared_pb.SuccessResponse) => void): grpc.ClientUnaryCall;
     compactDatabase(request: database_server_pb.CompactDatabaseRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: shared_pb.SuccessResponse) => void): grpc.ClientUnaryCall;
     compactDatabase(request: database_server_pb.CompactDatabaseRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: shared_pb.SuccessResponse) => void): grpc.ClientUnaryCall;
+    grpcAPIVersion(request: shared_pb.EmptyRequest, callback: (error: grpc.ServiceError | null, response: database_server_pb.GrpcAPIVersionResponse) => void): grpc.ClientUnaryCall;
+    grpcAPIVersion(request: shared_pb.EmptyRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: database_server_pb.GrpcAPIVersionResponse) => void): grpc.ClientUnaryCall;
+    grpcAPIVersion(request: shared_pb.EmptyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: database_server_pb.GrpcAPIVersionResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class DatabaseServerClient extends grpc.Client implements IDatabaseServerClient {
@@ -141,4 +155,7 @@ export class DatabaseServerClient extends grpc.Client implements IDatabaseServer
     public compactDatabase(request: database_server_pb.CompactDatabaseRequest, callback: (error: grpc.ServiceError | null, response: shared_pb.SuccessResponse) => void): grpc.ClientUnaryCall;
     public compactDatabase(request: database_server_pb.CompactDatabaseRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: shared_pb.SuccessResponse) => void): grpc.ClientUnaryCall;
     public compactDatabase(request: database_server_pb.CompactDatabaseRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: shared_pb.SuccessResponse) => void): grpc.ClientUnaryCall;
+    public grpcAPIVersion(request: shared_pb.EmptyRequest, callback: (error: grpc.ServiceError | null, response: database_server_pb.GrpcAPIVersionResponse) => void): grpc.ClientUnaryCall;
+    public grpcAPIVersion(request: shared_pb.EmptyRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: database_server_pb.GrpcAPIVersionResponse) => void): grpc.ClientUnaryCall;
+    public grpcAPIVersion(request: shared_pb.EmptyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: database_server_pb.GrpcAPIVersionResponse) => void): grpc.ClientUnaryCall;
 }

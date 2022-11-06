@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using ferrum_db;
+using ferrum_db_server.src;
 using Grpc.Core;
 using GrpcAPI;
 using GrpcAPI.index;
@@ -23,6 +24,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Has = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).has(request.Key);
             }
             catch (Exception e) {
+                Logger.Info($"Error checking if index has key: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -42,6 +44,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error putting key into index: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -62,6 +65,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error clearing index: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -82,6 +86,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Success = true;
             }
             catch (Exception e) {
+                Logger.Info($"Error deleting key from index: {e.Message}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -101,6 +106,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Value = Google.Protobuf.ByteString.CopyFrom(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).get(request.Key));
             }
             catch (Exception e) {
+                Logger.Info($"Error getting key from index: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -119,6 +125,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Chunk = Google.Protobuf.ByteString.CopyFrom(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).readChunk(request.Key, request.Offset, request.ChunkSize));
             }
             catch (Exception e) {
+                Logger.Info($"Error getting chunk from index: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -137,6 +144,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Chunk = Google.Protobuf.ByteString.CopyFrom(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).readUntil(request.Key, request.Offset, (byte)request.Terminator));
             }
             catch (Exception e) {
+                Logger.Info($"Error getting chunk from index: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -157,6 +165,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 }
             }
             catch (Exception e) {
+                Logger.Info($"Error listing keys from index: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -175,6 +184,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Size = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getRecordCount();
             }
             catch (Exception e) {
+                Logger.Info($"Error getting size of index: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -193,6 +203,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Size = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getRecordSize(request.Key) ?? 0;
             }
             catch (Exception e) {
+                Logger.Info($"Error getting size of record: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -211,6 +222,7 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
                 response.Count = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getRecordCount();
             }
             catch (Exception e) {
+                Logger.Info($"Error getting count of records: {e.Message}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);

@@ -160,3 +160,23 @@ export namespace CompactDatabaseRequest {
         name: string,
     }
 }
+
+export class GrpcAPIVersionResponse extends jspb.Message { 
+    getVersion(): string;
+    setVersion(value: string): GrpcAPIVersionResponse;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GrpcAPIVersionResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GrpcAPIVersionResponse): GrpcAPIVersionResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GrpcAPIVersionResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GrpcAPIVersionResponse;
+    static deserializeBinaryFromReader(message: GrpcAPIVersionResponse, reader: jspb.BinaryReader): GrpcAPIVersionResponse;
+}
+
+export namespace GrpcAPIVersionResponse {
+    export type AsObject = {
+        version: string,
+    }
+}

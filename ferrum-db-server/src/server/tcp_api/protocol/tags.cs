@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ferrum_db_server.src.db.collections;
+using GrpcAPI.collection;
 
 namespace ferrum_db_server.src.server.protocol {
     public class Tags {
