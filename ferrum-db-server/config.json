@@ -2,6 +2,7 @@
     "ip": "127.0.0.1",
     "tcpPort": 3000,
     "grpcPort": 3001,
+    "grpcMaxMessageLength": 134217728,
     "dbFolder": "./db",
     "stdout": true,
     "fileOut": "./logs.txt",

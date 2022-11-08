@@ -15,6 +15,7 @@ class Config {
     public string? ip;
     public int? tcpPort;
     public int? grpcPort;
+    public int? grpcMaxMessageLength;
     public string? dbFolder;
     public bool? stdout;
     public string? fileOut;
@@ -53,11 +54,11 @@ namespace ferrum_db_server {
             Config? config;
             if (File.Exists("config.json")) {
                 config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
-            }
-            else {
+            } else {
                 config = new Config();
             }
             config.ip = config.ip ?? "127.0.0.1";
+            config.grpcMaxMessageLength = config.grpcMaxMessageLength ?? 134217728;
             config.tcpPort = config.tcpPort ?? 3000;
             config.grpcPort = config.grpcPort ?? 3001;
             config.stdout = config.stdout ?? true;
@@ -66,6 +67,10 @@ namespace ferrum_db_server {
 
             if (Array.Exists(args, x => x == "--loglevel")) {
                 config!.logLevel = args[Array.IndexOf(args, "--loglevel") + 1];
+            }
+
+            if (Array.Exists(args, x => x == "--grpcmaxmessagelength")) {
+                config!.grpcMaxMessageLength = int.Parse(args[Array.IndexOf(args, "--grpcmaxmessagelength") + 1]);
             }
 
             if (Array.Exists(args, x => x == "--stdout")) {

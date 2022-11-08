@@ -20,7 +20,10 @@ namespace ferrum_db_server.src.server.grpc_api {
             var builder = WebApplication.CreateBuilder();
 
             // Add services to the container.
-            builder.Services.AddGrpc();
+            builder.Services.AddGrpc(options => {
+                options.MaxReceiveMessageSize = 134217728; // 128 MB
+                options.MaxSendMessageSize = 134217728; // 128 MB
+            });
             builder.Logging.ClearProviders();
             this.ioEventCallbacks = new ConcurrentQueue<IoEvent>();
             this.ioEvents = new AutoResetEvent(false);
