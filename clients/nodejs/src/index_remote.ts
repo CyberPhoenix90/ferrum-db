@@ -22,7 +22,10 @@ export class IndexRemote<T> extends CollectionRemote {
 
     constructor(ip: string, port: number, database: string, indexName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
         super(ip, port, CollectionType.INDEX, database, indexName);
-        this.client = new IndexClient(`${ip}:${port}`, ChannelCredentials.createSsl(), null);
+        this.client = new IndexClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+            'grpc.max_send_message_length': -1,
+            'grpc.max_receive_message_length': -1,
+        });
         this.encoding = encoding;
         this.compression = compression;
     }

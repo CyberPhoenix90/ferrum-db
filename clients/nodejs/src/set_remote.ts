@@ -10,7 +10,10 @@ export class SetRemote extends CollectionRemote {
 
     constructor(ip: string, port: number, database: string, setName: string) {
         super(ip, port, CollectionType.SET, database, setName);
-        this.client = new SetClient(`${ip}:${port}`, ChannelCredentials.createSsl(), null);
+        this.client = new SetClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+            'grpc.max_send_message_length': -1,
+            'grpc.max_receive_message_length': -1,
+        });
     }
 
     public async has(key: string): Promise<boolean> {

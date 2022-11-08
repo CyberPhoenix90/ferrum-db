@@ -26,7 +26,10 @@ export class FerrumServerClient {
     constructor(ip: string, port: number) {
         this.ip = ip;
         this.port = port;
-        this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {});
+        this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {
+            'grpc.max_send_message_length': -1,
+            'grpc.max_receive_message_length': -1,
+        });
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {

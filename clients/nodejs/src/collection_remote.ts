@@ -15,7 +15,10 @@ export class CollectionRemote {
     }
 
     constructor(ip: string, port: number, type: CollectionType, database: string, collectionkey: string) {
-        this.collectionClient = new CollectionClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {});
+        this.collectionClient = new CollectionClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+            'grpc.max_send_message_length': -1,
+            'grpc.max_receive_message_length': -1,
+        });
         this.type = type;
         this.database = database;
         this.collectionKey = collectionkey;

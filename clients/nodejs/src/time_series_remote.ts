@@ -32,7 +32,10 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
 
     constructor(ip: string, port: number, database: string, timeSeriesName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
         super(ip, port, CollectionType.TIMESERIES, database, timeSeriesName);
-        this.client = new TimeSeriesClient(`${ip}:${port}`, ChannelCredentials.createSsl(), null);
+        this.client = new TimeSeriesClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+            'grpc.max_send_message_length': -1,
+            'grpc.max_receive_message_length': -1,
+        });
         this.encoding = encoding;
         this.compression = compression;
     }
