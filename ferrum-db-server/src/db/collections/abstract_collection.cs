@@ -6,9 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using GrpcAPI.collection;
 
-namespace ferrum_db_server.src.db.collections {
+namespace ferrum_db_server.src.db.collections
+{
 
-    public abstract class AbstractCollection {
+    public abstract class AbstractCollection
+    {
         protected CollectionType type;
         protected string path;
         protected string name;
@@ -19,7 +21,8 @@ namespace ferrum_db_server.src.db.collections {
         private readonly Index? collectionTags;
 
         private string collectionTagKey;
-        public AbstractCollection(string recordFileName, CollectionType type, string name, Index? collectionTags) {
+        public AbstractCollection(string recordFileName, CollectionType type, string name, Index? collectionTags)
+        {
             this.collectionTags = collectionTags;
             this.recordFileName = recordFileName;
             this.type = type;
@@ -27,8 +30,10 @@ namespace ferrum_db_server.src.db.collections {
             this.collectionTagKey = this.type.ToString() + '_' + this.name + '_';
         }
 
-        public string[] getCollectionTags() {
-            if (this.collectionTags == null) {
+        public string[] getCollectionTags()
+        {
+            if (this.collectionTags == null)
+            {
                 return new string[0];
             }
             return this.collectionTags.getKeys()
@@ -37,64 +42,89 @@ namespace ferrum_db_server.src.db.collections {
                 .ToArray();
         }
 
-        public void deleteCollectionTag(string key = "") {
-            if (this.collectionTags != null) {
+        public void deleteCollectionTag(string key = "")
+        {
+            if (this.collectionTags != null)
+            {
 #if DEBUG
                 Console.WriteLine($"Deleting Tag {key} from collection {this.name}");
 #endif
                 this.collectionTags.delete(this.collectionTagKey + key, -1);
             }
-            else {
+            else
+            {
                 throw new Exception("Collection tags not supported for this collection");
             }
         }
 
-        public void setCollectionTag(string key, byte[] value) {
-            if (this.collectionTags != null) {
+        public void setCollectionTag(string key, byte[] value)
+        {
+            if (this.collectionTags != null)
+            {
                 this.collectionTags.set(this.collectionTagKey + key, value, -1);
             }
-            else {
+            else
+            {
                 throw new Exception("Collection tags not supported for this collection");
             }
         }
 
-        public bool hasCollectionTag(string key = "") {
-            if (this.collectionTags != null) {
+        public bool hasCollectionTag(string key = "")
+        {
+            if (this.collectionTags != null)
+            {
                 return this.collectionTags.has(this.collectionTagKey + key);
             }
-            else {
+            else
+            {
                 throw new Exception("Collection tags not supported for this collection");
             }
         }
 
-        public byte[] getCollectionTag(string key = "") {
-            if (this.collectionTags != null) {
+        public byte[] getCollectionTag(string key = "")
+        {
+            if (this.collectionTags != null)
+            {
                 var content = this.collectionTags.get(this.collectionTagKey + key);
 
-                if (content == null) {
+                if (content == null)
+                {
                     return new byte[0];
                 }
 
                 return content;
             }
-            else {
+            else
+            {
                 throw new Exception("Collection tags not supported for this collection");
             }
         }
 
-        protected virtual void initialize(Set? transactionSet) {
+        protected virtual void initialize(Set? transactionSet)
+        {
             Console.WriteLine($"Initializing index {name}");
             Directory.CreateDirectory(this.path);
-            if (Directory.Exists(Path.Join(this.path, "tmp"))) {
+            if (Directory.Exists(Path.Join(this.path, "tmp")))
+            {
                 Directory.Delete(Path.Join(this.path, "tmp"), true);
             }
             Directory.CreateDirectory(Path.Join(this.path, "tmp"));
 
             string record = Path.Join(this.path, this.recordFileName);
-            if (File.Exists(record) && new FileInfo(record).Length > 0) {
-                using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, this.recordFileName), FileMode.Open))) {
-                    while (reader.BaseStream.Position < reader.BaseStream.Length) {
-                        this.readRecords(reader, transactionSet);
+            if (File.Exists(record) && new FileInfo(record).Length > 0)
+            {
+                using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, this.recordFileName), FileMode.Open)))
+                {
+                    while (reader.BaseStream.Position < reader.BaseStream.Length)
+                    {
+                        try
+                        {
+                            this.readRecord(reader, transactionSet);
+                        }
+                        catch (EndOfStreamException e)
+                        {
+                            Logger.Error($"Record file {Path.GetFullPath(this.path)} is corrupted. {e.Message} Some data is likely lost! ");
+                        }
                     }
                 }
             }
@@ -106,7 +136,7 @@ namespace ferrum_db_server.src.db.collections {
             this.writer.BaseStream.Seek(0, SeekOrigin.End);
         }
 
-        protected abstract void readRecords(BinaryReader reader, Set? transactionSet);
+        protected abstract void readRecord(BinaryReader reader, Set? transactionSet);
 
     }
 }
