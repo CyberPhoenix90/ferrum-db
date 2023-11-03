@@ -50,15 +50,15 @@ async function stressTest(): Promise<void> {
 }
 
 async function clearDatabase(): Promise<void> {
-    const folder = join(__dirname, '../../../ferrum-db-server/bin/Release/net6.0/linux-x64/db');
+    const folder = join(__dirname, '../../../ferrum-db-server/bin/Release/net7.0/db');
     try {
         await rm(folder, { recursive: true });
     } catch {}
 }
 
 async function startServer(): Promise<ChildProcess> {
-    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Release/net6.0/linux-x64/ferrum-db-server'), ['--loglevel', 'DEBUG', '--stdout'], {
-        cwd: join(__dirname, '../../../ferrum-db-server/bin/Release/net6.0/linux-x64/'),
+    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Release/net7.0/ferrum-db-server'), ['--loglevel', 'DEBUG', '--stdout'], {
+        cwd: join(__dirname, '../../../ferrum-db-server/bin/Release/net7.0/'),
     });
 
     cp.stdout.on('data', (msg) => {

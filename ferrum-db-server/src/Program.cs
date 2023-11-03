@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
-class Config
+public class Config
 {
     public string? ip;
     public int? tcpPort;
@@ -22,7 +22,8 @@ class Config
     public bool? stdout;
     public string? fileOut;
     public string? logLevel;
-
+    public string? sslCertificate;
+    public string? sslPassword;
 }
 
 namespace ferrum_db_server
@@ -42,7 +43,7 @@ namespace ferrum_db_server
             stopWatch.Stop();
             new Thread(() =>
             {
-                new GRPCServer(config.ip, (int)config.grpcPort, ferrumDb, (int)config.grpcMaxMessageLength);
+                new GRPCServer(config, ferrumDb);
             }).Start();
             new Thread(() =>
             {
@@ -82,6 +83,16 @@ namespace ferrum_db_server
             if (Array.Exists(args, x => x == "--loglevel"))
             {
                 config!.logLevel = args[Array.IndexOf(args, "--loglevel") + 1];
+            }
+
+            if (Array.Exists(args, x => x == "--sslcert"))
+            {
+                config!.sslCertificate = args[Array.IndexOf(args, "--sslcert") + 1];
+            }
+
+            if (Array.Exists(args, x => x == "--sslpass"))
+            {
+                config!.sslPassword = args[Array.IndexOf(args, "--sslpass") + 1];
             }
 
             if (Array.Exists(args, x => x == "--grpcmaxmessagelength"))

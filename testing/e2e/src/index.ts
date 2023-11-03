@@ -128,16 +128,16 @@ function sleep(ms: number) {
 }
 
 async function clearDatabase(): Promise<void> {
-    const folder = join(__dirname, '../../../ferrum-db-server/bin/Debug/net6.0/linux-x64/db');
+    const folder = join(__dirname, '../../../ferrum-db-server/bin/Debug/net7.0/db');
     try {
         await rm(folder, { recursive: true });
     } catch {}
 }
 
 async function startServer(): Promise<ChildProcess> {
-    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Debug/net6.0/linux-x64/ferrum-db-server'), ['--stdout'], {
+    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Debug/net7.0/ferrum-db-server'), ['--stdout'], {
         stdio: 'inherit',
-        cwd: join(__dirname, '../../../ferrum-db-server/bin/Debug/net6.0/linux-x64/'),
+        cwd: join(__dirname, '../../../ferrum-db-server/bin/Debug/net7.0/'),
     });
 
     await sleep(4000);

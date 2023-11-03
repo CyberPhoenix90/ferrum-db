@@ -2,10 +2,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ferrum_db;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -18,15 +20,37 @@ namespace ferrum_db_server.src.server.grpc_api
         private readonly AutoResetEvent ioEvents;
         private readonly ConcurrentQueue<IoEvent> ioEventCallbacks;
 
-        public GRPCServer(string ip, int port, FerrumDb ferrumDb, int maxMessageLength)
+        public GRPCServer(Config config, FerrumDb ferrumDb)
         {
             var builder = WebApplication.CreateBuilder();
+            if (config.sslCertificate != null)
+            {
+
+                builder.WebHost.ConfigureKestrel((context, options) =>
+                {
+                    // Specify the SSL certificate
+                    options.Listen(IPAddress.Parse(config.ip), (int)config.grpcPort, listenOptions =>
+                    {
+                        listenOptions.UseHttps(config.sslCertificate, config.sslPassword);
+                    });
+                });
+            }
+            else
+            {
+                builder.WebHost.ConfigureKestrel((context, options) =>
+                {
+                    options.Listen(IPAddress.Parse(config.ip), (int)config.grpcPort, listenOptions =>
+                    {
+                        listenOptions.UseHttps();
+                    });
+                });
+            }
 
             // Add services to the container.
             builder.Services.AddGrpc(options =>
             {
-                options.MaxReceiveMessageSize = maxMessageLength;
-                options.MaxSendMessageSize = maxMessageLength;
+                options.MaxReceiveMessageSize = config.grpcMaxMessageLength;
+                options.MaxSendMessageSize = config.grpcMaxMessageLength;
             });
             builder.Logging.ClearProviders();
             this.ioEventCallbacks = new ConcurrentQueue<IoEvent>();
@@ -47,6 +71,13 @@ namespace ferrum_db_server.src.server.grpc_api
             CollectionService.ioEvents = this.ioEvents;
             CollectionService.ioEventCallbacks = this.ioEventCallbacks;
 
+            //Log all requests
+            app.Use(async (context, next) =>
+            {
+                Logger.Debug($"Request: {context.Request.Path}");
+                await next();
+            });
+
             // Configure the HTTP request pipeline.
             app.MapGrpcService<DatabaseService>();
             app.MapGrpcService<DatabaseServerService>();
@@ -57,14 +88,6 @@ namespace ferrum_db_server.src.server.grpc_api
             app
             .MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 
-            //Log all requests
-            app.Use(async (context, next) =>
-            {
-                Logger.Debug($"Request: {context.Request.Path}");
-                await next();
-            });
-
-            app.Urls.Add($"https://{ip}:{port}"); ;
             app.RunAsync();
 
             while (true)

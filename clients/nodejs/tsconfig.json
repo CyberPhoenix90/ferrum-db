@@ -22,21 +22,11 @@
         "noEmitOnError": false,
         "strictFunctionTypes": true,
         "sourceMap": true,
-        "watch": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "target": "es2019",
-        "lib": [
-            "dom",
-            "esnext.array",
-            "es2019"
-        ],
-        "outDir": "dist",
+        "lib": ["dom", "esnext.array", "es2019"],
+        "outDir": "dist"
     },
-    "include": [
-        "src/**/*.js",
-        "src/**/*.ts",
-        "src/**/*.d.ts",
-        "src/**/*.tsx",
-    ]
+    "include": ["src/**/*.js", "src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx"]
 }

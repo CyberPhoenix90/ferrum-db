@@ -199,16 +199,20 @@ Use Visual studio and just press build
 
 Insall dotnet-sdk
 
-> sudo snap install dotnet-sdk --classic --channel=latest/edge
+```
+sudo apt-get update && \
+  sudo apt-get install -y dotnet-sdk-7.0
+```
 
 In ferrum-db-server folder:
 
 Build Release:
-
-> dotnet publish --runtime linux-x64 -c Release --self-contained=true ferrum-db-server.csproj
+Run the script create-deployable.sh
+This creates a zip with a standalone version of ferrum that can be run on linux systems that have no dotnet installed
 
 Build Debug:
 
-> dotnet publish --runtime linux-x64 -c Debug --self-contained=true ferrum-db-server.csproj
+> dotnet build
 
---self-contained=true means the dotnet library is shipped along with the binary. This is not needed for development or for machines where you know dotnet is going to be present
+Generate protobuf client:
+Run npm install and then the script generate_grpc_client.sh
