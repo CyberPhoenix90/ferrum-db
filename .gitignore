@@ -6,3 +6,5 @@ node_modules
 coverage.cobertura.xml
 test-data
 ferrum-db-server/db
+ferrum-db-server.zip
+ferrum-db-server/ferrum
