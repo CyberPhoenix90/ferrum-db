@@ -9,20 +9,24 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace ferrum_db_server.src.server.grpc_api {
-    public class GRPCServer {
+namespace ferrum_db_server.src.server.grpc_api
+{
+    public class GRPCServer
+    {
 
         public delegate void IoEvent(FerrumDb ferrumDb);
         private readonly AutoResetEvent ioEvents;
         private readonly ConcurrentQueue<IoEvent> ioEventCallbacks;
 
-        public GRPCServer(string ip, int port, FerrumDb ferrumDb) {
+        public GRPCServer(string ip, int port, FerrumDb ferrumDb, int maxMessageLength)
+        {
             var builder = WebApplication.CreateBuilder();
 
             // Add services to the container.
-            builder.Services.AddGrpc(options => {
-                options.MaxReceiveMessageSize = 134217728; // 128 MB
-                options.MaxSendMessageSize = 134217728; // 128 MB
+            builder.Services.AddGrpc(options =>
+            {
+                options.MaxReceiveMessageSize = maxMessageLength;
+                options.MaxSendMessageSize = maxMessageLength;
             });
             builder.Logging.ClearProviders();
             this.ioEventCallbacks = new ConcurrentQueue<IoEvent>();
@@ -53,14 +57,24 @@ namespace ferrum_db_server.src.server.grpc_api {
             app
             .MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
 
+            //Log all requests
+            app.Use(async (context, next) =>
+            {
+                Logger.Debug($"Request: {context.Request.Path}");
+                await next();
+            });
+
             app.Urls.Add($"https://{ip}:{port}"); ;
             app.RunAsync();
 
-            while (true) {
+            while (true)
+            {
                 this.ioEvents.WaitOne();
-                while (!ioEventCallbacks.IsEmpty) {
+                while (!ioEventCallbacks.IsEmpty)
+                {
                     this.ioEventCallbacks.TryDequeue(out IoEvent? task);
-                    if (task != null) {
+                    if (task != null)
+                    {
                         task(ferrumDb);
 
                     }
