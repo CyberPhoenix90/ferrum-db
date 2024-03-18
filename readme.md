@@ -197,7 +197,7 @@ Use Visual studio and just press build
 
 ### Building on linux
 
-Insall dotnet-sdk
+Install dotnet-sdk
 
 ```
 sudo apt-get update && \

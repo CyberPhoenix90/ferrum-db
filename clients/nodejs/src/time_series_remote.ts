@@ -56,24 +56,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         return res.getHasserie();
     }
 
-    public async getEntry(serie: string, timestamp: number): Promise<T> {
-        const msg = new GetEntryRequest();
-
-        msg.setDatabase(this.database);
-        msg.setTimeseries(this.name);
-        msg.setSerie(serie);
-        msg.setTimestamp(timestamp);
-
-        const res = await promisify<CallbackReturnType<typeof this.client.getEntry>, GetEntryRequest>(this.client.getEntry.bind(this.client), msg);
-
-        if (res.getError()) {
-            throw new Error(res.getError());
-        }
-
-        return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
-    }
-
-    public async getEntryOrNull(serie: string, timestamp: number): Promise<T | null> {
+    public async getEntry(serie: string, timestamp: number): Promise<T | null> {
         const msg = new GetEntryRequest();
 
         msg.setDatabase(this.database);
@@ -158,7 +141,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         return Promise.all(res.getEntriesList_asU8().map((entry) => decodeValue<T>(entry, this.encoding, this.compression)));
     }
 
-    public async getNearestEntryToTimestamp(serie: string, timestamp: number): Promise<T> {
+    public async getNearestEntryToTimestamp(serie: string, timestamp: number): Promise<T | null> {
         const msg = new GetNearestEntryRequest();
 
         msg.setDatabase(this.database);
@@ -175,10 +158,14 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
             throw new Error(res.getError());
         }
 
+        if (res.getNotfound()) {
+            return null;
+        }
+
         return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
-    public async getFirstEntryBeforeTimestamp(serie: string, timestamp: number): Promise<T> {
+    public async getFirstEntryBeforeTimestamp(serie: string, timestamp: number): Promise<T | null> {
         const msg = new GetFirstEntryBeforeRequest();
 
         msg.setDatabase(this.database);
@@ -195,10 +182,14 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
             throw new Error(res.getError());
         }
 
+        if (res.getNotfound()) {
+            return null;
+        }
+
         return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
-    public async getFirstEntryAfterTimestamp(serie: string, timestamp: number): Promise<T> {
+    public async getFirstEntryAfterTimestamp(serie: string, timestamp: number): Promise<T | null> {
         const msg = new GetFirstEntryAfterRequest();
 
         msg.setDatabase(this.database);
@@ -215,10 +206,14 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
             throw new Error(res.getError());
         }
 
+        if (res.getNotfound()) {
+            return null;
+        }
+
         return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
-    public async getLastEntry(serie: string): Promise<T> {
+    public async getLastEntry(serie: string): Promise<T | null> {
         const msg = new GetLastEntryRequest();
 
         msg.setDatabase(this.database);
@@ -231,10 +226,14 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
             throw new Error(res.getError());
         }
 
+        if (res.getNotfound()) {
+            return null;
+        }
+
         return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
     }
 
-    public async getFirstEntry(serie: string): Promise<T> {
+    public async getFirstEntry(serie: string): Promise<T | null> {
         const msg = new GetFirstEntryRequest();
 
         msg.setDatabase(this.database);
@@ -248,6 +247,10 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
 
         if (res.getError()) {
             throw new Error(res.getError());
+        }
+
+        if (res.getNotfound()) {
+            return null;
         }
 
         return decodeValue(res.getEntry_asU8(), this.encoding, this.compression);
@@ -375,6 +378,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new ClearSerieRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
 
         const res = await promisify<CallbackReturnType<typeof this.client.clearSerie>, ClearSerieRequest>(this.client.clearSerie.bind(this.client), msg);
 
@@ -387,6 +391,7 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         const msg = new ListSeriesRequest();
 
         msg.setDatabase(this.database);
+        msg.setTimeseries(this.name);
 
         const res = await promisify<CallbackReturnType<typeof this.client.listSeries>, ListSeriesRequest>(this.client.listSeries.bind(this.client), msg);
 

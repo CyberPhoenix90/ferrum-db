@@ -409,6 +409,9 @@ export namespace GetEntryRequest {
 }
 
 export class GetEntryResponse extends jspb.Message { 
+
+    hasEntry(): boolean;
+    clearEntry(): void;
     getEntry(): Uint8Array | string;
     getEntry_asU8(): Uint8Array;
     getEntry_asB64(): string;
@@ -580,6 +583,9 @@ export namespace GetNearestEntryRequest {
 export class GetNearestEntryResponse extends jspb.Message { 
     getTimestamp(): number;
     setTimestamp(value: number): GetNearestEntryResponse;
+
+    hasEntry(): boolean;
+    clearEntry(): void;
     getEntry(): Uint8Array | string;
     getEntry_asU8(): Uint8Array;
     getEntry_asB64(): string;
@@ -643,6 +649,9 @@ export namespace GetFirstEntryBeforeRequest {
 export class GetFirstEntryBeforeResponse extends jspb.Message { 
     getTimestamp(): number;
     setTimestamp(value: number): GetFirstEntryBeforeResponse;
+
+    hasEntry(): boolean;
+    clearEntry(): void;
     getEntry(): Uint8Array | string;
     getEntry_asU8(): Uint8Array;
     getEntry_asB64(): string;
@@ -706,6 +715,9 @@ export namespace GetFirstEntryAfterRequest {
 export class GetFirstEntryAfterResponse extends jspb.Message { 
     getTimestamp(): number;
     setTimestamp(value: number): GetFirstEntryAfterResponse;
+
+    hasEntry(): boolean;
+    clearEntry(): void;
     getEntry(): Uint8Array | string;
     getEntry_asU8(): Uint8Array;
     getEntry_asB64(): string;
@@ -766,6 +778,9 @@ export namespace GetFirstEntryRequest {
 export class GetFirstEntryResponse extends jspb.Message { 
     getTimestamp(): number;
     setTimestamp(value: number): GetFirstEntryResponse;
+
+    hasEntry(): boolean;
+    clearEntry(): void;
     getEntry(): Uint8Array | string;
     getEntry_asU8(): Uint8Array;
     getEntry_asB64(): string;
@@ -826,6 +841,9 @@ export namespace GetLastEntryRequest {
 export class GetLastEntryResponse extends jspb.Message { 
     getTimestamp(): number;
     setTimestamp(value: number): GetLastEntryResponse;
+
+    hasEntry(): boolean;
+    clearEntry(): void;
     getEntry(): Uint8Array | string;
     getEntry_asU8(): Uint8Array;
     getEntry_asB64(): string;
