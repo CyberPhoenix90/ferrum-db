@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>ferrum_cache</RootNamespace>
+       <Platforms>x64</Platforms>
+    <Nullable>enable</Nullable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+</Project>

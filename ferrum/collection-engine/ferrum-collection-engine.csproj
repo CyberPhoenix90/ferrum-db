@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>ferrum_collection_engine</RootNamespace>
+       <Platforms>x64</Platforms>
+    <Nullable>enable</Nullable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\io-engine\ferrum-io-engine.csproj" />
+  </ItemGroup>
+</Project>

@@ -21,39 +21,19 @@ as.exposeFunction('/api/list-databases', async (msg: { serverIP: string; serverP
     return dbs;
 });
 
-as.exposeFunction('/api/list-indexes', async (msg: { serverIP: string; serverPort: number; database: string }) => {
+as.exposeFunction('/api/list-collections', async (msg: { serverIP: string; serverPort: number; database: string }) => {
     const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
     return connection.getDatabase(msg.database).getIndexes();
 });
 
-as.exposeFunction('/api/list-sets', async (msg: { serverIP: string; serverPort: number; database: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    return connection.getDatabase(msg.database).getSets();
-});
-
-as.exposeFunction('/api/list-timeseries', async (msg: { serverIP: string; serverPort: number; database: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    return connection.getDatabase(msg.database).getListOfTimeSeries();
-});
-
-as.exposeFunction('/api/list-index-keys', async (msg: { serverIP: string; serverPort: number; database: string; index: string }) => {
+as.exposeFunction('/api/list-collection-keys', async (msg: { serverIP: string; serverPort: number; database: string; index: string }) => {
     const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
     return connection.getDatabase(msg.database).getIndex(msg.index).getKeys();
 });
 
-as.exposeFunction('/api/list-set-keys', async (msg: { serverIP: string; serverPort: number; database: string; set: string }) => {
+as.exposeFunction('/api/get-collection-value', async (msg: { serverIP: string; serverPort: number; database: string; index: string; key: string }) => {
     const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    return connection.getDatabase(msg.database).getSet(msg.set).getKeys();
-});
-
-as.exposeFunction('/api/list-timeseries-keys', async (msg: { serverIP: string; serverPort: number; database: string; timeseries: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    return connection.getDatabase(msg.database).getTimeSeries(msg.timeseries).getSeries();
-});
-
-as.exposeFunction('/api/get-index-value', async (msg: { serverIP: string; serverPort: number; database: string; index: string; key: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    const value = await connection.getDatabase(msg.database).getIndex(msg.index, 'json', 'none').get(msg.key);
+    const value = await connection.getDatabase(msg.database).getIndex(msg.index).get(msg.key);
     return value;
 });
 

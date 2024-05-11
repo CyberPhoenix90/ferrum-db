@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>ferrum_db_engine</RootNamespace>
+       <Platforms>x64</Platforms>
+    <Nullable>enable</Nullable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\io-engine\ferrum-io-engine.csproj" />
+    <ProjectReference Include="..\garbage-collector\ferrum-garbage-collector.csproj" />
+    <ProjectReference Include="..\collection-engine\ferrum-collection-engine.csproj" />
+  </ItemGroup>
+</Project>

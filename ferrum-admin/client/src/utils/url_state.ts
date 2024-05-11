@@ -1,6 +1,6 @@
-import { urlStorage } from './url_storage';
+import { CancellationToken, urlStorageStream } from 'aurumjs';
 
-export const urlServerIP = urlStorage.bindToPropertyAsString('ip');
-export const urlServerPort = urlStorage.bindToPropertyAsInteger('port');
-export const urlDatabase = urlStorage.bindToPropertyAsString('db');
-export const urlFocusedCollection = urlStorage.bindToPropertyAsObject<{ type: number; name: string }>('collection');
+export const urlServerIP = urlStorageStream.listenAsString('ip', undefined, CancellationToken.forever);
+export const urlServerPort = urlStorageStream.listenAsNumber('port', undefined, CancellationToken.forever);
+export const urlDatabase = urlStorageStream.listenAsString('db', undefined, CancellationToken.forever);
+export const urlFocusedCollection = urlStorageStream.listenAsObject<{ type: number; name: string }>('collection', undefined, CancellationToken.forever);

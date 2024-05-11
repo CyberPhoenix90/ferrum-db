@@ -9,7 +9,7 @@ Ferrum DB is a NOSQL database server with a focus on high throughput at the expe
 
 ### How does it work?
 
-Ferrum DB is persisted and atomic, the way it achieves high performance is by holding all record meta data in memory at runtime. This means that record metadata querying is nearly instanteous as no disk access is needed to respond and access to data is quicker as no expensive disk lookups are needed to find out where a record is located on disk. The meta data is not exclusively held in memory, a record is kept on disk for persistence. This means that larger tham RAM databases are possible but the maximum database size does on the RAM at about the ratio of 1 GB per 10 million records of any size
+Ferrum DB is persisted and atomic, the way it achieves high performance is by holding all meta data in memory at runtime but not the records. This means that metadata querying is nearly instanteous as no disk access is needed to respond and access to data is quicker as no expensive disk lookups are needed to find out where a record is located on disk. The meta data is not exclusively held in memory, a record is kept on disk for persistence. This means that larger tham RAM databases are possible but the maximum database size does on the RAM at about the ratio of 1 GB per 10 million records of any size
 
 ## Main features
 
@@ -35,9 +35,9 @@ The "has" operation to check if something exists and it requires no disk lookup 
 The DB also has a getRecordSize operation that is just as cheap and can help with streaming.
 You can get the number of records no matter how big the collection is this will be almost instantenous.
 
-### Transactions
+### Typescript/Javascript query engine
 
-This database is capable of batching transactions. Which allows for multiple operations to be done atomically even across multiple databases.
+The DB has a query engine that allows you to query the database with local data access using typescript/javascript powered by V8. This allows you to do complex queries on the server side without having to transfer the data to the client. This is especially useful for large data sets where you only need a small subset of the data. The query engine is also very fast and can handle millions of records in seconds. This overcomes the bottleneck of having to transfer the data to the client and then doing the aggregation on the client side.
 
 ### Different types of collections
 
@@ -96,14 +96,6 @@ Imposed by available ports in TCP
 
 Since part of what makes this DB fast is holding all the meta data in memory this DB takes longer to startup the more records it has. You can expect about 3s of startup time for every 10M records. This is because the database builds its hashmap structure into memory for the entire collection ahead of time for maximum performance.
 
-### Binary only
-
-The database only works with binary data; it doesn't encode your data and accepts nothing but binary. The encoding responsibility is moved to the client as the client knows best what encoding types are useful to the environment that it serves.
-
-### No compression
-
-The database does not modify the data in any way, not even compression. If compression is desired it has to be done on the client side, which also makes sense because that means any compression algorithm can be used and memory, cpu or latency caused by compression is fully under the clients control.
-
 ## Use case suggestions:
 
 ### BLOB storage:
@@ -136,53 +128,6 @@ The C# Client has support for json, string, number and binary records.
 
 Using the protobuf files in this repo you can compile your own client and use it via GRPC
 
-## Future expansion:
-
-### MMAP
-
-Achieve faster performance when running the client on the same PC as the server by sharing memory through MMAP. This would eliminate the TCP overhead in favor of MMAP overhead which is much smaller
-
-### Deferred Writing
-
-Right now all operations are blocking while waiting for the disk write to complete. The DB could in theory push write operations into a queue and just move on immediately. If a read operation is done for something that is still in the queue it could be read from memory even giving a speed boost for certain reads and if a write occurs for something that is in the queue we can replace the old write giving yet more speed benefits. The downside is that in case of a sudden crash/power loss there is a higher potential for lost data (not corruption as the DB is written in a way that records are either fully lost or fully retained)
-
-### Memory Cache
-
-We could keep some record values in memory in a configurable memory cache to reduce IO in read intensive DBs
-
-### Append write
-
-Support to add content to an existing record without having to rewrite the entire record
-
-### Multithreading
-
-Collections are fully isolated from each other allowing each collection to use their own CPU thread. This may be completely futile though because TCP will prevent you from being able to max out the CPU of the Database anyway unless you have a lot of clients.
-
-### Observability
-
-The database could support watchers where clients request to be informed of changes of interest allowing for real timeish applications
-
-### Better Garbage Collection
-
-Ref counting
-Page files currently only get deleted if they had a single record or on restart. With ref counting we could delete page files as soon as all records in them are deleted saving us having to restart the database or calling an expensive compact. This would make the DB autocompacting which would mean regularly deleted data will almost immediately release disk space
-
-### Defragmentation
-
-With defragmentation we could shrink page files that have only a few deleted records instead of having to hope that all of them get deleted eventually. Defragmentation would have to run in a background thread, check through the references to find gaps and then lock the index while moving the data inside the page then truncating the file. This would avoid the situation where junk piles up because of sporadic deletes that never fully clear a page file
-
-### New collection type: Tree
-
-A special collection type specifically made to represent tree structures with ways of querying the tree at high speed and automatic management of child parent relationships (e.g. delete child on parent deletion)
-
-### New collection type: Searchable Index
-
-A type of key value storage where you can have multiple keys that are either strings or numbers (or both) and different ways to query on those keys. E.g. full text search, fuzzy search. Going to necessarily be more memory intensive than the other collections since FerrumDB does not compromise on performance
-
-### New collection type: Blockchain
-
-A collection that represents data as a set of changes from the previous version. Not unlike git this would allow all versions of the data that have ever been written to that collection to be seen and allows reverting back to prior versions
-
 ## Running ferrum db
 
 Once built ferrum db is just a simple executable. There is however a config.json file that you may wish to change to change your database server port or ip address
@@ -193,6 +138,7 @@ Writen in C#
 
 ### Building on Windows
 
+Install dotnet 8 in the visual studio installer
 Use Visual studio and just press build
 
 ### Building on linux
@@ -201,7 +147,7 @@ Install dotnet-sdk
 
 ```
 sudo apt-get update && \
-  sudo apt-get install -y dotnet-sdk-7.0
+  sudo apt-get install -y dotnet-sdk-8.0
 ```
 
 In ferrum-db-server folder:

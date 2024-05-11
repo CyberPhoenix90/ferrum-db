@@ -1,7 +1,7 @@
 import { Toaster } from 'aurum-components';
 import { Aurum } from 'aurumjs';
-import { Router } from './router';
-import { toasts } from './utils/page_state';
+import { Router } from './router.js';
+import { toasts } from './utils/page_state.js';
 
 Aurum.attach(
     <div>

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>ferrum_query_engine</RootNamespace>
+       <Platforms>x64</Platforms>
+    <Nullable>enable</Nullable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ferrum-transaction-engine\ferrum-transaction-engine.csproj" />
+    <ProjectReference Include="..\db-engine\ferrum-db-engine.csproj" />
+  </ItemGroup>
+</Project>

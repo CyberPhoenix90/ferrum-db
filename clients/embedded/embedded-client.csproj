@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>embedded_client</RootNamespace>
+       <Platforms>x64</Platforms>
+    <Nullable>enable</Nullable>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ferrum\db-engine\ferrum-db-engine.csproj" />
+    <ProjectReference Include="..\..\ferrum\ferrum-transaction-engine\ferrum-transaction-engine.csproj" />
+    <ProjectReference Include="..\..\ferrum\query-engine\ferrum-query-engine.csproj" />
+    <ProjectReference Include="..\..\ferrum\io-engine\ferrum-io-engine.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

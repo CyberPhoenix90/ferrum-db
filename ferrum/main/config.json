@@ -1,0 +1,6 @@
+{
+    "ip": "127.0.0.1",
+    "port": 3080,
+    "dbFolder": "./db",
+    "logLevel": "DEBUG"
+}

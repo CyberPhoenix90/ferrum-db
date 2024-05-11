@@ -1,12 +1,12 @@
 import { NumberField, TextField, Toast } from 'aurum-components';
 import { DataSource, Aurum } from 'aurumjs';
-import { authenticate } from '../utils/api';
-import { toasts } from '../utils/page_state';
-import { urlServerIP, urlServerPort } from '../utils/url_state';
+import { authenticate } from '../utils/api.js';
+import { toasts } from '../utils/page_state.js';
+import { urlServerIP, urlServerPort } from '../utils/url_state.js';
 
 export function AuthenticationPage() {
     const serverIP = new DataSource('localhost');
-    const serverPort = new DataSource(8080);
+    const serverPort = new DataSource(3000);
 
     return (
         <div>

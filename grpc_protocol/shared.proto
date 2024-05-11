@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-message EmptyRequest {
-}
-
-message SuccessResponse {
-  bool success = 1;
-  optional string error = 2;
-}

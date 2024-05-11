@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcAPI";
+
+import "shared.proto";
+import "collection.proto";
+
+service Database {
+    rpc CreateCollection (CreateCollectionRequest) returns (SuccessResponse);
+    rpc CreateCollectionIfNotExist (CreateCollectionRequest) returns (SuccessResponse);
+    rpc DeleteCollection (DeleteCollectionRequest) returns (SuccessResponse);
+    rpc HasCollection (HasCollectionRequest) returns (HasCollectionResponse);
+    rpc ListCollections (ListCollectionsRequest) returns (ListCollectionsResponse);
+}
+
+message CreateCollectionRequest {
+    string database = 1;
+    string name = 2;
+    uint32 pageSize = 3;
+    CollectionKeyType keyType = 4;
+    ValueEncodingType valueType = 5;
+    bool isArray = 6;
+    CompressionAlgorithm compressionAlgorithm = 7;
+}
+
+message DeleteCollectionRequest {
+    string database = 1;
+    string name = 2;
+}
+
+message HasCollectionRequest {
+    string database = 1;
+    string name = 2;
+}
+
+message HasCollectionResponse {
+    bool hasCollection = 1;
+  optional string error = 2;
+
+}
+
+message ListCollectionsRequest {
+    string database = 1;
+}
+
+message ListCollectionsResponse {
+    repeated string names = 1;
+    optional string error = 2;
+}

@@ -1,0 +1,206 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcAPI";
+
+import "shared.proto";
+
+service Collection {
+    rpc ListMeta (ListMetaRequest) returns (ListMetaResponse);
+    rpc DeleteMeta (DeleteMetaRequest) returns (DeleteMetaResponse);
+    rpc HasMeta (HasMetaRequest) returns (HasMetaResponse);
+    rpc GetMeta (GetMetaRequest) returns (GetMetaResponse);
+    rpc SetMeta (SetMetaRequest) returns (SetMetaResponse);
+    rpc Has (HasRequest) returns (HasResponse);
+    rpc Get (GetRequest) returns (GetResponse);
+    rpc GetChunk (GetChunkRequest) returns (GetChunkResponse);
+    rpc GetUntil (GetUntilRequest) returns (GetUntilResponse);
+    rpc Put (PutRequest) returns (SuccessResponse);
+    rpc Delete (DeleteRequest) returns (SuccessResponse);
+    rpc Clear (ClearRequest) returns (SuccessResponse);
+    rpc Size (SizeRequest) returns (SizeResponse);
+    rpc GetRecordSize (GetRecordSizeRequest) returns (GetRecordSizeResponse);
+    rpc GetRecordCount (GetRecordCountRequest) returns (GetRecordCountResponse);
+    rpc ListKeys (ListKeysRequest) returns (ListKeysResponse);
+}
+
+enum CollectionKeyType {
+    StringCollection = 0;
+    NumberCollection = 1;
+}
+
+enum CompressionAlgorithm {
+    None = 0;
+    LZ4 = 1;
+    ZSTD = 2;
+}
+
+enum ValueEncodingType {
+    Binary = 0;
+    String = 1;
+    Integer = 2;
+    Float = 3;
+    Boolean = 4;
+    JSON = 5;
+    Void = 6;
+}
+
+message ListMetaRequest {
+    string database = 1;
+    string collection = 2;
+}
+
+message ListMetaResponse {
+    map<string,string> meta = 1;
+    optional string error = 2;
+}
+
+message DeleteMetaRequest {
+    string database = 1;
+    string collection = 2;
+    string key = 3;
+}
+
+message DeleteMetaResponse {
+    optional string error = 1;
+}
+
+message HasMetaRequest {
+    string database = 1;
+    string collection = 2;
+    string key = 3;
+}
+
+message HasMetaResponse {
+    optional bool hasMeta = 1;
+    optional string error = 2;
+}
+
+message GetMetaRequest {
+    string database = 1;
+    string collection = 2;
+    string key = 3;
+}
+
+message GetMetaResponse {
+    string value = 1;
+    optional string error = 2;
+}
+
+message SetMetaRequest {
+    string database = 1;
+    string collection = 2;
+    string key = 3;
+    string value = 4;
+}
+
+message SetMetaResponse {
+    optional string error = 1;
+}
+
+message HasRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+}
+
+message HasResponse {
+    bool has = 1;
+    optional string error = 2;
+}
+
+message GetRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+}
+
+message GetResponse {
+    bytes value = 1;
+    bool notFound = 2;
+    optional string error = 3;
+}
+
+message GetChunkRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+    int64 offset = 4;
+    uint32 chunkSize = 5;
+}
+
+message GetChunkResponse {
+    bytes chunk = 1;
+    optional string error = 2;
+}
+
+message GetUntilRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+    int64 offset = 4;
+    int32 terminator = 5;    
+}
+
+message GetUntilResponse {
+    bytes chunk = 1;
+    optional string error = 2;
+}
+
+message PutRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+    bytes value = 4;
+}
+
+message DeleteRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+}
+
+message ClearRequest {
+    string database = 1;
+    string name = 2;    
+}
+
+message SizeRequest {
+    string database = 1;
+    string name = 2;
+}
+
+message SizeResponse {
+    int32 size = 1;
+    optional string error = 2;
+}
+
+message GetRecordSizeRequest {
+    string database = 1;
+    string name = 2;
+    string key = 3;
+}
+
+message GetRecordSizeResponse {
+    int64 size = 1;
+    optional string error = 2;
+}
+
+message ListKeysRequest {
+    string database = 1;
+    string name = 2;
+}
+
+message ListKeysResponse {
+    repeated string keys = 1;
+    optional string error = 2;
+}
+
+message GetRecordCountRequest {
+    string database = 1;
+    string name = 2;
+}
+
+message GetRecordCountResponse {
+    int32 count = 1;
+    optional string error = 2;
+}

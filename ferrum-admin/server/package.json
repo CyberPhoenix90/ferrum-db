@@ -2,18 +2,25 @@
     "name": "ferrum-admin-server",
     "version": "1.0.0",
     "description": "",
+    "type": "module",
     "main": "dist/index.mjs",
+    "workspaces": [
+        "../../clients/nodejs"
+    ],
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "build": "tsc",
+        "start": "node"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
         "@types/express": "^4.17.14",
-        "aurum-server": "^0.0.18",
-        "aurumjs": "^0.8.11",
+        "@types/google-protobuf": "^3.15.12",
+        "@types/node": "^20.10.4",
+        "aurum-server": "^0.0.36",
+        "aurumjs": "^0.9.22",
         "express": "^4.18.2",
-        "ferrum-db-client": "^0.2.15"
+        "ferrum-db-client": "^0.3.5"
     }
 }

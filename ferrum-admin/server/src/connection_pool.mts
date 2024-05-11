@@ -1,7 +1,7 @@
-import { ferrumConnect, FerrumServerConnection } from 'ferrum-db-client';
+import { ferrumConnect } from 'ferrum-db-client';
 import { Connection, connections } from './state.mjs';
 
-const connectionPool = new Map<string, FerrumServerConnection>();
+const connectionPool = new Map<string, any>();
 
 export async function getConnectionFor(ip: string, port: number) {
     const key = `${ip}:${port}`;

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcAPI";
+
+message EmptyRequest {
+}
+
+message SuccessResponse {
+  bool success = 1;
+  optional string error = 2;
+}

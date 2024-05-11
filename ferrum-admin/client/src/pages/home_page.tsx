@@ -9,8 +9,8 @@ import {
     listSets,
     listTimeSeries,
     listTimeSeriesKeys,
-} from '../utils/api';
-import { urlDatabase, urlFocusedCollection, urlServerIP, urlServerPort } from '../utils/url_state';
+} from '../utils/api.js';
+import { urlDatabase, urlFocusedCollection, urlServerIP, urlServerPort } from '../utils/url_state.js';
 import { JSONRenderer } from 'aurum-components';
 
 interface Connection {
