@@ -1,5 +1,5 @@
 #!/bin/bash
-PROTO_DIR=./ferrum/api/grpc_protocol
+PROTO_DIR=./ferrum/grpc_protocol
 OUT_DIR_JS=./clients/nodejs/dist/proto
 OUT_DIR_TS=./clients/nodejs/src/proto
 

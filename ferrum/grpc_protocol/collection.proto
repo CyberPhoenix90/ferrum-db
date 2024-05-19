@@ -44,6 +44,11 @@ enum ValueEncodingType {
     Void = 6;
 }
 
+enum Persistance {
+    Persisted = 0;
+    InMemory = 1;
+}
+
 message ListMetaRequest {
     string database = 1;
     string collection = 2;

@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "skipDefaultLibCheck": true,
+        "allowSyntheticDefaultImports": true,
+        "allowUnreachableCode": false,
+        "incremental": false,
+        "allowUnusedLabels": false,
+        "skipLibCheck": true,
+        "newLine": "LF",
+        "alwaysStrict": true,
+        "declarationMap": true,
+        "declaration": true,
+        "moduleResolution": "Node16",
+        "jsx": "react",
+        "module": "Node16",
+        "noFallthroughCasesInSwitch": true,
+        "noUnusedLocals": true,
+        "inlineSources": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noEmitOnError": false,
+        "strictFunctionTypes": true,
+        "sourceMap": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "target": "es2022",
+        "outDir": "dist"
+    },
+    "include": ["src/**/*.d.ts", "src/**/*.mts"]
+}

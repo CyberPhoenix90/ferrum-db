@@ -19,13 +19,20 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase
 
         try
         {
+
+            if (databaseEngine.HasDatabase(request.Name))
+            {
+                response.Code = SuccessResponseCode.AlreadyExists;
+                return Task.FromResult(response);
+            }
+
             databaseEngine.CreateDatabase(request.Name);
-            response.Success = true;
+            response.Code = SuccessResponseCode.Ok;
         }
         catch (Exception e)
         {
             Logger.Info($"Error creating database: {e.Message}");
-            response.Success = false;
+            response.Code = SuccessResponseCode.ServerError;
             response.Error = e.Message;
         }
 
@@ -38,13 +45,19 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase
         var response = new SuccessResponse();
         try
         {
+            if (!databaseEngine.HasDatabase(request.Name))
+            {
+                response.Code = SuccessResponseCode.NotFound;
+                return Task.FromResult(response);
+            }
+
             databaseEngine.DeleteDatabase(request.Name);
-            response.Success = true;
+            response.Code = SuccessResponseCode.Ok;
         }
         catch (Exception e)
         {
             Logger.Info($"Error deleting database: {e.Message}");
-            response.Success = false;
+            response.Code = SuccessResponseCode.ServerError;
             response.Error = e.Message;
         }
 
@@ -66,5 +79,4 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase
 
         return Task.FromResult(response);
     }
-
 }

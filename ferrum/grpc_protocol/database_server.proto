@@ -6,7 +6,6 @@ import "shared.proto";
 
 service DatabaseServer {
   rpc CreateDatabase (CreateDatabaseRequest) returns (SuccessResponse);
-  rpc CreateDatabaseIfNotExist (CreateDatabaseRequest) returns (SuccessResponse);
   rpc HasDatabase (HasDatabaseRequest) returns (HasDatabaseResponse);
   rpc DropDatabase (DropDatabaseRequest) returns (SuccessResponse);
   rpc ClearDatabase (ClearDatabaseRequest) returns (SuccessResponse);
@@ -15,32 +14,44 @@ service DatabaseServer {
 }
 
 message CreateDatabaseRequest {
-  string name = 1;
+  SuccessResponseCode code = 1;
+  optional string error = 2;
+  string name = 3;
 }
 
 message HasDatabaseRequest {
-  string name = 1;
+  SuccessResponseCode code = 1;
+  optional string error = 2;
+  string name = 3;
 }
 
 message HasDatabaseResponse {
-  bool hasDatabase = 1;
+  SuccessResponseCode code = 1;
   optional string error = 2;
+  bool hasDatabase = 3;
 }
 
 message DropDatabaseRequest {
-  string name = 1;
+  SuccessResponseCode code = 1;
+  optional string error = 2;
+  string name = 3;
 }
 
 message ClearDatabaseRequest {
-  string name = 1;
+  SuccessResponseCode code = 1;
+  optional string error = 2;
+  string name = 3;
 }
 
 
 message ListDatabasesResponse {
-  repeated string databases = 1;
+  SuccessResponseCode code = 1;
   optional string error = 2;
+  repeated string databases = 3;
 }
 
 message GrpcAPIVersionResponse {
-  string version = 1;
+  SuccessResponseCode code = 1;
+  optional string error = 2;
+  string version = 3;
 }
