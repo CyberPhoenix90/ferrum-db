@@ -2,6 +2,10 @@
     "workbench.colorCustomizations": {
         "activityBar.background": "#555",
         "statusBar.background": "#555"
-      },
-      "FSharp.suggestGitignore": false
+    },
+    "search.exclude": {
+        "**/bin": true,
+        "**/obj": true
+    },
+    "FSharp.suggestGitignore": false
 }

@@ -3,5 +3,19 @@
     "version": "0.0.1",
     "description": "Admin tools to manage ferrum database server",
     "author": "Joao Santos (CyberPhoenix)",
-    "license": "MIT"
+    "license": "MIT",
+    "scripts": {
+        "preinstall": "cd server && npm install && cd ../client && npm install",
+        "create:client": "cd server && tsc && node ./dist/scripts/generate_client.mjs",
+        "backend": "cd server && nodemon -e mts --watch 'src/**/*.mts' --exec 'tsc && node .'",
+        "frontend": "cd client && npm start",
+        "start": "concurrently --names backend,frontend \"npm run backend\" \"npm run frontend\""
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "nodemon": "^3.1.0"
+    },
+    "dependencies": {
+        "typescript": "^5.4.5"
+    }
 }

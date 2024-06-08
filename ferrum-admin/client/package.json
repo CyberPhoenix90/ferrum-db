@@ -11,8 +11,14 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "aurum-components": "^0.3.19",
-        "aurumjs": "^0.9.31",
+        "aurum-components": "^0.3.21",
+        "aurumjs": "^0.9.39"
+    },
+    "workspaces": [
+        "../../../aurum/packages/aurum",
+        "../../../aurum/packages/aurum-components"
+    ],
+    "devDependencies": {
         "vite": "^5.0.7"
     }
 }

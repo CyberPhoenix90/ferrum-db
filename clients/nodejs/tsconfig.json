@@ -11,12 +11,10 @@
         "alwaysStrict": true,
         "declarationMap": true,
         "declaration": true,
-        "moduleResolution": "Node16",
-        "jsx": "react",
-        "module": "Node16",
+        "moduleResolution": "Node",
+        "module": "CommonJS",
         "noFallthroughCasesInSwitch": true,
         "noUnusedLocals": true,
-        "inlineSources": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
         "noEmitOnError": false,
@@ -27,5 +25,5 @@
         "target": "es2022",
         "outDir": "dist"
     },
-    "include": ["src/**/*.d.ts", "src/**/*.mts"]
+    "include": ["src/**/*.d.ts", "src/**/*.mts", "src/util.ts", "src/connection/ferrum_database_remote.ts", "src/connection/client.ts", "src/index.ts"]
 }

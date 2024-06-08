@@ -1,0 +1,27 @@
+{
+    "compilerOptions": {
+        "outDir": "dist",
+        "sourceMap": true,
+        "module": "Node16",
+        "target": "ESNext",
+        "noUnusedLocals": true,
+        "noImplicitThis": true,
+        "declaration": true,
+        "declarationMap": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "jsxFactory": "Aurum.factory",
+        "jsxFragmentFactory": "Aurum.fragment",
+        "jsx": "react",
+        "moduleResolution": "Node16"
+    },
+    "include": [
+        "src/**/*.mts",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "test/**/*.mts",
+        "test/**/*.tsx",
+        "test/**/*.ts"
+    ]
+}

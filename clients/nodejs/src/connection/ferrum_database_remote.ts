@@ -1,9 +1,12 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
-import { DatabaseClient } from '../proto/database_grpc_pb.js';
+import { DatabaseClient } from '../proto/database_grpc_pb';
 
 export class FerrumDBRemote {
+    //@ts-ignore
     private ip: string;
+    //@ts-ignore
     private port: number;
+    //@ts-ignore
     private client: DatabaseClient;
     public readonly name: string;
 

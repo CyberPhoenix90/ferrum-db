@@ -1,49 +1,78 @@
-import { AurumServer } from 'aurum-server';
-import express from 'express';
+import { readFile } from 'fs/promises';
 import { createServer } from 'http';
-import { getConnectionFor } from './connection_pool.mjs';
-import { connections } from './state.mjs';
+import { join } from 'path';
+import { ConnectionController } from './controllers/connection_controller.mjs';
+import { Request } from './framework/request.mjs';
+import { Router } from './framework/router.mjs';
+import { DbServerController } from './controllers/db_server_controller.mjs';
 
-const app = express();
-const server = createServer(app);
-const as = AurumServer.create<void>({
-    reuseServer: server,
+const clientPath = join(import.meta.dirname, '../../client/dist');
+
+const controllers = [Router.fromController(new ConnectionController()), Router.fromController(new DbServerController())];
+
+const http = createServer(async (req: Request, res) => {
+    if (req.url.includes('..')) {
+        res.writeHead(400);
+        res.end();
+        return;
+    }
+
+    let body = '';
+    for await (const chunk of req) {
+        body += chunk;
+    }
+
+    req.rawBody = body;
+    if (req.headers['content-type'] === 'application/json') {
+        try {
+            req.body = JSON.parse(body);
+        } catch (e) {
+            res.writeHead(400);
+            res.end();
+            return;
+        }
+    }
+
+    if (req.url.startsWith('/api')) {
+        try {
+            for (const controller of controllers) {
+                if (await controller.route(req.url.slice(4), req, res)) {
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            try {
+                res.writeHead(500);
+            } catch {}
+            res.end();
+            return;
+        }
+    }
+
+    if (req.url === '/favicon.ico') {
+        res.end();
+        return;
+    }
+
+    if (!req.url.includes('.') && !req.url.startsWith('/api')) {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(await readFile(join(clientPath, 'index.html'), 'utf-8'));
+    } else if (req.url.endsWith('.map')) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(await readFile(join(clientPath, req.url.slice(1)), 'utf-8'));
+    } else if (req.url.endsWith('.js')) {
+        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        res.end(await readFile(join(clientPath, req.url.slice(1)), 'utf-8'));
+    } else if (req.url.endsWith('.css')) {
+        res.writeHead(200, { 'Content-Type': 'text/css' });
+        res.end(await readFile(join(clientPath, req.url.slice(1)), 'utf-8'));
+    } else {
+        res.writeHead(404);
+        res.end();
+    }
 });
 
-as.exposeFunction('/api/authenticate', async (msg: { serverIP: string; serverPort: number }) => {
-    await getConnectionFor(msg.serverIP, msg.serverPort);
-    return true;
+http.listen(3000, () => {
+    console.log('listening on 3000');
 });
-
-as.exposeFunction('/api/list-databases', async (msg: { serverIP: string; serverPort: number }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    const dbs = await connection.getDatabaseNames();
-    return dbs;
-});
-
-as.exposeFunction('/api/list-collections', async (msg: { serverIP: string; serverPort: number; database: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    return connection.getDatabase(msg.database).getIndexes();
-});
-
-as.exposeFunction('/api/list-collection-keys', async (msg: { serverIP: string; serverPort: number; database: string; index: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    return connection.getDatabase(msg.database).getIndex(msg.index).getKeys();
-});
-
-as.exposeFunction('/api/get-collection-value', async (msg: { serverIP: string; serverPort: number; database: string; index: string; key: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    const value = await connection.getDatabase(msg.database).getIndex(msg.index).get(msg.key);
-    return value;
-});
-
-as.exposeArrayDataSource('/api/connections', connections);
-
-as.exposeFunction('/api/kick-connection', async (msg: { serverIP: string; serverPort: number; connectionId: string }) => {
-    const connection = await getConnectionFor(msg.serverIP, msg.serverPort);
-    try {
-        await connection.kickConnection(msg.connectionId);
-    } catch {}
-});
-
-server.listen(8080, 'localhost', () => {});

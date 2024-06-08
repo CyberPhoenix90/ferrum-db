@@ -1,22 +1,38 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
-import { DatabaseServerClient } from '../proto/database_server_grpc_pb.js';
-import { CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from '../proto/database_server_pb.js';
-import { CallbackReturnType, promisify } from '../util.mjs';
-import { EmptyRequest } from '../proto/shared_pb.js';
-import { FerrumDBRemote } from './ferrum_database_remote.mjs';
+import { EventEmitter } from 'events';
+import { DatabaseServerClient } from '../proto/database_server_grpc_pb';
+import { ClearDatabaseRequest, CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from '../proto/database_server_pb';
+import { EmptyRequest } from '../proto/shared_pb';
+import { CallbackReturnType, promisify } from '../util';
+import { FerrumDBRemote } from './ferrum_database_remote';
 
-export class FerrumServerClient {
+//ignore unsafe ssl
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+export class FerrumServerClient extends EventEmitter<{ error: [Error]; ready: [] }> {
     private ip: string;
     private port: number;
     private client: DatabaseServerClient;
 
-    constructor(ip: string, port: number) {
+    constructor(ip: string, port: number, connectTimeout: number = 10000) {
+        super();
         this.ip = ip;
         this.port = port;
         this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });
+        this.client.waitForReady(Date.now() + connectTimeout, (err) => {
+            if (err) {
+                this.emit('error', err);
+            } else {
+                this.emit('ready');
+            }
+        });
+    }
+
+    public async close(): Promise<void> {
+        this.client.close();
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
@@ -48,7 +64,7 @@ export class FerrumServerClient {
         const msg = new HasDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.hasDatabase>, CreateDatabaseRequest>(this.client.hasDatabase.bind(this.client), msg);
+        const res = await promisify<CallbackReturnType<typeof this.client.hasDatabase>, HasDatabaseRequest>(this.client.hasDatabase.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -61,10 +77,7 @@ export class FerrumServerClient {
         const msg = new DropDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.dropDatabase>, CreateDatabaseRequest>(
-            this.client.dropDatabase.bind(this.client),
-            msg,
-        );
+        const res = await promisify<CallbackReturnType<typeof this.client.dropDatabase>, DropDatabaseRequest>(this.client.dropDatabase.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -75,7 +88,7 @@ export class FerrumServerClient {
         const msg = new CreateDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.clearDatabase>, CreateDatabaseRequest>(
+        const res = await promisify<CallbackReturnType<typeof this.client.clearDatabase>, ClearDatabaseRequest>(
             this.client.clearDatabase.bind(this.client),
             msg,
         );
