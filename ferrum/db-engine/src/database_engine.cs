@@ -24,65 +24,110 @@ public class DatabaseEngine
         this.internalDatabase = new Database(Path.Join(config.databasePath, "$$internal"), "$$internal", ioEngine);
         this.internalDatabase.initializeDatabase();
 
+        // Load all databases
+        var databaseDirs = Directory.GetDirectories(config.databasePath);
+        foreach (var databaseDir in databaseDirs)
+        {
+            var databaseName = Path.GetFileName(databaseDir);
+            if (databaseName == "$$internal")
+            {
+                continue;
+            }
+
+            var database = new Database(databaseDir, databaseName, ioEngine);
+            database.initializeDatabase();
+            this.databases[databaseName] = database;
+        }
+
     }
 
     public Database CreateDatabase(string name)
     {
-        writeLock.EnterWriteLock();
-        if (this.databases.ContainsKey(name))
+        try
         {
-            throw new Exception($"Database {name} already exists");
+            writeLock.EnterWriteLock();
+            if (this.databases.ContainsKey(name))
+            {
+                throw new Exception($"Database {name} already exists");
+            }
+
+            Directory.CreateDirectory(Path.Join(this.config.databasePath, name));
+            var database = new Database(Path.Join(this.config.databasePath, name), name, this.ioEngine);
+            database.initializeDatabase();
+            this.databases[name] = database;
+
+            return database;
         }
-
-        Directory.CreateDirectory(Path.Join(this.config.databasePath, name));
-        var database = new Database(Path.Join(this.config.databasePath, name), name, this.ioEngine);
-        database.initializeDatabase();
-        this.databases[name] = database;
-        writeLock.ExitWriteLock();
-
-        return database;
+        finally
+        {
+            writeLock.ExitWriteLock();
+        }
     }
 
     public void DeleteDatabase(string name)
     {
-        writeLock.EnterWriteLock();
-        if (!this.databases.ContainsKey(name))
+        try
         {
-            throw new Exception($"Database {name} does not exist");
-        }
+            writeLock.EnterWriteLock();
+            if (!this.databases.ContainsKey(name))
+            {
+                throw new Exception($"Database {name} does not exist");
+            }
 
-        this.databases[name].dispose();
-        this.databases.Remove(name);
-        Directory.Delete(Path.Join(this.config.databasePath, name));
-        writeLock.ExitWriteLock();
+            this.databases[name].dispose();
+            this.databases.Remove(name);
+        }
+        finally
+        {
+
+            writeLock.ExitWriteLock();
+        }
     }
 
     public List<string> ListDatabases()
     {
-        writeLock.EnterReadLock();
-        var result = this.databases.Keys.ToList();
-        writeLock.ExitReadLock();
-        return result;
+        try
+        {
+            writeLock.EnterReadLock();
+            var result = this.databases.Keys.ToList();
+            return result;
+        }
+        finally
+        {
+            writeLock.ExitReadLock();
+        }
     }
 
     public bool HasDatabase(string name)
     {
-        writeLock.EnterReadLock();
-        var result = this.databases.ContainsKey(name);
-        writeLock.ExitReadLock();
-        return result;
+        try
+        {
+            writeLock.EnterReadLock();
+            var result = this.databases.ContainsKey(name);
+            return result;
+        }
+        finally
+        {
+            writeLock.ExitReadLock();
+        }
     }
 
     public Database GetDatabase(string name)
     {
-        writeLock.EnterReadLock();
-        if (!this.databases.ContainsKey(name))
+        try
         {
-            throw new Exception($"Database {name} does not exist");
-        }
+            writeLock.EnterReadLock();
+            if (!this.databases.ContainsKey(name))
+            {
+                throw new Exception($"Database {name} does not exist");
+            }
 
-        var result = this.databases[name];
-        writeLock.ExitReadLock();
-        return result;
+            var result = this.databases[name];
+            return result;
+        }
+        finally
+        {
+            writeLock.ExitReadLock();
+        }
     }
 }

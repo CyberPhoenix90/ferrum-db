@@ -1,7 +1,7 @@
-import { FloatingWindow, WindowTitle, WindowContent, TextField, NumberField, WindowFooter, WindowContentRow, Button } from 'aurum-components';
+import { FloatingWindow, WindowTitle, WindowContent, TextField, NumberField, WindowFooter, WindowContentRow, Button, createForm } from 'aurum-components';
 import { ArrayDataSource, Aurum, DataSource, Renderable, dsMap } from 'aurumjs';
-import { ConnectionClient } from '../endpoints/connection_client.js';
-import { ServerModel } from '../models/server.js';
+import { ConnectionClient } from '../../endpoints/connection_client.js';
+import { ServerModel } from '../../models/server.js';
 
 export interface AddServerModalProps {
     dialogs: ArrayDataSource<Renderable>;
@@ -9,34 +9,49 @@ export interface AddServerModalProps {
 }
 
 export function AddServerModal(this: Renderable, props: AddServerModalProps) {
-    const name = new DataSource('');
-    const ip = new DataSource('localhost');
-    const port = new DataSource(3000);
-    const error = new DataSource('');
-    const loading = new DataSource(false);
-
     const close = function (this: Renderable) {
         props.dialogs.remove(this);
         props.onClose?.();
     }.bind(this);
 
+    const error = new DataSource('');
+    const loading = new DataSource(false);
+
+    const form = createForm<ServerModel>({
+        name: {
+            source: new DataSource(''),
+            minLength: 1,
+        },
+        serverIP: {
+            source: new DataSource('localhost'),
+            minLength: 7,
+            maxLength: 15,
+        },
+        serverPort: {
+            source: new DataSource(2999),
+            integer: true,
+            min: 1,
+            max: 65535,
+        },
+    });
+
     return (
-        <FloatingWindow onClose={close} onEscape={close} closable draggable x={100} y={100} w={400} h={200}>
+        <FloatingWindow onClose={close} onEscape={close} closable draggable w={400} h={200}>
             <WindowTitle>
                 <i class="fas fa-server"></i> Add server
             </WindowTitle>
             <WindowContent>
                 <WindowContentRow>
                     <label>Server name</label>
-                    <TextField value={name}></TextField>
+                    <TextField form={form} name="name"></TextField>
                 </WindowContentRow>
                 <WindowContentRow>
                     <label>Server IP</label>
-                    <TextField value={ip}></TextField>
+                    <TextField form={form} name="serverIP"></TextField>
                 </WindowContentRow>
                 <WindowContentRow>
                     <label>Server Port</label>
-                    <NumberField min={1} max={65535} value={port}></NumberField>
+                    <NumberField form={form} name="serverPort"></NumberField>
                 </WindowContentRow>
 
                 <div>
@@ -82,18 +97,16 @@ export function AddServerModal(this: Renderable, props: AddServerModalProps) {
                     <Button
                         buttonType="action"
                         onClick={async () => {
-                            if (!name.value || !ip.value || !port.value) {
+                            if (!form.isFullyValid()) {
                                 error.update('All fields are required');
                                 return;
                             }
 
+                            const model = form.getFormObject();
+
                             error.update('');
                             loading.update(true);
-                            const { success } = await ConnectionClient.addServer({
-                                name: name.value,
-                                serverIP: ip.value,
-                                serverPort: port.value,
-                            });
+                            const { success } = await ConnectionClient.addServer(model);
 
                             if (!success) {
                                 loading.update(false);

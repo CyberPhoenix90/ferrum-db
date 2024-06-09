@@ -1,6 +1,6 @@
 import { currentTheme, lightTheme } from 'aurum-components';
 import { Aurum, AurumRouter, DefaultRoute, Renderable, Route } from 'aurumjs';
-import { HomePage } from './ui/home_page.js';
+import { HomePage } from './ui/page/home_page.js';
 
 currentTheme.update(lightTheme);
 

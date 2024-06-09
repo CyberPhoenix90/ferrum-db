@@ -1,6 +1,6 @@
-import { Button, DropDownMenu, FloatingWindow, TextField, WindowContent, WindowContentRow, WindowFooter, WindowTitle, createForm } from 'aurum-components';
-import { ArrayDataSource, Aurum, DataSource, Renderable, dsMap } from 'aurumjs';
-import { DbServerClient } from '../endpoints/db_server_client.js';
+import { Button, FloatingWindow, TextField, WindowContent, WindowContentRow, WindowFooter, WindowTitle, createForm } from 'aurum-components';
+import { ArrayDataSource, Aurum, DataSource, Renderable } from 'aurumjs';
+import { DbServerClient } from '../../endpoints/db_server_client.js';
 
 export interface DatabaseModel {
     name: string;
@@ -14,8 +14,6 @@ export interface AddDatabaseModalProps {
 }
 
 export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps) {
-    const name = new DataSource('');
-    const type = new DataSource(0);
     const error = new DataSource('');
     const loading = new DataSource(false);
 
@@ -26,25 +24,21 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
 
     const form = createForm<DatabaseModel>({
         name: {
-            source: name,
+            source: new DataSource(''),
             minLength: 1,
+            maxLength: 80,
         },
     });
 
     return (
-        <FloatingWindow onClose={() => close()} onEscape={() => close()} onEnter={submit} closable draggable x={100} y={100} w={400} h={200}>
+        <FloatingWindow onClose={() => close()} onEscape={() => close()} onEnter={submit} closable draggable w={400} h={200}>
             <WindowTitle>
                 <i class="fas fa-server"></i> Add database
             </WindowTitle>
             <WindowContent>
                 <WindowContentRow>
                     <label>Database name</label>
-                    <TextField
-                        class={{
-                            invalid: form.isInvalid['name'],
-                        }}
-                        onBlur={() => form.validateField('name')}
-                        value={name}></TextField>
+                    <TextField form={form} name="name"></TextField>
                 </WindowContentRow>
                 <div
                     style={{
