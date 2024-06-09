@@ -5,7 +5,8 @@
     "type": "module",
     "main": "dist/index.mjs",
     "workspaces": [
-        "../../clients/nodejs"
+        "../../clients/nodejs",
+        "../shared"
     ],
     "scripts": {
         "build": "tsc",

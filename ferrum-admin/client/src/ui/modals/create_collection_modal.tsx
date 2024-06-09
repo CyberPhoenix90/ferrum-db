@@ -12,6 +12,7 @@ import {
     createForm,
 } from 'aurum-components';
 import { ArrayDataSource, Aurum, DataSource, Renderable, dsMap } from 'aurumjs';
+import { CollectionKeyType, CollectionValueType, CollectionCompression, CollectionPersistence, CollectionEvictionStrategy } from 'shared';
 
 export interface CollectionModel {
     name: string;
@@ -34,15 +35,15 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
 
     const form = createForm<{
         name: string;
-        keyType: 'string' | 'number';
-        valueType: 'json' | 'binary' | 'string' | 'int64' | 'float64' | 'real' | 'ndjson' | 'void';
-        compression: 'none' | 'lz4' | 'zstd';
-        persistence: 'persistent' | 'volatile';
+        keyType: CollectionKeyType;
+        valueType: CollectionValueType;
+        compression: CollectionCompression;
+        persistence: CollectionPersistence;
         limitRecordCount: boolean;
         maxRecordCount: number;
         limitCollectionSize: boolean;
         maxCollectionSize: number;
-        evictionStrategy: 'lru' | 'fifo';
+        evictionStrategy: CollectionEvictionStrategy;
         advanced: boolean;
         pageSize: number;
         overProvisionFactor: number;

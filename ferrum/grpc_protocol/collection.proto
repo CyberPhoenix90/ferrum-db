@@ -41,7 +41,15 @@ enum ValueEncodingType {
     Float = 3;
     Boolean = 4;
     JSON = 5;
-    Void = 6;
+    Real = 6;
+    NdJSON = 7;
+    Void = 8;
+}
+
+enum EvictionPolicy {
+    LRU = 0;
+    LFU = 1;
+    FIFO = 2;
 }
 
 enum Persistance {

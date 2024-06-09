@@ -51,12 +51,7 @@ export class FerrumServerClient extends EventEmitter<{ error: [Error]; ready: []
         return new FerrumDBRemote(this.ip, this.port, dbName);
     }
 
-    public async getDatabase(dbName: string): Promise<FerrumDBRemote> {
-        const has = await this.hasDatabase(dbName);
-        if (!has) {
-            throw new Error(`Database ${dbName} does not exist`);
-        }
-
+    public getDatabase(dbName: string): FerrumDBRemote {
         return new FerrumDBRemote(this.ip, this.port, dbName);
     }
 

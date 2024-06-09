@@ -14,15 +14,16 @@ service Database {
 }
 
 message CreateCollectionRequest {
-    SuccessResponseCode code = 1;
-    optional string error = 2;
-     string database = 3;
-    string name = 4;
+    string database = 1;
+    string name = 2;
+    CollectionKeyType keyType = 3;
+    ValueEncodingType valueType = 4;
     optional uint32 pageSize = 5;
-    CollectionKeyType keyType = 6;
-    ValueEncodingType valueType = 7;
-    bool isArray = 8;
+    optional float overprovision = 6;
+    optional int32 recordLimit = 7;
+    optional int32 collectionSizeLimit = 8;
     CompressionAlgorithm compressionAlgorithm = 9;
+    optional EvictionPolicy evictionPolicy = 10;
 }
 
 message DeleteCollectionRequest {

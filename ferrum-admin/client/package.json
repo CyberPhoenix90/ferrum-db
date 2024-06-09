@@ -16,7 +16,8 @@
     },
     "workspaces": [
         "../../../aurum/packages/aurum",
-        "../../../aurum/packages/aurum-components"
+        "../../../aurum/packages/aurum-components",
+        "../shared"
     ],
     "devDependencies": {
         "vite": "^5.0.7"

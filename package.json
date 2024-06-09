@@ -6,7 +6,8 @@
         "build-debug": "cd ferrum-db-server && dotnet publish --runtime linux-x64 -c Debug --self-contained=true ferrum-db-server.csproj",
         "test": "cd ferrum-db-server-tests && dotnet test --collect:\"XPlat Code Coverage\"",
         "codegen:buf": "./generate_grpc_client.sh",
-        "build:admin": "concurrently --names backend,frontend,shared \"npm run build:admin:backend\" \"npm run build:admin:frontend\" \"npm run build:admin:shared\"",
+        "build:client:node": "./generate_grpc_client.sh && cd clients/node && npm i && tsc",
+        "build:admin": "concurrently --names backend,frontend,shared,client \"npm run build:admin:backend\" \"npm run build:admin:frontend\" \"npm run build:admin:shared\" \"npm run build:client:node\"",
         "build:admin:backend": "cd ferrum-admin/server && npm i && tsc && nodemon -e mts --watch 'src/**/*.mts' --exec 'tsc && cd .. && npm run create:client && cd server && node .'",
         "build:admin:frontend": "cd ferrum-admin/client && npm i && vite",
         "build:admin:shared": "cd ferrum-admin/shared && npm i && tsc -w"
