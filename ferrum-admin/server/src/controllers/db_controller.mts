@@ -1,41 +1,41 @@
+import { CollectionCompression, CollectionEvictionStrategy, CollectionKeyType, CollectionPersistence, CollectionValueType } from 'shared';
+import { getConnectionFor } from '../connect_manager.mjs';
 import { publicEndpoint } from '../decorators/public.mjs';
 import { route } from '../decorators/route.mjs';
+import { FerrumRequest, FerrumResponse } from '../framework/request.mjs';
 import { Controller } from './controller.mjs';
-import { Request } from '../framework/request.mjs';
-import { ServerResponse } from 'http';
-import { getConnectionFor } from '../connect_manager.mjs';
 import { post } from '../decorators/method.mjs';
-import { CollectionCompression, CollectionEvictionStrategy, CollectionKeyType, CollectionPersistence, CollectionValueType } from 'shared';
+import { CompressionAlgorithm, CollectionKeyType as PBCollectionKeyType, ValueEncodingType, Persistence, EvictionPolicy } from 'ferrum-db-client';
 
 @route('/db')
 export class DbController extends Controller {
     @publicEndpoint()
-    @post<
-        {
+    @post()
+    public async listCollections(
+        req: FerrumRequest<{
             serverIP: string;
             serverPort: number;
             database: string;
-        },
-        {
-            collections: string[];
+        }>,
+        res: FerrumResponse<{
+            collections?: string[];
             success: boolean;
             error?: string;
-        }
-    >()
-    public async listCollections(req: Request, res: ServerResponse) {
+        }>,
+    ) {
         try {
             const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
             // List databases
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ collections: await connection.connection.getDatabase(req.body.database).listCollecions(), success: true }));
+            res.end({ collections: await connection.connection.getDatabase(req.body.database).listCollections(), success: true });
         } catch (e) {
-            res.end(JSON.stringify({ success: false, error: e.message }));
+            res.end({ success: false, error: e.message });
         }
     }
 
     @publicEndpoint()
-    @post<
-        {
+    @post()
+    public async createCollection(
+        req: FerrumRequest<{
             serverIP: string;
             serverPort: number;
             dbName: string;
@@ -49,69 +49,149 @@ export class DbController extends Controller {
             maxCollectionSize: number;
             pageSize: number;
             overProvisionFactor: number;
-        },
-        {
+        }>,
+        res: FerrumResponse<{
             success: boolean;
             error?: string;
-        }
-    >()
-    public async createCollection(req: Request, res: ServerResponse) {
+        }>,
+    ) {
         try {
             const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
             // Create database
-            await connection.connection.createDatabase(req.body.dbName);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true }));
+            await connection.connection.getDatabase(req.body.dbName).createCollection({
+                name: req.body.collectionName,
+                keyType: convertKeyType(req.body.keyType),
+                valueType: convertValueType(req.body.valueType),
+                compression: convertCompressionType(req.body.compression),
+                persistence: convertPersistenceType(req.body.persistence),
+                evictionStrategy: convertEvictionType(req.body.evictionStrategy),
+                maxRecordCount: req.body.maxRecordCount,
+                maxCollectionSize: req.body.maxCollectionSize,
+                pageSize: req.body.pageSize,
+                overProvisionFactor: req.body.overProvisionFactor,
+            });
+
+            res.end({ success: true });
         } catch (e) {
-            res.end(JSON.stringify({ success: false, error: e.message }));
+            res.end({ success: false, error: e.message });
         }
     }
 
     @publicEndpoint()
-    @post<
-        {
+    @post()
+    public async hasCollection(
+        req: FerrumRequest<{
             serverIP: string;
             serverPort: number;
             dbName: string;
             collectionName: string;
-        },
-        {
+        }>,
+        res: FerrumResponse<{
             success: boolean;
             error?: string;
-        }
-    >()
-    public async hasCollection(req: Request, res: ServerResponse) {
+        }>,
+    ) {
         try {
             const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: await connection.connection.getDatabase(req.body.dbName).hasCollection(req.body.collectionName) }));
+            res.end({ success: await connection.connection.getDatabase(req.body.dbName).hasCollection(req.body.collectionName) });
         } catch (e) {
-            res.end(JSON.stringify({ success: false, error: e.message }));
+            res.end({ success: false, error: e.message });
         }
     }
 
     @publicEndpoint()
-    @post<
-        {
+    @post()
+    public async deleteCollection(
+        req: FerrumRequest<{
             serverIP: string;
             serverPort: number;
             dbName: string;
             collectionName: string;
-        },
-        {
+        }>,
+        res: FerrumResponse<{
             success: boolean;
             error?: string;
-        }
-    >()
-    public async deleteCollection(req: Request, res: ServerResponse) {
+        }>,
+    ) {
         try {
             const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
             // Delete collection
             await connection.connection.getDatabase(req.body.dbName).dropCollection(req.body.collectionName);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true }));
+            res.end({ success: true });
         } catch (e) {
-            res.end(JSON.stringify({ success: false, error: e.message }));
+            res.end({ success: false, error: e.message });
         }
+    }
+}
+function convertKeyType(keyType: CollectionKeyType): PBCollectionKeyType {
+    switch (keyType) {
+        case CollectionKeyType.STRING:
+            return PBCollectionKeyType.STRINGCOLLECTION;
+        case CollectionKeyType.NUMBER:
+            return PBCollectionKeyType.NUMBERCOLLECTION;
+        default:
+            throw new Error('Unknown key type');
+    }
+}
+
+function convertValueType(valueType: CollectionValueType): ValueEncodingType {
+    switch (valueType) {
+        case CollectionValueType.STRING:
+            return ValueEncodingType.STRING;
+        case CollectionValueType.BINARY:
+            return ValueEncodingType.BINARY;
+        case CollectionValueType.JSON:
+            return ValueEncodingType.JSON;
+        case CollectionValueType.FLOAT64:
+            return ValueEncodingType.FLOAT;
+        case CollectionValueType.INT64:
+            return ValueEncodingType.INTEGER;
+        case CollectionValueType.BOOLEAN:
+            return ValueEncodingType.BOOLEAN;
+        case CollectionValueType.NDJSON:
+            return ValueEncodingType.NDJSON;
+        case CollectionValueType.REAL:
+            return ValueEncodingType.REAL;
+        case CollectionValueType.VOID:
+            return ValueEncodingType.VOID;
+        default:
+            throw new Error('Unknown value type');
+    }
+}
+
+function convertCompressionType(compression: CollectionCompression): CompressionAlgorithm {
+    switch (compression) {
+        case CollectionCompression.NONE:
+            return CompressionAlgorithm.NONE;
+        case CollectionCompression.ZSTD:
+            return CompressionAlgorithm.ZSTD;
+        case CollectionCompression.LZ4:
+            return CompressionAlgorithm.LZ4;
+        default:
+            throw new Error('Unknown compression type');
+    }
+}
+
+function convertPersistenceType(persistence: CollectionPersistence): Persistence {
+    switch (persistence) {
+        case CollectionPersistence.PERSISTENT:
+            return Persistence.PERSISTED;
+        case CollectionPersistence.VOLATILE:
+            return Persistence.INMEMORY;
+        default:
+            throw new Error('Unknown persistence type');
+    }
+}
+
+function convertEvictionType(eviction: CollectionEvictionStrategy): EvictionPolicy {
+    switch (eviction) {
+        case CollectionEvictionStrategy.LRU:
+            return EvictionPolicy.LRU;
+        case CollectionEvictionStrategy.LFU:
+            return EvictionPolicy.LFU;
+        case CollectionEvictionStrategy.FIFO:
+            return EvictionPolicy.FIFO;
+        default:
+            throw new Error('Unknown eviction type');
     }
 }

@@ -52,7 +52,7 @@ enum EvictionPolicy {
     FIFO = 2;
 }
 
-enum Persistance {
+enum Persistence {
     Persisted = 0;
     InMemory = 1;
 }

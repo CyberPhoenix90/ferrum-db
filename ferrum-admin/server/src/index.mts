@@ -2,15 +2,20 @@ import { readFile } from 'fs/promises';
 import { createServer } from 'http';
 import { join } from 'path';
 import { ConnectionController } from './controllers/connection_controller.mjs';
-import { Request } from './framework/request.mjs';
 import { Router } from './framework/router.mjs';
 import { DbServerController } from './controllers/db_server_controller.mjs';
+import { DbController } from './controllers/db_controller.mjs';
+import { FerrumRequest } from './framework/request.mjs';
 
 const clientPath = join(import.meta.dirname, '../../client/dist');
 
-const controllers = [Router.fromController(new ConnectionController()), Router.fromController(new DbServerController())];
+const controllers: Router[] = [
+    Router.fromController(new ConnectionController()),
+    Router.fromController(new DbServerController()),
+    Router.fromController(new DbController()),
+];
 
-const http = createServer(async (req: Request, res) => {
+const http = createServer(async (req: FerrumRequest, res) => {
     if (req.url.includes('..')) {
         res.writeHead(400);
         res.end();

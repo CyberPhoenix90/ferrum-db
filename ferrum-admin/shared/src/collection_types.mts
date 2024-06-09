@@ -1,6 +1,6 @@
 export enum CollectionKeyType {
-    'String' = 'string',
-    'Number' = 'number',
+    'STRING' = 'string',
+    'NUMBER' = 'number',
 }
 
 export enum CollectionValueType {

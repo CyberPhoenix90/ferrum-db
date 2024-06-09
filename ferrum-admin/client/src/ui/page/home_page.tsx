@@ -285,6 +285,7 @@ function serverToTreeModel(dialogs: ArrayDataSource<Renderable>, server: ServerM
                 return databases.map((db) => {
                     return {
                         name: db,
+                        children: new ArrayDataSource<TreeEntry<TreeEntryTag>>([]),
                         icon: 'fas fa-database',
                         tag: {
                             type: NodeType.DATABASE,

@@ -3,6 +3,7 @@ import { DatabaseClient } from '../proto/database_grpc_pb';
 import { EmptyRequest } from '../proto/shared_pb';
 import { CallbackReturnType, promisify } from '../util';
 import { CreateCollectionRequest, DeleteCollectionRequest, HasCollectionRequest } from '../proto/database_pb';
+import { CollectionKeyType, CompressionAlgorithm, EvictionPolicy, Persistence, ValueEncodingType } from '../proto/collection_pb';
 
 export class FerrumDBRemote {
     //@ts-ignore
@@ -64,9 +65,39 @@ export class FerrumDBRemote {
         return res.getHascollection();
     }
 
-    public async createCollection(collectionName: string): Promise<void> {
+    public async createCollection(config: {
+        name: string;
+        keyType: CollectionKeyType;
+        valueType: ValueEncodingType;
+        compression: CompressionAlgorithm;
+        persistence: Persistence;
+        evictionStrategy?: EvictionPolicy;
+        maxRecordCount?: number;
+        maxCollectionSize?: number;
+        pageSize?: number;
+        overProvisionFactor?: number;
+    }): Promise<void> {
         const msg = new CreateCollectionRequest();
-        msg.setName(collectionName);
+        msg.setName(config.name);
+        msg.setKeytype(config.keyType);
+        msg.setValuetype(config.valueType);
+        msg.setCompressionalgorithm(config.compression);
+        msg.setPersistencetype(config.persistence);
+        if (config.evictionStrategy) {
+            msg.setEvictionpolicy(config.evictionStrategy);
+        }
+        if (config.maxRecordCount) {
+            msg.setRecordlimit(config.maxRecordCount);
+        }
+        if (config.maxCollectionSize) {
+            msg.setCollectionsizelimit(config.maxCollectionSize);
+        }
+        if (config.pageSize) {
+            msg.setPagesize(config.pageSize);
+        }
+        if (config.overProvisionFactor) {
+            msg.setOverprovision(config.overProvisionFactor);
+        }
 
         const res = await promisify<CallbackReturnType<typeof this.client.createCollection>, CreateCollectionRequest>(
             this.client.createCollection.bind(this.client),

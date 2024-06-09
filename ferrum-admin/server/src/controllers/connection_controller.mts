@@ -1,28 +1,26 @@
-import { ServerResponse } from 'http';
 import { getConnectionFor } from '../connect_manager.mjs';
 import { get, post } from '../decorators/method.mjs';
 import { publicEndpoint } from '../decorators/public.mjs';
 import { route } from '../decorators/route.mjs';
-import { Request } from '../framework/request.mjs';
+import { FerrumRequest, FerrumResponse } from '../framework/request.mjs';
 import { servers } from '../storage.mjs';
 import { Controller } from './controller.mjs';
 
 @route('/connect')
 export class ConnectionController extends Controller {
     @publicEndpoint()
-    @post<
-        {
+    @post()
+    public async addServer(
+        req: FerrumRequest<{
             name: string;
             serverIP: string;
             serverPort: number;
-        },
-        {
+        }>,
+        res: FerrumResponse<{
             success: boolean;
             error?: string;
-        }
-    >()
-    public async addServer(req: Request, res: ServerResponse) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        }>,
+    ) {
         try {
             await getConnectionFor(req.body.serverIP, req.body.serverPort);
             servers.update((data) => {
@@ -34,40 +32,36 @@ export class ConnectionController extends Controller {
 
                 return data;
             });
-            res.end(JSON.stringify({ success: true }));
+            res.end({ success: true });
         } catch (e) {
-            res.end(JSON.stringify({ success: false, error: e.message }));
+            res.end({ success: false, error: e.message });
         }
     }
 
     @publicEndpoint()
-    @post<
-        {
+    @post()
+    public async removeServer(
+        req: FerrumRequest<{
             serverIP: string;
             serverPort: number;
-        },
-        {
+        }>,
+        res: FerrumResponse<{
             success: boolean;
-        }
-    >()
-    public async removeServer(req: Request, res: ServerResponse) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        }>,
+    ) {
         servers.update((data) => data.filter((e) => e.host !== req.body.serverIP || e.port !== req.body.serverPort));
-        res.end(JSON.stringify({ success: true }));
+        res.end({ success: true });
     }
 
     @publicEndpoint()
-    @get<{ servers: { serverIP: string; serverPort: number; name: string }[] }>()
-    public async listServers(req: Request, res: ServerResponse) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-            JSON.stringify({
-                servers: Array.from(servers.get()).map((e) => ({
-                    name: e.name,
-                    serverIP: e.host,
-                    serverPort: e.port,
-                })),
-            }),
-        );
+    @get()
+    public async listServers(req: FerrumRequest, res: FerrumResponse<{ servers: { serverIP: string; serverPort: number; name: string }[] }>) {
+        res.end({
+            servers: Array.from(servers.get()).map((e) => ({
+                name: e.name,
+                serverIP: e.host,
+                serverPort: e.port,
+            })),
+        });
     }
 }

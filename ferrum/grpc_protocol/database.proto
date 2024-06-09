@@ -24,6 +24,7 @@ message CreateCollectionRequest {
     optional int32 collectionSizeLimit = 8;
     CompressionAlgorithm compressionAlgorithm = 9;
     optional EvictionPolicy evictionPolicy = 10;
+    Persistence persistenceType = 11;
 }
 
 message DeleteCollectionRequest {

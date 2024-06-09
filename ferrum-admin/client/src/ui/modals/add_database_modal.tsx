@@ -1,6 +1,7 @@
 import { Button, FloatingWindow, TextField, WindowContent, WindowContentRow, WindowFooter, WindowTitle, createForm } from 'aurum-components';
 import { ArrayDataSource, Aurum, DataSource, Renderable } from 'aurumjs';
 import { DbServerClient } from '../../endpoints/db_server_client.js';
+import { LoadingSpinner } from '../components/loading_spinner.js';
 
 export interface DatabaseModel {
     name: string;
@@ -40,6 +41,14 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
                     <label>Database name</label>
                     <TextField form={form} name="name"></TextField>
                 </WindowContentRow>
+                <div
+                    style={{
+                        color: 'red',
+                        fontSize: '12px',
+                    }}>
+                    {error}
+                </div>
+                <LoadingSpinner loading={loading} message="Creating database..."></LoadingSpinner>
                 <div
                     style={{
                         color: 'red',
@@ -88,17 +97,21 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
 
         error.update('');
         loading.update(true);
-        const { success } = await DbServerClient.createDatabase({
-            dbName: model.name,
-            serverIP: props.serverIP,
-            serverPort: props.serverPort,
-        });
-
-        if (!success) {
+        try {
+            const { success } = await DbServerClient.createDatabase({
+                dbName: model.name,
+                serverIP: props.serverIP,
+                serverPort: props.serverPort,
+            });
+            if (!success) {
+                loading.update(false);
+                error.update('Failed to create database.');
+            } else {
+                close(model);
+            }
+        } catch (e) {
             loading.update(false);
-            error.update('Failed to create database.');
-        } else {
-            close(model);
+            error.update(`Failed to send request. ${e}`);
         }
     }
 }

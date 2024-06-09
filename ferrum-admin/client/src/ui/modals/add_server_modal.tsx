@@ -1,7 +1,8 @@
-import { FloatingWindow, WindowTitle, WindowContent, TextField, NumberField, WindowFooter, WindowContentRow, Button, createForm } from 'aurum-components';
-import { ArrayDataSource, Aurum, DataSource, Renderable, dsMap } from 'aurumjs';
+import { Button, FloatingWindow, NumberField, TextField, WindowContent, WindowContentRow, WindowFooter, WindowTitle, createForm } from 'aurum-components';
+import { ArrayDataSource, Aurum, DataSource, Renderable } from 'aurumjs';
 import { ConnectionClient } from '../../endpoints/connection_client.js';
 import { ServerModel } from '../../models/server.js';
+import { LoadingSpinner } from '../components/loading_spinner.js';
 
 export interface AddServerModalProps {
     dialogs: ArrayDataSource<Renderable>;
@@ -53,25 +54,7 @@ export function AddServerModal(this: Renderable, props: AddServerModalProps) {
                     <label>Server Port</label>
                     <NumberField form={form} name="serverPort"></NumberField>
                 </WindowContentRow>
-
-                <div>
-                    {loading.transform(
-                        dsMap((v) =>
-                            v ? (
-                                <>
-                                    <i
-                                        class="fas fa-spinner fa-spin"
-                                        style={{
-                                            fontSize: '12px',
-                                        }}></i>
-                                    &nbsp; Attempting to connect...
-                                </>
-                            ) : (
-                                ''
-                            ),
-                        ),
-                    )}
-                </div>
+                <LoadingSpinner loading={loading} message="Attempting to connect..."></LoadingSpinner>
                 <div
                     style={{
                         color: 'red',
@@ -106,13 +89,18 @@ export function AddServerModal(this: Renderable, props: AddServerModalProps) {
 
                             error.update('');
                             loading.update(true);
-                            const { success } = await ConnectionClient.addServer(model);
+                            try {
+                                const { success } = await ConnectionClient.addServer(model);
 
-                            if (!success) {
+                                if (!success) {
+                                    loading.update(false);
+                                    error.update('Failed to connect to server. Check the IP and port');
+                                } else {
+                                    close();
+                                }
+                            } catch (e) {
                                 loading.update(false);
                                 error.update('Failed to connect to server. Check the IP and port');
-                            } else {
-                                close();
                             }
                         }}
                         icon={

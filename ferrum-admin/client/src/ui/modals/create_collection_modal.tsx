@@ -13,10 +13,12 @@ import {
 } from 'aurum-components';
 import { ArrayDataSource, Aurum, DataSource, Renderable, dsMap } from 'aurumjs';
 import { CollectionKeyType, CollectionValueType, CollectionCompression, CollectionPersistence, CollectionEvictionStrategy } from 'shared';
+import { DbClient } from '../../endpoints/db_client.js';
+import { LoadingSpinner } from '../components/loading_spinner.js';
 
 export interface CollectionModel {
     name: string;
-    type: 'persistent' | 'volatile';
+    type: CollectionPersistence;
 }
 
 export interface CreateCollectionModalProps {
@@ -32,6 +34,8 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
         props.dialogs.remove(this);
         props.onClose?.(model);
     }.bind(this);
+    const error = new DataSource('');
+    const loading = new DataSource(false);
 
     const form = createForm<{
         name: string;
@@ -54,20 +58,20 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
             maxLength: 80,
         },
         keyType: {
-            source: new DataSource('string'),
-            oneOf: ['string', 'number'],
+            source: new DataSource(CollectionKeyType.STRING),
+            oneOf: Object.values(CollectionKeyType),
         },
         valueType: {
-            source: new DataSource('json'),
-            oneOf: ['json', 'binary', 'string', 'int64', 'float64', 'money', 'ndjson', 'void'],
+            source: new DataSource(CollectionValueType.JSON),
+            oneOf: Object.values(CollectionValueType),
         },
         compression: {
-            source: new DataSource('lz4'),
-            oneOf: ['none', 'lz4', 'zstd'],
+            source: new DataSource(CollectionCompression.LZ4),
+            oneOf: Object.values(CollectionCompression),
         },
         persistence: {
-            source: new DataSource('persistent'),
-            oneOf: ['persistent', 'volatile'],
+            source: new DataSource(CollectionPersistence.PERSISTENT),
+            oneOf: Object.values(CollectionPersistence),
         },
         limitRecordCount: {
             source: new DataSource(false),
@@ -86,8 +90,8 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
             min: 1,
         },
         evictionStrategy: {
-            source: new DataSource('lru'),
-            oneOf: ['lru', 'fifo'],
+            source: new DataSource(CollectionEvictionStrategy.LRU),
+            oneOf: Object.values(CollectionEvictionStrategy),
         },
         advanced: {
             source: new DataSource(false),
@@ -219,6 +223,14 @@ A factor of 2 means that the record will have 2x the space it needs and can be a
                         ) : undefined,
                     ),
                 )}
+                <LoadingSpinner loading={loading} message="Creating collection..."></LoadingSpinner>
+                <div
+                    style={{
+                        color: 'red',
+                        fontSize: '12px',
+                    }}>
+                    {error}
+                </div>
             </WindowContent>
             <WindowFooter>
                 <div class="right">
@@ -243,9 +255,42 @@ A factor of 2 means that the record will have 2x the space it needs and can be a
         </FloatingWindow>
     );
 
-    function submit() {
+    async function submit() {
         if (form.isFullyValid()) {
-            close({ name: 'test', type: 'persistent' });
+            const model = form.getFormObject();
+
+            error.update('');
+            loading.update(true);
+            try {
+                const { success } = await DbClient.createCollection({
+                    collectionName: model.name,
+                    compression: model.compression,
+                    dbName: props.dbName,
+                    evictionStrategy: model.evictionStrategy,
+                    keyType: model.keyType,
+                    maxCollectionSize: model.maxCollectionSize,
+                    maxRecordCount: model.maxRecordCount,
+                    overProvisionFactor: model.overProvisionFactor,
+                    pageSize: model.pageSize,
+                    persistence: model.persistence,
+                    serverIP: props.serverIP,
+                    serverPort: props.serverPort,
+                    valueType: model.valueType,
+                });
+
+                if (!success) {
+                    loading.update(false);
+                    error.update('Failed to create collection.');
+                } else {
+                    close({
+                        name: model.name,
+                        type: model.persistence,
+                    });
+                }
+            } catch (e) {
+                loading.update(false);
+                error.update(`Failed to send request. ${e}`);
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import ts, { TypeNode } from 'typescript';
+import ts, { TypeNode, TypeReference } from 'typescript';
 
 const __filename = new URL(import.meta.url).pathname;
 const __dirname = join(__filename, '..');
@@ -27,7 +27,7 @@ for (const controllerDefinition of files) {
     const ast = ts.createSourceFile(controllerDefinition, readFileSync(controllerDefinition, 'utf8'), ts.ScriptTarget.ES2022, true);
 
     // Find the class declaration
-    const classDeclaration = ast.statements.find((e: { kind: any }) => e.kind === ts.SyntaxKind.ClassDeclaration) as ts.ClassDeclaration;
+    const classDeclaration = ast.statements.find((e) => e.kind === ts.SyntaxKind.ClassDeclaration) as ts.ClassDeclaration;
 
     if (!classDeclaration) {
         continue;
@@ -43,7 +43,7 @@ for (const controllerDefinition of files) {
             }
 
             // get methods
-            const methods = classDeclaration.members.filter((e: { kind: any }) => e.kind === ts.SyntaxKind.MethodDeclaration) as ts.MethodDeclaration[];
+            const methods = classDeclaration.members.filter((e) => e.kind === ts.SyntaxKind.MethodDeclaration) as ts.MethodDeclaration[];
 
             if (classDeclaration.name === undefined) {
                 throw new Error('Controller must have a name');
@@ -65,10 +65,45 @@ for (const controllerDefinition of files) {
                     continue;
                 }
 
-                if ((getMethod ?? postMethod).typeArguments[0] === undefined) {
+                if (method.parameters.length !== 2) {
                     const { line, character } = ts.getLineAndCharacterOfPosition(method.getSourceFile(), method.getStart());
                     throw new Error(
-                        `The annotation for method ${method.name.getText()} in controller ${classDeclaration.name.getText()} is missing a type argument
+                        `The annotation for method ${method.name.getText()} in controller ${classDeclaration.name.getText()} must have 2 parameters
+${method.getSourceFile().fileName}:${line + 1}:${character + 1}`,
+                    );
+                }
+
+                if (method.parameters[0].type === undefined || method.parameters[1].type === undefined) {
+                    const { line, character } = ts.getLineAndCharacterOfPosition(method.getSourceFile(), method.getStart());
+                    throw new Error(
+                        `The method ${method.name.getText()} in controller ${classDeclaration.name.getText()} must have a type for both parameters
+${method.getSourceFile().fileName}:${line + 1}:${character + 1}`,
+                    );
+                }
+
+                if (
+                    (!getMethod && (method.parameters[0].type as any).typeArguments === undefined) ||
+                    (method.parameters[1].type as any).typeArguments === undefined
+                ) {
+                    const { line, character } = ts.getLineAndCharacterOfPosition(method.getSourceFile(), method.getStart());
+                    throw new Error(
+                        `The method ${method.name.getText()} in controller ${classDeclaration.name.getText()} must have a generic type for the relevant parameters
+${method.getSourceFile().fileName}:${line + 1}:${character + 1}`,
+                    );
+                }
+
+                if (getMethod && (method.parameters[0].type as any as TypeReference)?.typeArguments?.[0] !== undefined) {
+                    const { line, character } = ts.getLineAndCharacterOfPosition(method.getSourceFile(), method.getStart());
+                    throw new Error(
+                        `The first argument in method ${method.name.getText()} in controller ${classDeclaration.name.getText()} must not have a type argument because it is a get method
+${method.getSourceFile().fileName}:${line + 1}:${character + 1}`,
+                    );
+                }
+
+                if (method.parameters[1].type === undefined) {
+                    const { line, character } = ts.getLineAndCharacterOfPosition(method.getSourceFile(), method.getStart());
+                    throw new Error(
+                        `The second argument of method ${method.name.getText()} in controller ${classDeclaration.name.getText()} must have a type
 ${method.getSourceFile().fileName}:${line + 1}:${character + 1}`,
                     );
                 }
@@ -78,17 +113,21 @@ ${method.getSourceFile().fileName}:${line + 1}:${character + 1}`,
                         name: method.name.getText(),
                         method: 'get',
                         route: getMethod.args[0]?.toString() ?? method.name.getText(),
-                        outputType: getMethod.typeArguments[0].getText(),
-                        requiredImports: extractRequiredImports(getMethod.typeArguments[0]),
+                        outputType: (method.parameters[1].type as any).typeArguments[0].getText(),
+                        requiredImports: extractRequiredImports([], (method.parameters[1].type as any).typeArguments[0]),
                     });
                 } else if (postMethod) {
                     controllerMetadata.methods.push({
                         name: method.name.getText(),
                         method: 'post',
                         route: postMethod.args[0]?.toString() ?? method.name.getText(),
-                        inputType: postMethod.typeArguments[0].getText(),
-                        outputType: postMethod.typeArguments[1].getText(),
-                        requiredImports: extractRequiredImports(postMethod.typeArguments[0], postMethod.typeArguments[1]),
+                        inputType: (method.parameters[0].type as any).typeArguments[0].getText(),
+                        outputType: (method.parameters[1].type as any).typeArguments[0].getText(),
+                        requiredImports: extractRequiredImports(
+                            [],
+                            (method.parameters[0].type as any).typeArguments[0],
+                            (method.parameters[1].type as any).typeArguments[0],
+                        ),
                     });
                 } else {
                     throw new Error('Method must have either a get or post annotation');
@@ -147,7 +186,7 @@ function getExtendingClass(classDeclaration: ts.ClassDeclaration): string {
     if (!heritageClauses) {
         return '';
     }
-    const extendsClause = heritageClauses.find((e: { token: any }) => e.token === ts.SyntaxKind.ExtendsKeyword);
+    const extendsClause = heritageClauses.find((e) => e.token === ts.SyntaxKind.ExtendsKeyword);
     if (!extendsClause) {
         return '';
     }
@@ -163,9 +202,9 @@ function getAnnotations(classDeclaration: ts.ClassDeclaration | ts.MethodDeclara
     typeArguments: Array<ts.TypeNode>;
     args: (string | ts.Expression)[];
 }[] {
-    return classDeclaration.modifiers.filter(ts.isDecorator).map((e: { expression: any }) => {
+    return classDeclaration.modifiers.filter(ts.isDecorator).map((e) => {
         const expression = e.expression as ts.CallExpression;
-        const args = expression.arguments.map((e: any) => {
+        const args = expression.arguments.map((e) => {
             if (ts.isStringLiteral(e)) {
                 return e.text;
             } else {
@@ -207,11 +246,36 @@ interface MethodMetaData {
     outputType: string;
     requiredImports: string[];
 }
-function extractRequiredImports(...typeNodes: TypeNode[]): string[] {
-    const result = [];
-    for (const typeNode of typeNodes) {
+function extractRequiredImports(result: string[], ...typeNodes: TypeNode[]): string[] {
+    for (let typeNode of typeNodes) {
+        // Unwrap array types
+        while (ts.isArrayTypeNode(typeNode)) {
+            typeNode = typeNode.elementType;
+        }
+
+        // Unwrap union types
+        if (ts.isUnionTypeNode(typeNode)) {
+            for (const type of typeNode.types) {
+                extractRequiredImports(result, type);
+            }
+            continue;
+        }
+
+        // Search generic types
+        if (ts.isTypeReferenceNode(typeNode) && typeNode.typeArguments) {
+            for (const type of typeNode.typeArguments) {
+                extractRequiredImports(result, type);
+            }
+        }
+
         if (ts.isTypeReferenceNode(typeNode)) {
             result.push(typeNode.typeName.getText());
+        } else if (ts.isTypeLiteralNode(typeNode)) {
+            for (const member of typeNode.members) {
+                if (ts.isPropertySignature(member)) {
+                    extractRequiredImports(result, member.type);
+                }
+            }
         }
     }
     return result;

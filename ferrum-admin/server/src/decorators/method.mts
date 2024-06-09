@@ -1,4 +1,4 @@
-export function get<O>(route?: string) {
+export function get(route?: string) {
     return function (value: any, context: DecoratorContext) {
         if (context.kind === 'method') {
             value[methodModelSymbol] = {
@@ -12,7 +12,7 @@ export function get<O>(route?: string) {
     };
 }
 
-export function post<I, O>(route?: string) {
+export function post(route?: string) {
     return function (value: any, context: DecoratorContext) {
         if (context.kind === 'method') {
             value[methodModelSymbol] = {
