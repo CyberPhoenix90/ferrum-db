@@ -10,12 +10,13 @@ using ferrum_transaction_engine;
 using ferrum_logger;
 using ferrum_query_engine;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace ferrum;
 
 class Program
 {
-    static void Main(string[] args)
+    async static Task Main(string[] args)
     {
         if (args.Contains("--help") || args.Contains("-h"))
         {
@@ -43,6 +44,7 @@ class Program
         var transactionEngine = new TransactionEngine(ferrumDb);
 
         var queryEngine = new QueryEngine(ferrumDb, transactionEngine);
+        await queryEngine.ExecuteQuery("add(2, 33);");
 
         Logger.Info($"Starting API");
         new API(ferrumDb, transactionEngine, queryEngine, new APIConfig

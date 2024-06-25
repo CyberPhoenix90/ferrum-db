@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading;
@@ -11,44 +12,28 @@ namespace ferrum_collection_engine;
 
 public class Collection
 {
-        const uint MIN_PAGE_SIZE = 1024 * 1024 * 16;
-        const uint DEFAULT_PAGE_SIZE = 1024 * 1024 * 64;
-        const uint MAX_PAGE_FILE_PER_FOLDER = 10000;
-        private readonly IOEngine io;
-        private readonly string folder;
-        private readonly uint pageSize;
-        private Dictionary<uint, PageFile> pageFiles;
-        private uint activePageFile;
-        private uint nextPageFile;
+        public const uint MIN_PAGE_SIZE = 1024 * 1024 * 16;
+        public const uint DEFAULT_PAGE_SIZE = 1024 * 1024 * 64;
+        public const uint MAX_PAGE_FILE_PER_FOLDER = 10000;
+        protected readonly IOEngine io;
+        protected readonly string folder;
+        protected uint pageSize;
+        protected Dictionary<uint, PageFile> pageFiles;
+        protected uint activePageFile;
+        protected uint nextPageFile;
         public ReaderWriterLockSlim writeLock = new ReaderWriterLockSlim();
+        public bool disposed = false;
 
-        public Collection(IOEngine io, string folder, string encoding, uint? pageSize)
+        protected Collection(IOEngine io, string folder)
         {
-                if (pageSize < MIN_PAGE_SIZE)
-                {
-                        throw new Exception("Page size must be at least 16MB to avoid excessive fragmentation");
-                }
-
                 this.io = io;
                 this.folder = folder;
-                this.pageSize = pageSize ?? DEFAULT_PAGE_SIZE;
                 this.pageFiles = [];
                 this.activePageFile = 0;
                 this.nextPageFile = 0;
         }
 
-        public void initialize()
-        {
-                if (!this.io.exists(this.folder))
-                {
-                        this.io.mkdir(this.folder);
-                        return;
-                }
-
-                loadPageFiles();
-        }
-
-        private void loadPageFiles()
+        protected void loadPageFiles()
         {
                 foreach (var file in this.io.iterateFilesRecursively(this.folder))
                 {
@@ -94,5 +79,24 @@ public class Collection
                 this.pageFiles[index] = pageFile;
                 this.nextPageFile++;
                 return index;
+        }
+
+        public void Dispose()
+        {
+                if (this.disposed)
+                {
+                        throw new Exception("Collection has been disposed");
+                }
+                try
+                {
+                        writeLock.EnterWriteLock();
+                        Directory.Delete(this.folder, true);
+                        this.pageFiles.Clear();
+                        this.disposed = true;
+                }
+                finally
+                {
+                        writeLock.ExitWriteLock();
+                }
         }
 }

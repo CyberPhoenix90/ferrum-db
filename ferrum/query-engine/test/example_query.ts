@@ -1,4 +1,4 @@
-import { api, ResponseCode } from 'ferrum';
+import { api, ResponseCode } from 'ferrum-query-api';
 interface LogModel {}
 
 export async function renameUser(parameters: { userId: string; newName: string }): Promise<{ code: ResponseCode; data: void }> {

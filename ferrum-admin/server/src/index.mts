@@ -72,6 +72,9 @@ const http = createServer(async (req: FerrumRequest, res) => {
     } else if (req.url.endsWith('.css')) {
         res.writeHead(200, { 'Content-Type': 'text/css' });
         res.end(await readFile(join(clientPath, req.url.slice(1)), 'utf-8'));
+    } else if (req.url.endsWith('.d.ts') || req.url.endsWith('.d.mts')) {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end(await readFile(join(clientPath, req.url.slice(1)), 'utf-8'));
     } else {
         res.writeHead(404);
         res.end();

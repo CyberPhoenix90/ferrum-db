@@ -3,6 +3,7 @@ import {
     DropDownMenu,
     FloatingWindow,
     NumberField,
+    Submit,
     TextField,
     ToggleField,
     WindowContent,
@@ -12,9 +13,10 @@ import {
     createForm,
 } from 'aurum-components';
 import { ArrayDataSource, Aurum, DataSource, Renderable, dsMap } from 'aurumjs';
-import { CollectionKeyType, CollectionValueType, CollectionCompression, CollectionPersistence, CollectionEvictionStrategy } from 'shared';
-import { DbClient } from '../../endpoints/db_client.js';
+import { CollectionKeyType, CollectionValueType, CollectionCompression, CollectionPersistence, CollectionEvictionStrategy, SuccessResponseCode } from 'shared';
 import { LoadingSpinner } from '../components/loading_spinner.js';
+import { ErrorIndicator } from '../components/error_indicator.js';
+import { DbClient } from '../../endpoints/db_client.js';
 
 export interface CollectionModel {
     name: string;
@@ -34,9 +36,6 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
         props.dialogs.remove(this);
         props.onClose?.(model);
     }.bind(this);
-    const error = new DataSource('');
-    const loading = new DataSource(false);
-
     const form = createForm<{
         name: string;
         keyType: CollectionKeyType;
@@ -51,65 +50,93 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
         advanced: boolean;
         pageSize: number;
         overProvisionFactor: number;
-    }>({
-        name: {
-            source: new DataSource(),
-            minLength: 1,
-            maxLength: 80,
+    }>(
+        {
+            name: {
+                source: new DataSource(),
+                minLength: 1,
+                maxLength: 80,
+            },
+            keyType: {
+                source: new DataSource(CollectionKeyType.STRING),
+                oneOf: Object.values(CollectionKeyType),
+            },
+            valueType: {
+                source: new DataSource(CollectionValueType.JSON),
+                oneOf: Object.values(CollectionValueType),
+            },
+            compression: {
+                source: new DataSource(CollectionCompression.LZ4),
+                oneOf: Object.values(CollectionCompression),
+            },
+            persistence: {
+                source: new DataSource(CollectionPersistence.PERSISTENT),
+                oneOf: Object.values(CollectionPersistence),
+            },
+            limitRecordCount: {
+                source: new DataSource(false),
+            },
+            maxRecordCount: {
+                source: new DataSource(1000),
+                integer: true,
+                min: 1,
+            },
+            limitCollectionSize: {
+                source: new DataSource(false),
+            },
+            maxCollectionSize: {
+                source: new DataSource(1024),
+                integer: true,
+                min: 1,
+            },
+            evictionStrategy: {
+                source: new DataSource(CollectionEvictionStrategy.LRU),
+                oneOf: Object.values(CollectionEvictionStrategy),
+            },
+            advanced: {
+                source: new DataSource(false),
+            },
+            pageSize: {
+                source: new DataSource(16),
+                integer: true,
+                min: 1,
+            },
+            overProvisionFactor: {
+                source: new DataSource(2),
+                min: 1,
+                max: 10,
+            },
         },
-        keyType: {
-            source: new DataSource(CollectionKeyType.STRING),
-            oneOf: Object.values(CollectionKeyType),
+        async (model, markAsFailed) => {
+            const { code } = await DbClient.createCollection({
+                collectionName: model.name,
+                compression: model.compression,
+                dbName: props.dbName,
+                evictionStrategy: model.evictionStrategy,
+                keyType: model.keyType,
+                maxCollectionSize: model.maxCollectionSize,
+                maxRecordCount: model.maxRecordCount,
+                overProvisionFactor: model.overProvisionFactor,
+                pageSize: model.pageSize,
+                persistence: model.persistence,
+                serverIP: props.serverIP,
+                serverPort: props.serverPort,
+                valueType: model.valueType,
+            });
+
+            if (code !== SuccessResponseCode.OK) {
+                markAsFailed('Failed to create collection.');
+            } else {
+                close({
+                    name: model.name,
+                    type: model.persistence,
+                });
+            }
         },
-        valueType: {
-            source: new DataSource(CollectionValueType.JSON),
-            oneOf: Object.values(CollectionValueType),
-        },
-        compression: {
-            source: new DataSource(CollectionCompression.LZ4),
-            oneOf: Object.values(CollectionCompression),
-        },
-        persistence: {
-            source: new DataSource(CollectionPersistence.PERSISTENT),
-            oneOf: Object.values(CollectionPersistence),
-        },
-        limitRecordCount: {
-            source: new DataSource(false),
-        },
-        maxRecordCount: {
-            source: new DataSource(1000),
-            integer: true,
-            min: 1,
-        },
-        limitCollectionSize: {
-            source: new DataSource(false),
-        },
-        maxCollectionSize: {
-            source: new DataSource(1024),
-            integer: true,
-            min: 1,
-        },
-        evictionStrategy: {
-            source: new DataSource(CollectionEvictionStrategy.LRU),
-            oneOf: Object.values(CollectionEvictionStrategy),
-        },
-        advanced: {
-            source: new DataSource(false),
-        },
-        pageSize: {
-            source: new DataSource(16),
-            integer: true,
-            min: 1,
-        },
-        overProvisionFactor: {
-            source: new DataSource(2),
-            min: 1,
-            max: 10,
-        },
-    });
+    );
 
     return (
-        <FloatingWindow onClose={() => close()} onEnter={() => submit()} onEscape={() => close()} closable draggable w={500} h={600}>
+        <FloatingWindow onClose={() => close()} onEnter={form.submit} onEscape={() => close()} closable draggable w={500} h={600}>
             <WindowTitle>
                 <i class="fas fa-table"></i> Add Collection
             </WindowTitle>
@@ -223,14 +250,8 @@ A factor of 2 means that the record will have 2x the space it needs and can be a
                         ) : undefined,
                     ),
                 )}
-                <LoadingSpinner loading={loading} message="Creating collection..."></LoadingSpinner>
-                <div
-                    style={{
-                        color: 'red',
-                        fontSize: '12px',
-                    }}>
-                    {error}
-                </div>
+                <LoadingSpinner loading={form.submitting} message="Creating collection..."></LoadingSpinner>
+                <ErrorIndicator error={form.submitError}></ErrorIndicator>
             </WindowContent>
             <WindowFooter>
                 <div class="right">
@@ -242,55 +263,16 @@ A factor of 2 means that the record will have 2x the space it needs and can be a
                         }}>
                         Cancel
                     </Button>
-                    <Button
+                    <Submit
+                        form={form}
                         buttonType={'action'}
-                        onClick={() => submit()}
                         style={{
                             minWidth: '120px',
                         }}>
                         OK
-                    </Button>
+                    </Submit>
                 </div>
             </WindowFooter>
         </FloatingWindow>
     );
-
-    async function submit() {
-        if (form.isFullyValid()) {
-            const model = form.getFormObject();
-
-            error.update('');
-            loading.update(true);
-            try {
-                const { success } = await DbClient.createCollection({
-                    collectionName: model.name,
-                    compression: model.compression,
-                    dbName: props.dbName,
-                    evictionStrategy: model.evictionStrategy,
-                    keyType: model.keyType,
-                    maxCollectionSize: model.maxCollectionSize,
-                    maxRecordCount: model.maxRecordCount,
-                    overProvisionFactor: model.overProvisionFactor,
-                    pageSize: model.pageSize,
-                    persistence: model.persistence,
-                    serverIP: props.serverIP,
-                    serverPort: props.serverPort,
-                    valueType: model.valueType,
-                });
-
-                if (!success) {
-                    loading.update(false);
-                    error.update('Failed to create collection.');
-                } else {
-                    close({
-                        name: model.name,
-                        type: model.persistence,
-                    });
-                }
-            } catch (e) {
-                loading.update(false);
-                error.update(`Failed to send request. ${e}`);
-            }
-        }
-    }
 }

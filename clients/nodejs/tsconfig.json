@@ -25,5 +25,5 @@
         "target": "es2022",
         "outDir": "dist"
     },
-    "include": ["src/**/*.d.ts", "src/**/*.mts", "src/util.ts", "src/connection/ferrum_database_remote.ts", "src/connection/client.ts", "src/index.ts"]
+    "include": ["src/**/*.d.ts", "src/**/*.ts"]
 }

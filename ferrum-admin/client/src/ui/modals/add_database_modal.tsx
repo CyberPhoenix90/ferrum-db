@@ -1,6 +1,7 @@
-import { Button, FloatingWindow, TextField, WindowContent, WindowContentRow, WindowFooter, WindowTitle, createForm } from 'aurum-components';
+import { Button, FloatingWindow, Submit, TextField, WindowContent, WindowContentRow, WindowFooter, WindowTitle, createForm } from 'aurum-components';
 import { ArrayDataSource, Aurum, DataSource, Renderable } from 'aurumjs';
 import { DbServerClient } from '../../endpoints/db_server_client.js';
+import { ErrorIndicator } from '../components/error_indicator.js';
 import { LoadingSpinner } from '../components/loading_spinner.js';
 
 export interface DatabaseModel {
@@ -15,24 +16,35 @@ export interface AddDatabaseModalProps {
 }
 
 export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps) {
-    const error = new DataSource('');
-    const loading = new DataSource(false);
-
     const close = function (this: Renderable, model?: DatabaseModel) {
         props.dialogs.remove(this);
         props.onClose?.(model);
     }.bind(this);
 
-    const form = createForm<DatabaseModel>({
-        name: {
-            source: new DataSource(''),
-            minLength: 1,
-            maxLength: 80,
+    const form = createForm<DatabaseModel>(
+        {
+            name: {
+                source: new DataSource(''),
+                minLength: 1,
+                maxLength: 80,
+            },
         },
-    });
+        async (model, markAsFailed) => {
+            const { success } = await DbServerClient.createDatabase({
+                dbName: model.name,
+                serverIP: props.serverIP,
+                serverPort: props.serverPort,
+            });
+            if (!success) {
+                markAsFailed('Failed to create database.');
+            } else {
+                close(model);
+            }
+        },
+    );
 
     return (
-        <FloatingWindow onClose={() => close()} onEscape={() => close()} onEnter={submit} closable draggable w={400} h={200}>
+        <FloatingWindow onClose={() => close()} onEscape={() => close()} onEnter={form.submit} closable draggable w={400} h={200}>
             <WindowTitle>
                 <i class="fas fa-server"></i> Add database
             </WindowTitle>
@@ -41,21 +53,8 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
                     <label>Database name</label>
                     <TextField form={form} name="name"></TextField>
                 </WindowContentRow>
-                <div
-                    style={{
-                        color: 'red',
-                        fontSize: '12px',
-                    }}>
-                    {error}
-                </div>
-                <LoadingSpinner loading={loading} message="Creating database..."></LoadingSpinner>
-                <div
-                    style={{
-                        color: 'red',
-                        fontSize: '12px',
-                    }}>
-                    {error}
-                </div>
+                <LoadingSpinner loading={form.submitting} message="Creating database..."></LoadingSpinner>
+                <ErrorIndicator error={form.submitError}></ErrorIndicator>
             </WindowContent>
             <WindowFooter>
                 <div class="right">
@@ -71,9 +70,9 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
                         }>
                         Cancel
                     </Button>
-                    <Button
+                    <Submit
                         buttonType="action"
-                        onClick={submit}
+                        form={form}
                         icon={
                             <i
                                 class="fas fa-plus"
@@ -82,36 +81,9 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
                                 }}></i>
                         }>
                         Add database
-                    </Button>
+                    </Submit>
                 </div>
             </WindowFooter>
         </FloatingWindow>
     );
-
-    async function submit(): Promise<void> {
-        if (!form.isFullyValid()) {
-            return;
-        }
-
-        const model = form.getFormObject();
-
-        error.update('');
-        loading.update(true);
-        try {
-            const { success } = await DbServerClient.createDatabase({
-                dbName: model.name,
-                serverIP: props.serverIP,
-                serverPort: props.serverPort,
-            });
-            if (!success) {
-                loading.update(false);
-                error.update('Failed to create database.');
-            } else {
-                close(model);
-            }
-        } catch (e) {
-            loading.update(false);
-            error.update(`Failed to send request. ${e}`);
-        }
-    }
 }

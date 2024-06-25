@@ -4,7 +4,7 @@ using System.IO;
 using Newtonsoft.Json.Linq;
 
 namespace ferrum_collection_engine;
-class PageFile
+public class PageFile
 {
     // How many bytes of this page file contain data that was deleted
     public long trashBytes;

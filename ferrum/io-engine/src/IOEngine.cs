@@ -8,7 +8,7 @@ namespace ferrum_io_engine;
 public class IOEngine
 {
 
-    public bool exists(string path)
+    public bool Exists(string path)
     {
         return File.Exists(path);
     }
@@ -60,5 +60,10 @@ public class IOEngine
     public long getFileSize(string file)
     {
         return new FileInfo(file).Length;
+    }
+
+    public bool isDirectory(string folder)
+    {
+        return (File.GetAttributes(folder) & FileAttributes.Directory) == FileAttributes.Directory;
     }
 }

@@ -1,9 +1,9 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
-import { DatabaseClient } from '../proto/database_grpc_pb';
-import { EmptyRequest } from '../proto/shared_pb';
-import { CallbackReturnType, promisify } from '../util';
-import { CreateCollectionRequest, DeleteCollectionRequest, HasCollectionRequest } from '../proto/database_pb';
 import { CollectionKeyType, CompressionAlgorithm, EvictionPolicy, Persistence, ValueEncodingType } from '../proto/collection_pb';
+import { DatabaseClient } from '../proto/database_grpc_pb';
+import { CreateCollectionRequest, DeleteCollectionRequest, HasCollectionRequest, ListCollectionsRequest, ListCollectionsResponse } from '../proto/database_pb';
+import { CallbackReturnType, promisify } from '../util';
+import { SuccessResponse } from '../proto/shared_pb';
 
 export class FerrumDBRemote {
     //@ts-ignore
@@ -24,18 +24,23 @@ export class FerrumDBRemote {
         });
     }
 
-    public async listCollections(): Promise<string[]> {
-        const msg = new EmptyRequest();
-        const res = await promisify<CallbackReturnType<typeof this.client.listCollections>, EmptyRequest>(this.client.listCollections.bind(this.client), msg);
+    public async listCollections(): Promise<ListCollectionsResponse> {
+        const msg = new ListCollectionsRequest();
+        msg.setDatabase(this.name);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.listCollections>, ListCollectionsRequest>(
+            this.client.listCollections.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
         }
 
-        return res.getNamesList();
+        return res;
     }
 
-    public async dropCollection(collectionName: string): Promise<void> {
+    public async dropCollection(collectionName: string): Promise<SuccessResponse> {
         const msg = new DeleteCollectionRequest();
         msg.setName(collectionName);
 
@@ -47,6 +52,8 @@ export class FerrumDBRemote {
         if (res.getError()) {
             throw new Error(res.getError());
         }
+
+        return res;
     }
 
     public async hasCollection(collectionName: string): Promise<boolean> {
@@ -76,8 +83,9 @@ export class FerrumDBRemote {
         maxCollectionSize?: number;
         pageSize?: number;
         overProvisionFactor?: number;
-    }): Promise<void> {
+    }): Promise<SuccessResponse> {
         const msg = new CreateCollectionRequest();
+        msg.setDatabase(this.name);
         msg.setName(config.name);
         msg.setKeytype(config.keyType);
         msg.setValuetype(config.valueType);
@@ -107,5 +115,7 @@ export class FerrumDBRemote {
         if (res.getError()) {
             throw new Error(res.getError());
         }
+
+        return res;
     }
 }

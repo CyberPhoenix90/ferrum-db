@@ -14,17 +14,19 @@ service Database {
 }
 
 message CreateCollectionRequest {
-    string database = 1;
-    string name = 2;
-    CollectionKeyType keyType = 3;
-    ValueEncodingType valueType = 4;
-    optional uint32 pageSize = 5;
-    optional float overprovision = 6;
-    optional int32 recordLimit = 7;
-    optional int32 collectionSizeLimit = 8;
-    CompressionAlgorithm compressionAlgorithm = 9;
-    optional EvictionPolicy evictionPolicy = 10;
-    Persistence persistenceType = 11;
+    SuccessResponseCode code = 1;
+    optional string error = 2;
+    string database = 3;
+    string name = 4;
+    CollectionKeyType keyType = 5;
+    ValueEncodingType valueType = 6;
+    optional uint32 pageSize = 7;
+    optional float overprovision = 8;
+    optional int32 recordLimit = 9;
+    optional int32 collectionSizeLimit = 10;
+    CompressionAlgorithm compressionAlgorithm = 11;
+    optional EvictionPolicy evictionPolicy = 12;
+    Persistence persistenceType = 13;
 }
 
 message DeleteCollectionRequest {
@@ -39,8 +41,7 @@ message HasCollectionRequest {
 
 message HasCollectionResponse {
     bool hasCollection = 1;
-  optional string error = 2;
-
+    optional string error = 2;
 }
 
 message ListCollectionsRequest {
@@ -48,6 +49,7 @@ message ListCollectionsRequest {
 }
 
 message ListCollectionsResponse {
-    repeated string names = 1;
+    SuccessResponseCode code = 1;
     optional string error = 2;
+    repeated string names = 3;
 }

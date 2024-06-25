@@ -5,7 +5,14 @@ import { route } from '../decorators/route.mjs';
 import { FerrumRequest, FerrumResponse } from '../framework/request.mjs';
 import { Controller } from './controller.mjs';
 import { post } from '../decorators/method.mjs';
-import { CompressionAlgorithm, CollectionKeyType as PBCollectionKeyType, ValueEncodingType, Persistence, EvictionPolicy } from 'ferrum-db-client';
+import {
+    SuccessResponseCode,
+    CompressionAlgorithm,
+    CollectionKeyType as PBCollectionKeyType,
+    ValueEncodingType,
+    Persistence,
+    EvictionPolicy,
+} from 'ferrum-db-client';
 
 @route('/db')
 export class DbController extends Controller {
@@ -19,16 +26,17 @@ export class DbController extends Controller {
         }>,
         res: FerrumResponse<{
             collections?: string[];
-            success: boolean;
+            code: SuccessResponseCode;
             error?: string;
         }>,
     ) {
         try {
             const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
+            const response = await connection.connection.getDatabase(req.body.database).listCollections();
             // List databases
-            res.end({ collections: await connection.connection.getDatabase(req.body.database).listCollections(), success: true });
+            res.end({ collections: response.getNamesList(), code: response.getCode() });
         } catch (e) {
-            res.end({ success: false, error: e.message });
+            res.end({ code: SuccessResponseCode.SERVER_ERROR, error: e.message });
         }
     }
 
@@ -51,14 +59,14 @@ export class DbController extends Controller {
             overProvisionFactor: number;
         }>,
         res: FerrumResponse<{
-            success: boolean;
+            code: SuccessResponseCode;
             error?: string;
         }>,
     ) {
         try {
             const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
             // Create database
-            await connection.connection.getDatabase(req.body.dbName).createCollection({
+            const response = await connection.connection.getDatabase(req.body.dbName).createCollection({
                 name: req.body.collectionName,
                 keyType: convertKeyType(req.body.keyType),
                 valueType: convertValueType(req.body.valueType),
@@ -71,9 +79,9 @@ export class DbController extends Controller {
                 overProvisionFactor: req.body.overProvisionFactor,
             });
 
-            res.end({ success: true });
+            res.end({ code: response.getCode() });
         } catch (e) {
-            res.end({ success: false, error: e.message });
+            res.end({ code: SuccessResponseCode.SERVER_ERROR, error: e.message });
         }
     }
 

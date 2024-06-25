@@ -5,7 +5,7 @@
     "type": "module",
     "main": "dist/index.mjs",
     "workspaces": [
-        "../../clients/nodejs",
+        "../nodejs",
         "../shared"
     ],
     "scripts": {

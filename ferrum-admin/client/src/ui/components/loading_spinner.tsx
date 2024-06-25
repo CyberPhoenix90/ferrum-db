@@ -1,6 +1,6 @@
-import { DataSource, Renderable, Aurum, dsMap } from 'aurumjs';
+import { Aurum, ReadOnlyDataSource, Renderable, dsMap } from 'aurumjs';
 
-export function LoadingSpinner(props: { loading: DataSource<boolean>; message: string }): Renderable {
+export function LoadingSpinner(props: { loading: ReadOnlyDataSource<boolean>; message: string }): Renderable {
     const { loading, message } = props;
     return (
         <div>

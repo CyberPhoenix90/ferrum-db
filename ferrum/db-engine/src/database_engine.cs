@@ -22,7 +22,7 @@ public class DatabaseEngine
         this.ioEngine = ioEngine;
         Directory.CreateDirectory(Path.Join(config.databasePath, "$$internal"));
         this.internalDatabase = new Database(Path.Join(config.databasePath, "$$internal"), "$$internal", ioEngine);
-        this.internalDatabase.initializeDatabase();
+        this.internalDatabase.InitializeDatabase();
 
         // Load all databases
         var databaseDirs = Directory.GetDirectories(config.databasePath);
@@ -35,7 +35,7 @@ public class DatabaseEngine
             }
 
             var database = new Database(databaseDir, databaseName, ioEngine);
-            database.initializeDatabase();
+            database.InitializeDatabase();
             this.databases[databaseName] = database;
         }
 
@@ -53,7 +53,7 @@ public class DatabaseEngine
 
             Directory.CreateDirectory(Path.Join(this.config.databasePath, name));
             var database = new Database(Path.Join(this.config.databasePath, name), name, this.ioEngine);
-            database.initializeDatabase();
+            database.InitializeDatabase();
             this.databases[name] = database;
 
             return database;
@@ -74,7 +74,7 @@ public class DatabaseEngine
                 throw new Exception($"Database {name} does not exist");
             }
 
-            this.databases[name].dispose();
+            this.databases[name].Dispose();
             this.databases.Remove(name);
         }
         finally

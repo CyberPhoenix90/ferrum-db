@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>ferrum_collection_engine</RootNamespace>
        <Platforms>x64</Platforms>
     <Nullable>enable</Nullable>
     <DebugType>portable</DebugType>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
