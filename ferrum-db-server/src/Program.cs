@@ -36,7 +36,7 @@ namespace ferrum_db_server
             Config? config = LoadConfig(args);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-            Logger.Info($"Starting Ferrum Database Server v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
+            Logger.Info($"Starting Ferrum Database Server v0.0.13");
             var stopWatch = new Stopwatch();
             stopWatch.Start();
             FerrumDb ferrumDb = new FerrumDb(Path.Join(config.dbFolder, "ferrum_db_server.mr"));

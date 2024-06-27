@@ -88,10 +88,6 @@ Subject to inode or folder capacity limitation of file system. Also uses about 1
 
 Subject to inode or folder capacity limitation of file system. Also uses about 1 GB of Ram per 10 Million databases
 
-### Maximum simultaneous connections: approx. 65535
-
-Imposed by available ports in TCP
-
 ### Slow startup for large databases
 
 Since part of what makes this DB fast is holding all the meta data in memory this DB takes longer to startup the more records it has. You can expect about 3s of startup time for every 10M records. This is because the database builds its hashmap structure into memory for the entire collection ahead of time for maximum performance.
