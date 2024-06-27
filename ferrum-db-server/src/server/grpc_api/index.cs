@@ -4,27 +4,33 @@ using System.Threading;
 using System.Threading.Tasks;
 using ferrum_db;
 using ferrum_db_server.src;
+using Google.Protobuf;
 using Grpc.Core;
 using GrpcAPI;
 using GrpcAPI.index;
 using Microsoft.Extensions.Logging;
 using static ferrum_db_server.src.server.grpc_api.GRPCServer;
 
-public class IndexService : GrpcAPI.index.Index.IndexBase {
+public class IndexService : GrpcAPI.index.Index.IndexBase
+{
     public static AutoResetEvent ioEvents;
     public static ConcurrentQueue<IoEvent> ioEventCallbacks;
 
 
-    public override Task<HasResponse> Has(HasRequest request, ServerCallContext context) {
+    public override Task<HasResponse> Has(HasRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<HasResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new HasResponse();
-            try {
+            try
+            {
                 response.Has = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).has(request.Key);
             }
-            catch (Exception e) {
-                Logger.Info($"Error checking if index has key: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error checking if index has key: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -34,17 +40,21 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<SuccessResponse> Put(PutRequest request, ServerCallContext context) {
+    public override Task<SuccessResponse> Put(PutRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<SuccessResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new SuccessResponse();
-            try {
+            try
+            {
                 ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).set(request.Key, request.Value.ToByteArray(), -1);
                 response.Success = true;
             }
-            catch (Exception e) {
-                Logger.Info($"Error putting key into index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error putting key into index: {e.Message} {e.StackTrace}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -55,17 +65,21 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<SuccessResponse> Clear(ClearRequest request, ServerCallContext context) {
+    public override Task<SuccessResponse> Clear(ClearRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<SuccessResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new SuccessResponse();
-            try {
+            try
+            {
                 ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).clear();
                 response.Success = true;
             }
-            catch (Exception e) {
-                Logger.Info($"Error clearing index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error clearing index: {e.Message} {e.StackTrace}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -76,17 +90,21 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<SuccessResponse> Delete(DeleteRequest request, ServerCallContext context) {
+    public override Task<SuccessResponse> Delete(DeleteRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<SuccessResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new SuccessResponse();
-            try {
+            try
+            {
                 ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).delete(request.Key, -1);
                 response.Success = true;
             }
-            catch (Exception e) {
-                Logger.Info($"Error deleting key from index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error deleting key from index: {e.Message} {e.StackTrace}");
                 response.Success = false;
                 response.Error = e.Message;
             }
@@ -97,16 +115,21 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<GetResponse> Get(GetRequest request, ServerCallContext context) {
+    public override Task<GetResponse> Get(GetRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<GetResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new GetResponse();
-            try {
-                response.Value = Google.Protobuf.ByteString.CopyFrom(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).get(request.Key));
+            try
+            {
+                response.NotFound = !ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).has(request.Key);
+                response.Value = copyOrNull(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).get(request.Key));
             }
-            catch (Exception e) {
-                Logger.Info($"Error getting key from index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error getting key from index: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -116,16 +139,20 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<GetChunkResponse> GetChunk(GetChunkRequest request, ServerCallContext context) {
+    public override Task<GetChunkResponse> GetChunk(GetChunkRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<GetChunkResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new GetChunkResponse();
-            try {
-                response.Chunk = Google.Protobuf.ByteString.CopyFrom(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).readChunk(request.Key, request.Offset, request.ChunkSize));
+            try
+            {
+                response.Chunk = copyOrNull(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).readChunk(request.Key, request.Offset, request.ChunkSize));
             }
-            catch (Exception e) {
-                Logger.Info($"Error getting chunk from index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error getting chunk from index: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -135,16 +162,20 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<GetUntilResponse> GetUntil(GetUntilRequest request, ServerCallContext context) {
+    public override Task<GetUntilResponse> GetUntil(GetUntilRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<GetUntilResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new GetUntilResponse();
-            try {
-                response.Chunk = Google.Protobuf.ByteString.CopyFrom(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).readUntil(request.Key, request.Offset, (byte)request.Terminator));
+            try
+            {
+                response.Chunk = copyOrNull(ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).readUntil(request.Key, request.Offset, (byte)request.Terminator));
             }
-            catch (Exception e) {
-                Logger.Info($"Error getting chunk from index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error getting chunk from index: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -154,18 +185,23 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<ListKeysResponse> ListKeys(ListKeysRequest request, ServerCallContext context) {
+    public override Task<ListKeysResponse> ListKeys(ListKeysRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<ListKeysResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new ListKeysResponse();
-            try {
-                foreach (var key in ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getKeys()) {
+            try
+            {
+                foreach (var key in ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getKeys())
+                {
                     response.Keys.Add(key);
                 }
             }
-            catch (Exception e) {
-                Logger.Info($"Error listing keys from index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error listing keys from index: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -175,16 +211,20 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<SizeResponse> Size(SizeRequest request, ServerCallContext context) {
+    public override Task<SizeResponse> Size(SizeRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<SizeResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new SizeResponse();
-            try {
+            try
+            {
                 response.Size = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getRecordCount();
             }
-            catch (Exception e) {
-                Logger.Info($"Error getting size of index: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error getting size of index: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -194,16 +234,20 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<GetRecordSizeResponse> GetRecordSize(GetRecordSizeRequest request, ServerCallContext context) {
+    public override Task<GetRecordSizeResponse> GetRecordSize(GetRecordSizeRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<GetRecordSizeResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new GetRecordSizeResponse();
-            try {
+            try
+            {
                 response.Size = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getRecordSize(request.Key) ?? 0;
             }
-            catch (Exception e) {
-                Logger.Info($"Error getting size of record: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error getting size of record: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -213,16 +257,20 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         return promise.Task;
     }
 
-    public override Task<GetRecordCountResponse> GetRecordCount(GetRecordCountRequest request, ServerCallContext context) {
+    public override Task<GetRecordCountResponse> GetRecordCount(GetRecordCountRequest request, ServerCallContext context)
+    {
         var promise = new TaskCompletionSource<GetRecordCountResponse>();
 
-        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) => {
+        ioEventCallbacks.Enqueue((FerrumDb ferrumDb) =>
+        {
             var response = new GetRecordCountResponse();
-            try {
+            try
+            {
                 response.Count = ferrumDb.getDatabase(request.Database).getIndex(request.IndexName).getRecordCount();
             }
-            catch (Exception e) {
-                Logger.Info($"Error getting count of records: {e.Message}");
+            catch (Exception e)
+            {
+                Logger.Info($"Error getting count of records: {e.Message} {e.StackTrace}");
                 response.Error = e.Message;
             }
             promise.SetResult(response);
@@ -230,5 +278,13 @@ public class IndexService : GrpcAPI.index.Index.IndexBase {
         ioEvents.Set();
 
         return promise.Task;
+    }
+    private ByteString? copyOrNull(byte[] data)
+    {
+        if (data == null)
+        {
+            return ByteString.Empty;
+        }
+        return ByteString.CopyFrom(data);
     }
 }

@@ -19,6 +19,7 @@ namespace ferrum_db_server.src.db.collections
         protected BinaryWriter writer;
 
         private readonly Index? collectionTags;
+        protected long lastValidRecordPosition = 0;
 
         private string collectionTagKey;
         public AbstractCollection(string recordFileName, CollectionType type, string name, Index? collectionTags)
@@ -115,15 +116,18 @@ namespace ferrum_db_server.src.db.collections
             {
                 using (BinaryReader reader = new BinaryReader(File.Open(Path.Join(this.path, this.recordFileName), FileMode.Open)))
                 {
+                    this.lastValidRecordPosition = reader.BaseStream.Position;
                     while (reader.BaseStream.Position < reader.BaseStream.Length)
                     {
                         try
                         {
                             this.readRecord(reader, transactionSet);
+                            this.lastValidRecordPosition = reader.BaseStream.Position;
                         }
-                        catch (EndOfStreamException e)
+                        catch (Exception e)
                         {
-                            Logger.Error($"Record file {Path.GetFullPath(this.path)} is corrupted. {e.Message} Some data is likely lost! ");
+                            Logger.Error($"Record of {this.name} from file {Path.GetFullPath(this.path)} is corrupted. {e.Message} {e.StackTrace}");
+                            break;
                         }
                     }
                 }
@@ -133,7 +137,7 @@ namespace ferrum_db_server.src.db.collections
             Console.WriteLine($"New writer at {Path.Join(path, this.recordFileName)}");
 #endif
             this.writer = new BinaryWriter(File.Open(Path.Join(path, this.recordFileName), FileMode.OpenOrCreate));
-            this.writer.BaseStream.Seek(0, SeekOrigin.End);
+            this.writer.BaseStream.Seek(this.lastValidRecordPosition, SeekOrigin.Begin);
         }
 
         protected abstract void readRecord(BinaryReader reader, Set? transactionSet);

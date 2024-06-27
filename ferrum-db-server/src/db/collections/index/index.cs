@@ -65,7 +65,8 @@ namespace ferrum_db_server.src.db.collections
         protected override void readRecord(BinaryReader reader, Set? transactionSet)
         {
             var commited = true;
-            var key = reader.ReadString();
+            string key;
+            key = reader.ReadString();
             var pageFileId = reader.ReadUInt32();
             if (!this.pageFiles.ContainsKey(pageFileId))
             {
@@ -91,6 +92,7 @@ namespace ferrum_db_server.src.db.collections
             {
                 this.contentMap.TryAdd(key, new IndexEntryMetadata(pageFileId, posInPage, length, reader.BaseStream.Position - 1));
             }
+
         }
 
         public void dispose()

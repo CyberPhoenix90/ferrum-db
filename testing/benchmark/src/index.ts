@@ -37,7 +37,7 @@ async function benchmark(indexRemote: IndexRemote<{ a: number; b: string }>): Pr
 
 //@ts-ignore
 async function clearDatabase(): Promise<void> {
-    const folder = join(__dirname, '../../../ferrum-db-server/bin/Release/net7.0/db');
+    const folder = join(__dirname, '../../../ferrum-db-server/bin/Release/net8.0/db');
     try {
         await rm(folder, { recursive: true });
     } catch {}
@@ -45,8 +45,8 @@ async function clearDatabase(): Promise<void> {
 
 //@ts-ignore
 async function startServer(): Promise<ChildProcess> {
-    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Release/net7.0/ferrum-db-server'), ['--loglevel', 'WARN', '--stdout'], {
-        cwd: join(__dirname, '../../../ferrum-db-server/bin/Release/net7.0/'),
+    const cp = spawn(join(__dirname, '../../../ferrum-db-server/bin/Release/net8.0/ferrum-db-server'), ['--loglevel', 'WARN', '--stdout'], {
+        cwd: join(__dirname, '../../../ferrum-db-server/bin/Release/net8.0/'),
     });
 
     cp.stdout.on('data', (msg) => {
