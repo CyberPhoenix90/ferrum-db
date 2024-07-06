@@ -1,0 +1,33 @@
+{
+    "name": "ferrum-db-client",
+    "version": "0.4.0",
+    "main": "dist/index.js",
+    "compiler": "typescript",
+    "dependencies": {
+        "@grpc/grpc-js": "^1.7.3",
+        "@types/google-protobuf": "^3.15.12",
+        "@types/node": "^20.12.12",
+        "bson": "4.4.0",
+        "google-protobuf": "^3.21.2"
+    },
+    "hooks": {
+        "preBuild": "bash -c \"cd ../.. && ./generate_grpc_client.sh\""
+    },
+    "defaultBuildSettings": {
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "assembly": "library",
+        "includes": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+        "jsxFragmentFactory": "Aurum.fragment",
+        "jsxFactory": "Aurum.factory",
+        "jsx": "react"
+    },
+    "builds": [
+        {
+            "includes": ["src/**/*.ts", "src/**/*.tsx"],
+            "outdir": "dist",
+            "name": "esnext",
+            "platform": "node"
+        }
+    ]
+}

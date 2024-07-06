@@ -1,0 +1,22 @@
+{
+    "name": "ferrum-query-api",
+    "version": "0.0.1",
+    "type": "module",
+    "main": "dist/index.mjs",
+    "compiler": "typescript",
+    "defaultBuildSettings": {
+        "assembly": "library",
+        "includes": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+        "jsxFragmentFactory": "Aurum.fragment",
+        "jsxFactory": "Aurum.factory",
+        "jsx": "react"
+    },
+    "builds": [
+        {
+            "includes": ["src/**/*.mts", "src/**/*.ts", "src/**/*.tsx"],
+            "outdir": "dist",
+            "name": "esnext",
+            "platform": "node"
+        }
+    ]
+}

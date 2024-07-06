@@ -1,0 +1,34 @@
+{
+    "name": "ferrum-admin-client",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "dist/index.mjs",
+    "compiler": "typescript",
+    "scripts": {
+        "start": "vite --host"
+    },
+    "dependencies": {
+        "aurum-components": "^0.3.21",
+        "aurumjs": "^0.9.39",
+        "monaco-editor": "^0.49.0"
+    },
+    "devDependencies": {
+        "vite": "^5.0.7"
+    },
+    "projectReferences": ["ferrum-query-api", "shared"],
+    "defaultBuildSettings": {
+        "assembly": "executable",
+        "includes": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+        "jsxFragmentFactory": "Aurum.fragment",
+        "jsxFactory": "Aurum.factory",
+        "jsx": "react"
+    },
+    "builds": [
+        {
+            "includes": ["src/**/*.ts", "src/**/*.tsx"],
+            "outdir": "dist",
+            "name": "esnext",
+            "platform": "node"
+        }
+    ]
+}

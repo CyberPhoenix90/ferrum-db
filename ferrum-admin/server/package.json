@@ -1,22 +1,16 @@
 {
-    "name": "ferrum-admin-server",
-    "version": "1.0.0",
-    "description": "",
-    "type": "module",
-    "main": "dist/index.mjs",
-    "workspaces": [
-        "../nodejs",
-        "../shared"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "start": "node"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "@types/node": "^20.10.4",
-        "ferrum-db-client": "^0.4.0"
-    }
+  "name": "ferrum-admin-server",
+  "version": "1.0.0",
+  "main": "dist/index.mjs",
+  "type": "module",
+  "dependencies": {
+    "@types/node": "^20.10.4",
+    "shared": "^1.0.0",
+    "ferrum-db-client": "^0.4.0"
+  },
+  "workspaces": [
+    "../shared",
+    "../../clients/nodejs"
+  ],
+  "scripts": {}
 }

@@ -1,28 +1,23 @@
 {
-    "name": "ferrum-admin-client",
-    "version": "1.0.0",
-    "description": "",
-    "type": "module",
-    "main": "index.js",
-    "scripts": {
-        "start": "vite --host"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "aurum-components": "^0.3.21",
-        "aurumjs": "^0.9.39",
-        "monaco-editor": "^0.49.0"
-    },
-    "workspaces": [
-        "../../ferrum-query-api",
-        "../../../aurum/packages/aurum",
-        "../../../aurum/packages/aurum-components",
-        "../shared"
-    ],
-    "devDependencies": {
-        "ferrum-query-api": "0.0.0",
-        "vite": "^5.0.7"
-    }
+  "name": "ferrum-admin-client",
+  "version": "1.0.0",
+  "main": "dist/index.mjs",
+  "type": "module",
+  "dependencies": {
+    "aurum-components": "^0.3.21",
+    "aurumjs": "^0.9.39",
+    "monaco-editor": "^0.49.0",
+    "ferrum-query-api": "^0.0.1",
+    "shared": "^1.0.0"
+  },
+  "workspaces": [
+    "../../ferrum-query-api",
+    "../shared"
+  ],
+  "scripts": {
+    "start": "vite --host"
+  },
+  "devDependencies": {
+    "vite": "^5.0.7"
+  }
 }

@@ -1,0 +1,29 @@
+{
+    "name": "ferrum-admin-server",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "dist/index.mjs",
+    "compiler": "typescript",
+    "dependencies": {
+        "@types/node": "^20.10.4"
+    },
+    "hooks": {
+        "postBuild": "node ./dist/scripts/generate_client.mjs"
+    },
+    "projectReferences": ["shared", "ferrum-db-client"],
+    "defaultBuildSettings": {
+        "assembly": "executable",
+        "includes": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+        "jsxFragmentFactory": "Aurum.fragment",
+        "jsxFactory": "Aurum.factory",
+        "jsx": "react"
+    },
+    "builds": [
+        {
+            "includes": ["src/**/*.mts", "src/**/*.ts", "src/**/*.tsx"],
+            "outdir": "dist",
+            "name": "esnext",
+            "platform": "node"
+        }
+    ]
+}

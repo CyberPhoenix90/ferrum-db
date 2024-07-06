@@ -1,0 +1,22 @@
+{
+    "name": "shared",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "dist/index.mjs",
+    "compiler": "typescript",
+    "defaultBuildSettings": {
+        "assembly": "library",
+        "includes": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+        "jsxFragmentFactory": "Aurum.fragment",
+        "jsxFactory": "Aurum.factory",
+        "jsx": "react"
+    },
+    "builds": [
+        {
+            "includes": ["src/**/*.mts", "src/**/*.ts", "src/**/*.tsx"],
+            "outdir": "prebuilt/esnext",
+            "name": "esnext",
+            "platform": "isomorphic"
+        }
+    ]
+}
