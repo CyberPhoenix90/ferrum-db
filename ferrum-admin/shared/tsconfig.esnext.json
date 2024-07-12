@@ -19,7 +19,8 @@
     "newLine": "LF",
     "declarationMap": true,
     "inlineSources": true,
-    "outDir": "prebuilt/esnext"
+    "outDir": "prebuilt/esnext",
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.mts",
