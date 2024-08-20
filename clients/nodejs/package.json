@@ -1,6 +1,6 @@
 {
     "name": "ferrum-db-client",
-    "version": "0.3.6",
+    "version": "0.3.7",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
     "description": "Client for Ferrum Database Server",
