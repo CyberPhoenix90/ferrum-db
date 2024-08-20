@@ -13,7 +13,7 @@ export { SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 export async function ferrumConnect(ip: string, port: number): Promise<FerrumServerClient> {
-    return new FerrumServerClient(ip, port);
+    return FerrumServerClient.getFerrumServerClient(ip, port);
 }
 
 export { CollectionType } from './proto/collection_pb';
@@ -22,14 +22,44 @@ export class FerrumServerClient {
     private ip: string;
     private port: number;
     private client: DatabaseServerClient;
+    private static instanceMap: { [key: string]: FerrumServerClient } = {};
 
-    constructor(ip: string, port: number) {
+    private constructor(ip: string, port: number) {
         this.ip = ip;
         this.port = port;
         this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });
+    }
+
+    public static getFerrumServerClient(ip: string, port: number) {
+        const key = `${ip}:${port}`;
+        if (!FerrumServerClient.instanceMap[key]) {
+            FerrumServerClient.instanceMap[key] = new FerrumServerClient(ip, port);
+        }
+
+        return FerrumServerClient.instanceMap[key];
+    }
+
+    public static disconnectAll() {
+        for (const key of Object.keys(FerrumServerClient.instanceMap)) {
+            FerrumServerClient.instanceMap[key].disconnect();
+        }
+
+        FerrumServerClient.instanceMap = {};
+    }
+
+    public async disconnectClient(ip: string, port: number) {
+        const key = `${ip}:${port}`;
+        if (FerrumServerClient.instanceMap[key]) {
+            FerrumServerClient.instanceMap[key].disconnect();
+            delete FerrumServerClient.instanceMap[key];
+        }
+    }
+
+    private disconnect() {
+        this.client.close();
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
@@ -45,7 +75,7 @@ export class FerrumServerClient {
             throw new Error(res.getError());
         }
 
-        return new FerrumDBRemote(this.ip, this.port, dbName);
+        return new FerrumDBRemote(this.client.getChannel(), dbName);
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
@@ -61,7 +91,7 @@ export class FerrumServerClient {
             throw new Error(res.getError());
         }
 
-        return new FerrumDBRemote(this.ip, this.port, dbName);
+        return new FerrumDBRemote(this.client.getChannel(), dbName);
     }
 
     public async getDatabase(dbName: string): Promise<FerrumDBRemote> {
@@ -70,7 +100,7 @@ export class FerrumServerClient {
             throw new Error(`Database ${dbName} does not exist`);
         }
 
-        return new FerrumDBRemote(this.ip, this.port, dbName);
+        return new FerrumDBRemote(this.client.getChannel(), dbName);
     }
 
     public async hasDatabase(dbName: string): Promise<boolean> {

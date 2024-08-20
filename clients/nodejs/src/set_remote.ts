@@ -4,13 +4,15 @@ import { CollectionType } from './proto/collection_pb';
 import { SetClient } from './proto/set_grpc_pb';
 import { ClearRequest, DeleteRequest, HasRequest, ListKeysRequest, PutRequest, SizeRequest } from './proto/set_pb';
 import { CallbackReturnType, promisify } from './util';
+import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class SetRemote extends CollectionRemote {
     private client: SetClient;
 
-    constructor(ip: string, port: number, database: string, setName: string) {
-        super(ip, port, CollectionType.SET, database, setName);
-        this.client = new SetClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+    constructor(channel: Channel, database: string, setName: string) {
+        super(channel, CollectionType.SET, database, setName);
+        this.client = new SetClient(channel.getTarget(), ChannelCredentials.createSsl(), {
+            channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });

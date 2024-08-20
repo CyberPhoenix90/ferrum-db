@@ -14,15 +14,17 @@ import {
     PutRequest,
 } from './proto/index_pb';
 import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class IndexRemote<T> extends CollectionRemote {
     private encoding: SupportedEncodingTypes;
     private compression: SupportedCompressionTypes;
     private client: IndexClient;
 
-    constructor(ip: string, port: number, database: string, indexName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        super(ip, port, CollectionType.INDEX, database, indexName);
-        this.client = new IndexClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+    constructor(channel: Channel, database: string, indexName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
+        super(channel, CollectionType.INDEX, database, indexName);
+        this.client = new IndexClient(channel.getTarget(), ChannelCredentials.createSsl(), {
+            channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });

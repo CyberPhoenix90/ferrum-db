@@ -24,15 +24,17 @@ import {
     PutEntryRequest,
 } from './proto/timeseries_pb';
 import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class TimeSeriesRemote<T> extends CollectionRemote {
     private encoding: SupportedEncodingTypes;
     private compression: SupportedCompressionTypes;
     private client: TimeSeriesClient;
 
-    constructor(ip: string, port: number, database: string, timeSeriesName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        super(ip, port, CollectionType.TIMESERIES, database, timeSeriesName);
-        this.client = new TimeSeriesClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+    constructor(channel: Channel, database: string, timeSeriesName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
+        super(channel, CollectionType.TIMESERIES, database, timeSeriesName);
+        this.client = new TimeSeriesClient(channel.getTarget(), ChannelCredentials.createSsl(), {
+            channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });

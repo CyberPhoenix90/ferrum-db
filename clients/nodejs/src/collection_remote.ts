@@ -2,6 +2,7 @@ import { ChannelCredentials } from '@grpc/grpc-js';
 import { CollectionClient } from './proto/collection_grpc_pb';
 import { CollectionType, DeleteTagRequest, GetTagRequest, HasTagRequest, ListTagsRequest, SetTagRequest } from './proto/collection_pb';
 import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class CollectionRemote {
     public readonly type: CollectionType;
@@ -14,8 +15,9 @@ export class CollectionRemote {
         return this.collectionKey;
     }
 
-    constructor(ip: string, port: number, type: CollectionType, database: string, collectionkey: string) {
-        this.collectionClient = new CollectionClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+    constructor(channel: Channel, type: CollectionType, database: string, collectionkey: string) {
+        this.collectionClient = new CollectionClient(channel.getTarget(), ChannelCredentials.createSsl(), {
+            channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });

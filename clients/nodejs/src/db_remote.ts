@@ -18,18 +18,18 @@ import {
 import { SetRemote } from './set_remote';
 import { TimeSeriesRemote } from './time_series_remote';
 import { SupportedCompressionTypes, SupportedEncodingTypes, CallbackReturnType, promisify } from './util';
+import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class FerrumDBRemote {
-    private ip: string;
-    private port: number;
     private client: DatabaseClient;
     public readonly name: string;
+    private channel: Channel;
 
-    constructor(ip: string, port: number, dbName: string) {
-        this.ip = ip;
-        this.port = port;
+    constructor(channel: Channel, dbName: string) {
+        this.channel = channel;
         this.name = dbName;
-        this.client = new DatabaseClient(`${ip}:${port}`, ChannelCredentials.createSsl(), {
+        this.client = new DatabaseClient(channel.getTarget(), ChannelCredentials.createSsl(), {
+            channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });
@@ -55,7 +55,7 @@ export class FerrumDBRemote {
     }
 
     public getIndex<T>(index: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): IndexRemote<T> {
-        return new IndexRemote<T>(this.ip, this.port, this.name, index, encoding, compression);
+        return new IndexRemote<T>(this.channel, this.name, index, encoding, compression);
     }
 
     public async deleteIndex(index: string): Promise<void> {
@@ -140,7 +140,7 @@ export class FerrumDBRemote {
     }
 
     public getSet(set: string): SetRemote {
-        return new SetRemote(this.ip, this.port, this.name, set);
+        return new SetRemote(this.channel, this.name, set);
     }
 
     public async deleteSet(set: string): Promise<void> {
@@ -225,7 +225,7 @@ export class FerrumDBRemote {
     }
 
     public getTimeSeries<T>(name: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): TimeSeriesRemote<T> {
-        return new TimeSeriesRemote<T>(this.ip, this.port, this.name, name, encoding, compression);
+        return new TimeSeriesRemote<T>(this.channel, this.name, name, encoding, compression);
     }
 
     public async deleteTimeSeries(name: string): Promise<void> {
