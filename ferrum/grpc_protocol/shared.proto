@@ -18,6 +18,8 @@ enum SuccessResponseCode {
   SERVER_ERROR = 4;
   // BAD_REQUEST_ERROR is returned when the request was malformed.
   REQUEST_ERROR = 5;
+  // TIMEOUT_ERROR is returned when the request timed out.
+  TIMEOUT_ERROR = 6;
 }
 
 message SuccessResponse {

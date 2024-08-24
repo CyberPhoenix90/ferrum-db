@@ -2,7 +2,9 @@
     "name": "ferrum-db-client",
     "version": "0.4.0",
     "main": "dist/index.js",
+    "group": "ferrum-admin",
     "compiler": "typescript",
+    "type": "commonjs",
     "dependencies": {
         "@grpc/grpc-js": "^1.7.3",
         "@types/google-protobuf": "^3.15.12",

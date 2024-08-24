@@ -79,4 +79,9 @@ public class DatabaseServerService : DatabaseServer.DatabaseServerBase
 
         return Task.FromResult(response);
     }
+
+    public override Task<RunQueryResponse> RunQuery(RunQueryRequest request, ServerCallContext context)
+    {
+        return base.RunQuery(request, context);
+    }
 }

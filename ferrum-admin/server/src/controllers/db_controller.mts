@@ -109,6 +109,27 @@ export class DbController extends Controller {
 
     @publicEndpoint()
     @post()
+    public async runQuery(
+        req: FerrumRequest<{
+            serverIP: string;
+            serverPort: number;
+            query: string;
+        }>,
+        res: FerrumResponse<{
+            success: boolean;
+            error?: string;
+            data?: string;
+        }>,
+    ) {
+        try {
+            const connection = await getConnectionFor(req.body.serverIP, req.body.serverPort);
+            const response = await connection.connection.runQuery(req.body.query);
+            res.end({ success: true, data: response });
+        } catch (e) {
+            res.end({ success: false, error: e.message });
+
+    @publicEndpoint()
+    @post()
     public async deleteCollection(
         req: FerrumRequest<{
             serverIP: string;

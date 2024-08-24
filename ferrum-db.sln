@@ -37,8 +37,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "embedded-client", "testing\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "collection-engine", "testing\collection-engine\collection-engine.csproj", "{A0F852EC-18A2-4CC6-B6AB-F4B38DCB3EEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "neon", "ferrum\neon\neon.csproj", "{89CC59C5-7573-4517-940B-D7362A23B04E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -120,7 +118,6 @@ Global
 		{EBE4CBEB-28FB-46D3-A6CF-D1C6520B754A} = {F02D0A15-86F1-46A5-9068-B76381008503}
 		{90CD2CE2-A054-4DCF-BF3D-D64529F8375F} = {FA5F1F63-C483-4F65-B622-000E750E8B0D}
 		{A0F852EC-18A2-4CC6-B6AB-F4B38DCB3EEC} = {FA5F1F63-C483-4F65-B622-000E750E8B0D}
-		{89CC59C5-7573-4517-940B-D7362A23B04E} = {01ED5E06-E82D-464E-A16A-A34E40B1FD00}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DCC6C156-A091-410E-B16D-6C2857179455}

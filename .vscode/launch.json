@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/ferrum/main/bin/Debug/net8.0/ferrum",
+            "program": "${workspaceFolder}/ferrum/main/bin/x64/Debug/net8.0/ferrum",
             "args": [],
             "cwd": "${workspaceFolder}/ferrum/main",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

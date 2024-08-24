@@ -11,18 +11,26 @@ service DatabaseServer {
   rpc ClearDatabase (ClearDatabaseRequest) returns (SuccessResponse);
   rpc ListDatabases (EmptyRequest) returns (ListDatabasesResponse);
   rpc GrpcAPIVersion (EmptyRequest) returns (GrpcAPIVersionResponse);
+  rpc RunQuery (RunQueryRequest) returns (RunQueryResponse);
+}
+
+message RunQueryRequest {
+  string query = 1;
+  repeated string parameters = 2;
+}
+
+message RunQueryResponse {
+  SuccessResponseCode code = 1;
+  optional string error = 2;
+  bytes data = 3;
 }
 
 message CreateDatabaseRequest {
-  SuccessResponseCode code = 1;
-  optional string error = 2;
-  string name = 3;
+  string name = 1;
 }
 
 message HasDatabaseRequest {
-  SuccessResponseCode code = 1;
-  optional string error = 2;
-  string name = 3;
+  string name = 1;
 }
 
 message HasDatabaseResponse {
@@ -32,15 +40,11 @@ message HasDatabaseResponse {
 }
 
 message DropDatabaseRequest {
-  SuccessResponseCode code = 1;
-  optional string error = 2;
-  string name = 3;
+  string name = 1;
 }
 
 message ClearDatabaseRequest {
-  SuccessResponseCode code = 1;
-  optional string error = 2;
-  string name = 3;
+  string name = 1;
 }
 
 

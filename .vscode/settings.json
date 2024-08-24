@@ -5,7 +5,10 @@
     },
     "search.exclude": {
         "**/bin": true,
-        "**/obj": true
+        "**/obj": true,
+        "**/*.js": true,
+        "**/*.map": true,
+        "**/package-lock.json": true
     },
     "FSharp.suggestGitignore": false
 }

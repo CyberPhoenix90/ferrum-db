@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ferrum_db_engine;
 using ferrum_transaction_engine;
-using Microsoft.ClearScript;
-using Microsoft.ClearScript.V8;
 
 namespace ferrum_query_engine;
 
@@ -12,48 +12,57 @@ public class QueryEngine
     private DatabaseEngine databaseEngine;
     private TransactionEngine transactionEngine;
 
-    public QueryEngine(DatabaseEngine databaseEngine, TransactionEngine transactionEngine)
+    public List<Query> pendingQueries = [];
+    public List<ExecutionEngine> queryEngines = [];
+
+    public QueryEngine(DatabaseEngine databaseEngine, TransactionEngine transactionEngine, QueryEngineConfig config)
     {
         this.transactionEngine = transactionEngine;
         this.databaseEngine = databaseEngine;
+
+        for (int i = 0; i < config.maxQueryVMs; i++)
+        {
+            queryEngines.Add(new ExecutionEngine(databaseEngine, transactionEngine, config));
+        }
     }
 
-    public async Task ExecuteQuery(string query)
+    public async Task<QueryResult> SubmitQuery(string query, string[] parameters, int? overrideMaxQueryTime = null, int? overrideMaxQueryVMMemory = null)
     {
-        using (var engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableTaskPromiseConversion))
+        var taskSource = new TaskCompletionSource<QueryResult>();
+        Query q = new Query(query, parameters, taskSource, overrideMaxQueryTime, overrideMaxQueryVMMemory);
+        pendingQueries.Add(q);
+        NextQuery();
+
+        // Continue with the next query when the current one is done. This ensures that potentially pending queries are executed.
+        taskSource.Task.ContinueWith(_ => NextQuery());
+
+        return await taskSource.Task;
+    }
+
+    private void NextQuery()
+    {
+        Query? query = pendingQueries.FirstOrDefault();
+        if (query != null)
         {
-            string javascriptCode = @"
-function delay(milliseconds) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, milliseconds);
-    });
-}
-
-async function main() {
-    console.log('Start');
-    await delay(2000);
-    console.log('1 second later');
-    return 2;
-}
-
- main();
-";
-
-            engine.AddHostObject("setTimeout", new Func<dynamic, int, Task>(async (callback, milliseconds) =>
+            ExecutionEngine? engine = GetAvailableEngine();
+            if (engine != null)
             {
-                await Task.Delay(milliseconds);
-                await callback();
-            }));
-
-            engine.AddHostObject("console", new
-            {
-                log = new Action<object>(Console.WriteLine)
-            });
-
-            Console.WriteLine($"BEFORE");
-            var stringResult = await (engine.Evaluate(javascriptCode) as Task<object>);
-            Console.WriteLine($"AFTER");
-            Console.WriteLine($"stringResult : {stringResult}");
+                engine.AssignAndExecuteQuery(query);
+                pendingQueries.Remove(query);
+            }
         }
+    }
+
+    private ExecutionEngine? GetAvailableEngine()
+    {
+        foreach (var engine in queryEngines)
+        {
+            if (!engine.isBusy)
+            {
+                return engine;
+            }
+        }
+
+        return null;
     }
 }

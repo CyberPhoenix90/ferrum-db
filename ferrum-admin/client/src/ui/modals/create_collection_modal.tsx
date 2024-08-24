@@ -52,59 +52,61 @@ export function CreateCollectionModal(this: Renderable, props: CreateCollectionM
         overProvisionFactor: number;
     }>(
         {
-            name: {
-                source: new DataSource(),
-                minLength: 1,
-                maxLength: 80,
-            },
-            keyType: {
-                source: new DataSource(CollectionKeyType.STRING),
-                oneOf: Object.values(CollectionKeyType),
-            },
-            valueType: {
-                source: new DataSource(CollectionValueType.JSON),
-                oneOf: Object.values(CollectionValueType),
-            },
-            compression: {
-                source: new DataSource(CollectionCompression.LZ4),
-                oneOf: Object.values(CollectionCompression),
-            },
-            persistence: {
-                source: new DataSource(CollectionPersistence.PERSISTENT),
-                oneOf: Object.values(CollectionPersistence),
-            },
-            limitRecordCount: {
-                source: new DataSource(false),
-            },
-            maxRecordCount: {
-                source: new DataSource(1000),
-                integer: true,
-                min: 1,
-            },
-            limitCollectionSize: {
-                source: new DataSource(false),
-            },
-            maxCollectionSize: {
-                source: new DataSource(1024),
-                integer: true,
-                min: 1,
-            },
-            evictionStrategy: {
-                source: new DataSource(CollectionEvictionStrategy.LRU),
-                oneOf: Object.values(CollectionEvictionStrategy),
-            },
-            advanced: {
-                source: new DataSource(false),
-            },
-            pageSize: {
-                source: new DataSource(16),
-                integer: true,
-                min: 1,
-            },
-            overProvisionFactor: {
-                source: new DataSource(2),
-                min: 1,
-                max: 10,
+            fields: {
+                name: {
+                    source: new DataSource(),
+                    minLength: 1,
+                    maxLength: 80,
+                },
+                keyType: {
+                    source: new DataSource(CollectionKeyType.STRING),
+                    oneOf: Object.values(CollectionKeyType),
+                },
+                valueType: {
+                    source: new DataSource(CollectionValueType.JSON),
+                    oneOf: Object.values(CollectionValueType),
+                },
+                compression: {
+                    source: new DataSource(CollectionCompression.LZ4),
+                    oneOf: Object.values(CollectionCompression),
+                },
+                persistence: {
+                    source: new DataSource(CollectionPersistence.PERSISTENT),
+                    oneOf: Object.values(CollectionPersistence),
+                },
+                limitRecordCount: {
+                    source: new DataSource(false),
+                },
+                maxRecordCount: {
+                    source: new DataSource(1000),
+                    integer: true,
+                    min: 1,
+                },
+                limitCollectionSize: {
+                    source: new DataSource(false),
+                },
+                maxCollectionSize: {
+                    source: new DataSource(1024),
+                    integer: true,
+                    min: 1,
+                },
+                evictionStrategy: {
+                    source: new DataSource(CollectionEvictionStrategy.LRU),
+                    oneOf: Object.values(CollectionEvictionStrategy),
+                },
+                advanced: {
+                    source: new DataSource(false),
+                },
+                pageSize: {
+                    source: new DataSource(16),
+                    integer: true,
+                    min: 16,
+                },
+                overProvisionFactor: {
+                    source: new DataSource(2),
+                    min: 1,
+                    max: 10,
+                },
             },
         },
         async (model, markAsFailed) => {
@@ -182,7 +184,7 @@ Compression is highly recommended for volatile collections."></i>
                     </label>
                     <ToggleField form={form} name="limitRecordCount"></ToggleField>
                 </WindowContentRow>
-                {form.schema.limitRecordCount.source.transform(
+                {form.schema.fields.limitRecordCount.source.transform(
                     dsMap((v) =>
                         v ? (
                             <WindowContentRow>
@@ -198,7 +200,7 @@ Compression is highly recommended for volatile collections."></i>
                     </label>
                     <ToggleField form={form} name="limitCollectionSize"></ToggleField>
                 </WindowContentRow>
-                {form.schema.limitCollectionSize.source.transform(
+                {form.schema.fields.limitCollectionSize.source.transform(
                     dsMap((v) =>
                         v ? (
                             <WindowContentRow>
@@ -209,7 +211,7 @@ Compression is highly recommended for volatile collections."></i>
                     ),
                 )}
                 {DataSource.fromAggregation(
-                    [form.schema.limitRecordCount.source, form.schema.limitCollectionSize.source],
+                    [form.schema.fields.limitRecordCount.source, form.schema.fields.limitCollectionSize.source],
                     (limitRecordCount, limitCollectionSize) =>
                         limitRecordCount || limitCollectionSize ? (
                             <WindowContentRow>
@@ -222,13 +224,13 @@ Compression is highly recommended for volatile collections."></i>
                     <label>Advanced</label>
                     <ToggleField form={form} name="advanced"></ToggleField>
                 </WindowContentRow>
-                {form.schema.advanced.source.transform(
+                {form.schema.fields.advanced.source.transform(
                     dsMap((v) =>
                         v ? (
                             <>
                                 <WindowContentRow>
                                     <label>
-                                        Page size{' '}
+                                        Page size (MB){' '}
                                         <i
                                             class="fas fa-info-circle"
                                             title="How many MB a page file can have before the next one is written. More page files means less garbage but more fragmentation. It's a performance vs disk space efficiency tradeoff"></i>

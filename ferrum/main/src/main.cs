@@ -43,8 +43,13 @@ class Program
 
         var transactionEngine = new TransactionEngine(ferrumDb);
 
-        var queryEngine = new QueryEngine(ferrumDb, transactionEngine);
-        await queryEngine.ExecuteQuery("add(2, 33);");
+        var queryEngine = new QueryEngine(ferrumDb, transactionEngine, new QueryEngineConfig
+        {
+            maxQueryVMs = config.maxQueryVMs,
+            maxQueryVMMemory = config.maxQueryVMMemory,
+            defaultMaxQueryTime = config.defaultMaxQueryTime,
+        });
+        await queryEngine.SubmitQuery("import { api, ResponseCode } from 'ferrum-query-api';\n\nexport default async function query(parameters: {}): Promise<{ code: ResponseCode; data: any }> { return { code: ResponseCode.OK, data: undefined };\n}", []);
 
         Logger.Info($"Starting API");
         new API(ferrumDb, transactionEngine, queryEngine, new APIConfig
@@ -60,10 +65,10 @@ class Program
         // All work happens in background threads. Prevent the main thread from exiting until interrupt signal is received
         var waitHandle = new ManualResetEvent(false);
         Console.CancelKeyPress += (sender, eventArgs) =>
-        {
-            eventArgs.Cancel = true;
-            waitHandle.Set();
-        };
+                {
+                    eventArgs.Cancel = true;
+                    waitHandle.Set();
+                };
         waitHandle.WaitOne();
     }
 

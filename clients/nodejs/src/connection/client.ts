@@ -1,8 +1,8 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { EventEmitter } from 'events';
 import { DatabaseServerClient } from '../proto/database_server_grpc_pb';
-import { ClearDatabaseRequest, CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from '../proto/database_server_pb';
-import { EmptyRequest } from '../proto/shared_pb';
+import { ClearDatabaseRequest, CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest, RunQueryRequest } from '../proto/database_server_pb';
+import { EmptyRequest, SuccessResponseCode } from '../proto/shared_pb';
 import { CallbackReturnType, promisify } from '../util';
 import { FerrumDBRemote } from './ferrum_database_remote';
 
@@ -33,6 +33,19 @@ export class FerrumServerClient extends EventEmitter<{ error: [Error]; ready: []
 
     public async close(): Promise<void> {
         this.client.close();
+    }
+
+    public async runQuery(query: string): Promise<{ code: SuccessResponseCode; data: any }> {
+        const msg = new RunQueryRequest();
+        msg.setQuery(query);
+
+        const res = await promisify<CallbackReturnType<typeof this.client.runQuery>, RunQueryRequest>(this.client.runQuery.bind(this.client), msg);
+
+        if (res.getError()) {
+            throw new Error(res.getError());
+        }
+
+        return { code: res.getCode(), data: res.getData() };
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {

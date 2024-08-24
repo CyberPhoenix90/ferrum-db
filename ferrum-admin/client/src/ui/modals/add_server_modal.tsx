@@ -29,20 +29,22 @@ export function AddServerModal(this: Renderable, props: AddServerModalProps) {
 
     const form = createForm<ServerModel>(
         {
-            name: {
-                source: new DataSource(''),
-                minLength: 1,
-            },
-            serverIP: {
-                source: new DataSource('localhost'),
-                minLength: 7,
-                maxLength: 15,
-            },
-            serverPort: {
-                source: new DataSource(2999),
-                integer: true,
-                min: 1,
-                max: 65535,
+            fields: {
+                name: {
+                    source: new DataSource(''),
+                    minLength: 1,
+                },
+                serverIP: {
+                    source: new DataSource('localhost'),
+                    minLength: 7,
+                    maxLength: 15,
+                },
+                serverPort: {
+                    source: new DataSource(2999),
+                    integer: true,
+                    min: 1,
+                    max: 65535,
+                },
             },
         },
         async (model, markAsFailed) => {

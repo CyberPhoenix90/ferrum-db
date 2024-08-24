@@ -12,5 +12,7 @@
     "../shared",
     "../../clients/nodejs"
   ],
-  "scripts": {}
+  "scripts": {
+    "start": "cd ../../ferrum/main && dotnet run & cd ../../ferrum-admin/server && node ."
+  }
 }

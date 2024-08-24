@@ -23,10 +23,12 @@ export function AddDatabaseModal(this: Renderable, props: AddDatabaseModalProps)
 
     const form = createForm<DatabaseModel>(
         {
-            name: {
-                source: new DataSource(''),
-                minLength: 1,
-                maxLength: 80,
+            fields: {
+                name: {
+                    source: new DataSource(''),
+                    minLength: 1,
+                    maxLength: 80,
+                },
             },
         },
         async (model, markAsFailed) => {

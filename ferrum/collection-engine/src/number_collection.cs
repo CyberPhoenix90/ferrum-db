@@ -24,11 +24,16 @@ public class NumberCollection : Collection
             throw new Exception("Collection folder already exists");
         }
 
-        if (config.PageSize != null && config.PageSize >= 16)
+        if (config.PageSize != null)
         {
-            collection.pageSize = (uint)(config.PageSize * 1024 * 1024);
+            if (config.PageSize >= MIN_PAGE_SIZE)
+                collection.pageSize = (uint)(config.PageSize * 1024 * 1024);
+            else
+            {
+                collection.pageSize = MIN_PAGE_SIZE;
+            }
         }
-        else
+        else if (config.PageSize == null)
         {
             collection.pageSize = Collection.DEFAULT_PAGE_SIZE;
         }
