@@ -5,7 +5,7 @@ import {
     NumberField,
     Submit,
     TextField,
-    ToggleField,
+    CheckboxField,
     WindowContent,
     WindowContentRow,
     WindowFooter,
@@ -182,7 +182,7 @@ Compression is highly recommended for volatile collections."></i>
                     <label>
                         Limit record count <i class="fas fa-info-circle" title="Enables auto eviction"></i>
                     </label>
-                    <ToggleField form={form} name="limitRecordCount"></ToggleField>
+                    <CheckboxField form={form} name="limitRecordCount"></CheckboxField>
                 </WindowContentRow>
                 {form.schema.fields.limitRecordCount.source.transform(
                     dsMap((v) =>
@@ -198,7 +198,7 @@ Compression is highly recommended for volatile collections."></i>
                     <label>
                         Limit collection size <i class="fas fa-info-circle" title="Enables auto eviction"></i>
                     </label>
-                    <ToggleField form={form} name="limitCollectionSize"></ToggleField>
+                    <CheckboxField form={form} name="limitCollectionSize"></CheckboxField>
                 </WindowContentRow>
                 {form.schema.fields.limitCollectionSize.source.transform(
                     dsMap((v) =>
@@ -222,7 +222,7 @@ Compression is highly recommended for volatile collections."></i>
                 )}
                 <WindowContentRow>
                     <label>Advanced</label>
-                    <ToggleField form={form} name="advanced"></ToggleField>
+                    <CheckboxField form={form} name="advanced"></CheckboxField>
                 </WindowContentRow>
                 {form.schema.fields.advanced.source.transform(
                     dsMap((v) =>

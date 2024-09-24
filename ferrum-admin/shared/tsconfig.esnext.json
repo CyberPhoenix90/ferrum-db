@@ -19,7 +19,7 @@
     "newLine": "LF",
     "declarationMap": true,
     "inlineSources": true,
-    "outDir": "prebuilt/esnext",
+    "outDir": "dist",
     "skipLibCheck": true
   },
   "include": [

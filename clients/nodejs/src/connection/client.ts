@@ -1,7 +1,15 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { EventEmitter } from 'events';
 import { DatabaseServerClient } from '../proto/database_server_grpc_pb';
-import { ClearDatabaseRequest, CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest, RunQueryRequest } from '../proto/database_server_pb';
+import {
+    ClearDatabaseRequest,
+    CreateDatabaseRequest,
+    DropDatabaseRequest,
+    HasDatabaseRequest,
+    QueryResponseEncoding,
+    QueryResponsePartType,
+    RunQueryRequest,
+} from '../proto/database_server_pb';
 import { EmptyRequest, SuccessResponseCode } from '../proto/shared_pb';
 import { CallbackReturnType, promisify } from '../util';
 import { FerrumDBRemote } from './ferrum_database_remote';
@@ -19,8 +27,8 @@ export class FerrumServerClient extends EventEmitter<{ error: [Error]; ready: []
         this.ip = ip;
         this.port = port;
         this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {
-            'grpc.max_send_message_length': -1,
-            'grpc.max_receive_message_length': -1,
+            'grpc.max_send_message_length': 128 * 1024 * 1024,
+            'grpc.max_receive_message_length': 128 * 1024 * 1024,
         });
         this.client.waitForReady(Date.now() + connectTimeout, (err) => {
             if (err) {
@@ -35,17 +43,27 @@ export class FerrumServerClient extends EventEmitter<{ error: [Error]; ready: []
         this.client.close();
     }
 
-    public async runQuery(query: string): Promise<{ code: SuccessResponseCode; data: any }> {
+    public async *runQuery(
+        query: string,
+        params: string[],
+        debugMode: boolean,
+    ): AsyncIterableIterator<{ type: QueryResponsePartType; code: SuccessResponseCode; data?: string; encoding: QueryResponseEncoding; error?: string }> {
         const msg = new RunQueryRequest();
         msg.setQuery(query);
+        msg.setParametersList(params);
+        msg.setDebugmode(debugMode);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.runQuery>, RunQueryRequest>(this.client.runQuery.bind(this.client), msg);
+        const stream = this.client.runQuery(msg);
 
-        if (res.getError()) {
-            throw new Error(res.getError());
+        for await (const res of stream) {
+            yield {
+                type: res.getType(),
+                code: res.getCode(),
+                data: res.getData(),
+                encoding: res.getEncoding(),
+                error: res.getError(),
+            };
         }
-
-        return { code: res.getCode(), data: res.getData() };
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {

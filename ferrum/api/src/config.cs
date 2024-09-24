@@ -7,4 +7,5 @@ public class APIConfig
     public int grpcMaxMessageLength;
     public string? sslCertificate;
     public string? sslPassword;
+    public bool allowDebuggingQueries;
 }

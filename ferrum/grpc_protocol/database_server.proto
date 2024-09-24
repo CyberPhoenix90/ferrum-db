@@ -11,18 +11,28 @@ service DatabaseServer {
   rpc ClearDatabase (ClearDatabaseRequest) returns (SuccessResponse);
   rpc ListDatabases (EmptyRequest) returns (ListDatabasesResponse);
   rpc GrpcAPIVersion (EmptyRequest) returns (GrpcAPIVersionResponse);
-  rpc RunQuery (RunQueryRequest) returns (RunQueryResponse);
+  rpc RunQuery (RunQueryRequest) returns (stream RunQueryResponse);
 }
 
 message RunQueryRequest {
   string query = 1;
   repeated string parameters = 2;
+  bool debugMode = 3;
+}
+
+enum QueryResponsePartType {
+  DEBUG_PORT = 0;
+  CHUNK = 1;
+  FINAL = 2;
 }
 
 message RunQueryResponse {
-  SuccessResponseCode code = 1;
-  optional string error = 2;
-  bytes data = 3;
+  QueryResponsePartType type = 1;
+  SuccessResponseCode code = 2;
+  optional string error = 3;
+  optional string data = 4;
+  optional QueryResponseEncoding encoding = 5;
+  optional int32 debugPort = 6;
 }
 
 message CreateDatabaseRequest {
@@ -58,4 +68,11 @@ message GrpcAPIVersionResponse {
   SuccessResponseCode code = 1;
   optional string error = 2;
   string version = 3;
+}
+
+enum QueryResponseEncoding {
+  TEXT_PLAIN = 0;
+  TEXT_JSON = 1;
+  TEXT_BASE64 = 2;
+  NO_DATA  = 3;
 }

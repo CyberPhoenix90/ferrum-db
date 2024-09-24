@@ -8,7 +8,7 @@
         "@types/node": "^20.10.4"
     },
     "scripts": {
-        "start": "cd ../../ferrum/main && dotnet run & cd ../../ferrum-admin/server && node ."
+        "start": "cd ../../ferrum/main && cd ../../ferrum-admin/server && node ."
     },
     "hooks": {
         "postBuild": "node ./dist/scripts/generate_client.mjs"

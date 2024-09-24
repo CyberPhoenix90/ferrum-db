@@ -46,3 +46,8 @@ export function kickConnection(ip: string, port: number): void {
         connectionPool.delete(connectionId);
     }
 }
+
+export function reconnect(ip: string, port: number): Promise<Connection> {
+    kickConnection(ip, port);
+    return getConnectionFor(ip, port);
+}

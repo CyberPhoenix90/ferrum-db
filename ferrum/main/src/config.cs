@@ -63,10 +63,13 @@ public class Config
     [DefaultValue(0)]
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
     public int maxPendingQueries;
+    // Allow debugging queries. Query debugging is generally designed to not cause problems because locks aren't held during debugging but this is not a guarantee.
+    // Collections may lock up during debugging. Use at your own risk
+    [DefaultValue(false)]
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+    public bool allowDebuggingQueries;
     // How many file handles can be open at once. Too low might degrade performance
     [DefaultValue(2048)]
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
     public int maxFileHandles;
-
-
 }

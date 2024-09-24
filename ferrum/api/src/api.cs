@@ -44,8 +44,8 @@ public class API
         // Add services to the container.
         builder.Services.AddGrpc(options =>
         {
-            options.MaxReceiveMessageSize = config.grpcMaxMessageLength;
-            options.MaxSendMessageSize = config.grpcMaxMessageLength;
+            options.MaxReceiveMessageSize = config.grpcMaxMessageLength * 1024 * 1024;
+            options.MaxSendMessageSize = config.grpcMaxMessageLength * 1024 * 1024;
         });
         builder.Logging.ClearProviders();
 
@@ -60,6 +60,8 @@ public class API
 
         DatabaseServerService.config = config;
         DatabaseServerService.databaseEngine = databaseEngine;
+        DatabaseServerService.queryEngine = queryEngine;
+
         DatabaseService.config = config;
         DatabaseService.databaseEngine = databaseEngine;
         CollectionService.config = config;

@@ -65,7 +65,7 @@ function openContextMenu(
     parent: TreeEntry<TreeEntryTag>,
     contextMenu: DataSource<Renderable>,
     dialogs: ArrayDataSource<Renderable>,
-    openDcuments: ArrayDataSource<FerrumAdminDocument>,
+    openDocuments: ArrayDataSource<FerrumAdminDocument>,
     serverEntries: ArrayDataSource<TreeEntry<TreeEntryTag>>,
 ) {
     switch (entry.tag.type) {
@@ -73,13 +73,13 @@ function openContextMenu(
             openAddServerContextMenu(contextMenu, dialogs, serverEntries, e);
             break;
         case NodeType.SERVER:
-            openServerContextMenu(contextMenu, entry, dialogs, serverEntries, e);
+            openServerContextMenu(contextMenu, entry, dialogs, openDocuments, serverEntries, e);
             break;
         case NodeType.DATABASE:
-            openDatabaseContextMenu(contextMenu, entry, parent, dialogs, openDcuments, e);
+            openDatabaseContextMenu(contextMenu, entry, parent, dialogs, openDocuments, e);
             break;
         case NodeType.COLLECTION:
-            openCollectionContextMenu(contextMenu, entry, parent, dialogs, openDcuments, e);
+            openCollectionContextMenu(contextMenu, entry, parent, dialogs, openDocuments, e);
     }
 }
 
@@ -181,7 +181,14 @@ function openDatabaseContextMenu(
                     onClick={() => {
                         openDocuments.push({
                             title: `New Query (${getValueOf(entry.name)})`,
-                            content: <QueryEditor dialogSource={contextMenu} initialCode={`const db = await api.getDatabase('${entry.name}');`} />,
+                            content: (
+                                <QueryEditor
+                                    serverIP={entry.tag.server.serverIP}
+                                    serverPort={entry.tag.server.serverPort}
+                                    dialogSource={contextMenu}
+                                    initialCode={`const db = await api.getDatabase('${entry.name}');`}
+                                />
+                            ),
                         });
                     }}>
                     <i class="fas fa-play"></i> Run Query
@@ -237,6 +244,7 @@ function openServerContextMenu(
     contextMenu: DataSource<Renderable>,
     entry: TreeEntry<TreeEntryTag>,
     dialogs: ArrayDataSource<Renderable>,
+    openDocuments: ArrayDataSource<FerrumAdminDocument>,
     serverEntries: ArrayDataSource<TreeEntry<TreeEntryTag>>,
     e: MouseEvent,
 ) {
@@ -261,6 +269,22 @@ function openServerContextMenu(
                         minWidth: '120px',
                     }}>
                     <i class="fas fa-plus"></i> Create Database
+                </div>,
+                <div
+                    onClick={() => {
+                        openDocuments.push({
+                            title: `New Query (${getValueOf(entry.name)})`,
+                            content: (
+                                <QueryEditor
+                                    serverIP={entry.tag.server.serverIP}
+                                    serverPort={entry.tag.server.serverPort}
+                                    dialogSource={contextMenu}
+                                    initialCode={``}
+                                />
+                            ),
+                        });
+                    }}>
+                    <i class="fas fa-play"></i> Run Query
                 </div>,
                 <div
                     onClick={async () => {

@@ -11,4 +11,6 @@ export enum ResponseCode {
     SERVER_ERROR = 4,
     // BAD_REQUEST_ERROR is returned when the request was malformed.
     REQUEST_ERROR = 5,
+    TIMEOUT_ERROR = 6,
+    NETWORK_ERROR = 7,
 }

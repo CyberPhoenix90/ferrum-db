@@ -11,8 +11,8 @@
         "postBuild": "cp ./index.html ./dist/index.html"
     },
     "dependencies": {
-        "aurum-components": "^0.3.21",
-        "aurumjs": "^0.9.46",
+        "aurum-components": "^0.3.25",
+        "aurumjs": "^0.9.50",
         "monaco-editor": "^0.49.0"
     },
     "devDependencies": {

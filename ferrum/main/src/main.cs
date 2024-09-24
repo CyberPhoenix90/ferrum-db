@@ -24,6 +24,12 @@ class Program
             return;
         }
 
+        if (args.Contains("--version") || args.Contains("-v"))
+        {
+            Console.WriteLine("Ferrum DB Server v1.0.0");
+            return;
+        }
+
         Thread.CurrentThread.Name = "Main";
         Config config = loadConfig(args);
 
@@ -49,7 +55,6 @@ class Program
             maxQueryVMMemory = config.maxQueryVMMemory,
             defaultMaxQueryTime = config.defaultMaxQueryTime,
         });
-        await queryEngine.SubmitQuery("import { api, ResponseCode } from 'ferrum-query-api';\n\nexport default async function query(parameters: {}): Promise<{ code: ResponseCode; data: any }> { return { code: ResponseCode.OK, data: undefined };\n}", []);
 
         Logger.Info($"Starting API");
         new API(ferrumDb, transactionEngine, queryEngine, new APIConfig
@@ -59,6 +64,7 @@ class Program
             sslCertificate = config.sslCertificate,
             sslPassword = config.sslPassword,
             grpcMaxMessageLength = config.grpcMaxMessageLength,
+            allowDebuggingQueries = config.allowDebuggingQueries,
         });
         Logger.Info($"Ferrum DB Server Running with API @ {config.ip}:{config.port}");
 
@@ -101,6 +107,7 @@ class Program
         Console.WriteLine("  --max-query-vms=<vms> Sets how many queries can be run in parallel");
         Console.WriteLine("  --max-query-vm-memory=<memory> Max heap size of VMs in MB");
         Console.WriteLine("  --default-max-query-time=<time> Max time in seconds a query can run before being killed");
+        Console.WriteLine("  --allow-debugging-queries Allow debugging queries. Not recommended for production");
         return;
     }
 

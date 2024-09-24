@@ -153,7 +153,21 @@ namespace ferrum_query_engine
         {
             var timeout = query.overrideMaxQueryTime ?? queryEngineConfig.defaultMaxQueryTime;
             var script = await Transpile(query.query);
-            using var engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableTaskPromiseConversion | V8ScriptEngineFlags.AddPerformanceObject | V8ScriptEngineFlags.EnableDynamicModuleImports);
+
+            V8ScriptEngineFlags config;
+
+            int port = this.GetAvailablePort();
+
+            if (query.debugMode)
+            {
+                config = V8ScriptEngineFlags.EnableTaskPromiseConversion | V8ScriptEngineFlags.AddPerformanceObject | V8ScriptEngineFlags.EnableDynamicModuleImports | V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart | V8ScriptEngineFlags.EnableRemoteDebugging;
+            }
+            else
+            {
+                config = V8ScriptEngineFlags.EnableTaskPromiseConversion | V8ScriptEngineFlags.AddPerformanceObject | V8ScriptEngineFlags.EnableDynamicModuleImports;
+            }
+
+            using var engine = new V8ScriptEngine(config, port);
             DefineSetTimeout(engine, cancellationToken);
             DefineSetInterval(engine, cancellationToken);
             RegisterConsoleMethods(engine);
@@ -179,14 +193,37 @@ namespace ferrum_query_engine
             {
                 Category = ModuleCategory.Standard,
             },
-             "globalThis.query = (await import('query.js')).default");
+             $@"const func = (await import('query.js')).default
+             if(func != null) {{
+                globalThis.query = async (parameters) => {{
+                    {(query.debugMode ? "debug(func)" : "")}
+                    const result = await func(parameters)
+                    if(typeof result !== 'object' || result === null) {{
+                        return {{ code: 5, error: 'Query did not return an object' }}
+                    }}
+
+                    const data = result.data;
+
+                    if(typeof data === 'string') {{
+                        return {{ code: result.code, data: data, encoding: 0 }};
+                    }} else if(data instanceof Uint8Array) {{
+                        return {{ code: result.code, data: btoa(data), encoding: 2 }};
+                    }} else if(typeof data === 'object') {{
+                        return {{ code: result.code, data: JSON.stringify(data), encoding: 1 }};
+                    }} else if(data == undefined) {{
+                        return {{ code: result.code, data: undefined, encoding: 3 }};
+                    }} else {{
+                        return {{ code: 5, error: `Invalid data type. Expected string, object or binary and got ${{typeof data}}` }};
+                    }}
+                }}
+             }}");
 
             if (engine.Script.query is null)
             {
                 return new QueryResult
                 {
                     code = Code.SERVER_ERROR,
-                    error = "Query returned null"
+                    error = "Query did not export a default function"
                 };
             }
 
@@ -198,13 +235,23 @@ namespace ferrum_query_engine
             var result = new QueryResult
             {
                 code = (Code)(queryResult.code ?? (int)Code.OK),
-                data = queryResult.data is Undefined || queryResult.data is null ? null : BitConverter.GetBytes(queryResult.data),
+                data = queryResult.data is Undefined || queryResult.data is null ? null : queryResult.data is String ? queryResult.data : throw new Exception("Invalid data type"),
+                encoding = (QueryDataEncoding)(queryResult.encoding ?? (int)QueryDataEncoding.NO_DATA)
             };
 
             engine.Dispose();
 
             return result;
 
+        }
+
+        private int GetAvailablePort()
+        {
+            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return port;
         }
 
         private static void RegisterConsoleMethods(V8ScriptEngine engine)

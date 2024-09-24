@@ -15,6 +15,8 @@ public class QueryEngine
     public List<Query> pendingQueries = [];
     public List<ExecutionEngine> queryEngines = [];
 
+    public delegate void onDebugMessageDelegate(int debugPort);
+
     public QueryEngine(DatabaseEngine databaseEngine, TransactionEngine transactionEngine, QueryEngineConfig config)
     {
         this.transactionEngine = transactionEngine;
@@ -26,10 +28,12 @@ public class QueryEngine
         }
     }
 
-    public async Task<QueryResult> SubmitQuery(string query, string[] parameters, int? overrideMaxQueryTime = null, int? overrideMaxQueryVMMemory = null)
+    public async Task<QueryResult> SubmitQuery(string query, string[] parameters, bool debugMode,
+    onDebugMessageDelegate onDebugMessage
+    , int? overrideMaxQueryTime = null, int? overrideMaxQueryVMMemory = null)
     {
         var taskSource = new TaskCompletionSource<QueryResult>();
-        Query q = new Query(query, parameters, taskSource, overrideMaxQueryTime, overrideMaxQueryVMMemory);
+        Query q = new Query(query, parameters, debugMode, taskSource, overrideMaxQueryTime, overrideMaxQueryVMMemory);
         pendingQueries.Add(q);
         NextQuery();
 

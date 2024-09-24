@@ -4,9 +4,17 @@ public class QueryResult
 {
     public Code code;
     public string? error;
-    public byte[]? data;
+    public string? data;
+    public QueryDataEncoding encoding;
 }
 
+public enum QueryDataEncoding
+{
+    TEXT_PLAIN = 0,
+    TEXT_JSON = 1,
+    TEXT_BASE64 = 2,
+    NO_DATA = 3
+}
 public enum Code
 {
     // OK is returned when the request was successful.
