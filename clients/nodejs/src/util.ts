@@ -2,6 +2,7 @@ import { ServiceError } from '@grpc/grpc-js';
 import { gunzip, gzip } from 'zlib';
 import { promisify as promisifyCb } from 'util';
 import { deserialize, serialize, setInternalBufferSize } from 'bson';
+import { EventEmitter } from 'aurumjs';
 
 export type CallbackReturnType<T extends (...args: any[]) => any> = Parameters<Parameters<T>[3]>[1];
 
@@ -26,6 +27,45 @@ export function encodeBSON(value: any): Buffer {
 
 export function expandBsonBuffer(newSize: number): void {
     bsonBufferSize = newSize;
+}
+
+export interface DatabaseResponseMetrics {
+    latency: number;
+    success: boolean;
+}
+
+export interface ObserverConfig {
+    startNotifier: EventEmitter<void>;
+    timeoutNotifier: EventEmitter<void>;
+    responseNotifier: EventEmitter<DatabaseResponseMetrics>;
+    timeout: number;
+}
+
+export function performRPC<T, M>(observerConfig: ObserverConfig, fn: (msg: M, cb: CallBack<T>) => void, msg: M): Promise<T> {
+    return new Promise((resolve, reject) => {
+        observerConfig.startNotifier.fire();
+        const startTime = performance.now();
+        let timeoutHandle: NodeJS.Timeout;
+        if (observerConfig.timeout > 0) {
+            timeoutHandle = setTimeout(() => {
+                observerConfig.timeoutNotifier.fire();
+            }, observerConfig.timeout);
+        }
+
+        fn(msg, (err, res) => {
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+            }
+
+            if (err) {
+                observerConfig.responseNotifier.fire({ latency: performance.now() - startTime, success: false });
+                reject(err);
+            } else {
+                observerConfig.responseNotifier.fire({ latency: performance.now() - startTime, success: true });
+                resolve(res);
+            }
+        });
+    });
 }
 
 export function promisify<T, M>(fn: (msg: M, cb: CallBack<T>) => void, msg: M): Promise<T> {

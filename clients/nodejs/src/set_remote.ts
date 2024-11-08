@@ -3,14 +3,14 @@ import { CollectionRemote } from './collection_remote';
 import { CollectionType } from './proto/collection_pb';
 import { SetClient } from './proto/set_grpc_pb';
 import { ClearRequest, DeleteRequest, HasRequest, ListKeysRequest, PutRequest, SizeRequest } from './proto/set_pb';
-import { CallbackReturnType, promisify } from './util';
+import { CallbackReturnType, ObserverConfig, performRPC } from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class SetRemote extends CollectionRemote {
     private client: SetClient;
 
-    constructor(channel: Channel, database: string, setName: string) {
-        super(channel, CollectionType.SET, database, setName);
+    constructor(channel: Channel, database: string, setName: string, observerConfig: ObserverConfig) {
+        super(channel, CollectionType.SET, database, setName, observerConfig);
         this.client = new SetClient(channel.getTarget(), ChannelCredentials.createSsl(), {
             channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
@@ -25,7 +25,7 @@ export class SetRemote extends CollectionRemote {
         msg.setSetname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.has>, HasRequest>(this.client.has.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.has>, HasRequest>(this.observerConfig, this.client.has.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -40,7 +40,7 @@ export class SetRemote extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setSetname(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.size>, SizeRequest>(this.client.size.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.size>, SizeRequest>(this.observerConfig, this.client.size.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -61,7 +61,7 @@ export class SetRemote extends CollectionRemote {
         msg.setSetname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.put>, PutRequest>(this.client.put.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.put>, PutRequest>(this.observerConfig, this.client.put.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -74,7 +74,7 @@ export class SetRemote extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setSetname(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.clear>, ClearRequest>(this.client.clear.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.clear>, ClearRequest>(this.observerConfig, this.client.clear.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -90,7 +90,11 @@ export class SetRemote extends CollectionRemote {
         msg.setSetname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.delete>, DeleteRequest>(this.client.delete.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.delete>, DeleteRequest>(
+            this.observerConfig,
+            this.client.delete.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -105,7 +109,11 @@ export class SetRemote extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setSetname(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.listKeys>, ListKeysRequest>(this.client.listKeys.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.listKeys>, ListKeysRequest>(
+            this.observerConfig,
+            this.client.listKeys.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());

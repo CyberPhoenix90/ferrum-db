@@ -13,7 +13,7 @@ import {
     ListKeysRequest,
     PutRequest,
 } from './proto/index_pb';
-import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import { CallbackReturnType, decodeValue, encodeValue, ObserverConfig, performRPC, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class IndexRemote<T> extends CollectionRemote {
@@ -21,8 +21,15 @@ export class IndexRemote<T> extends CollectionRemote {
     private compression: SupportedCompressionTypes;
     private client: IndexClient;
 
-    constructor(channel: Channel, database: string, indexName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        super(channel, CollectionType.INDEX, database, indexName);
+    constructor(
+        channel: Channel,
+        database: string,
+        indexName: string,
+        encoding: SupportedEncodingTypes,
+        compression: SupportedCompressionTypes,
+        observerConfig: ObserverConfig,
+    ) {
+        super(channel, CollectionType.INDEX, database, indexName, observerConfig);
         this.client = new IndexClient(channel.getTarget(), ChannelCredentials.createSsl(), {
             channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
@@ -39,7 +46,7 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setIndexname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.has>, HasRequest>(this.client.has.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.has>, HasRequest>(this.observerConfig, this.client.has.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -55,7 +62,8 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setIndexname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getRecordSize>, GetRecordSizeRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getRecordSize>, GetRecordSizeRequest>(
+            this.observerConfig,
             this.client.getRecordSize.bind(this.client),
             msg,
         );
@@ -73,7 +81,8 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setIndexname(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getRecordCount>, GetRecordCountRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getRecordCount>, GetRecordCountRequest>(
+            this.observerConfig,
             this.client.getRecordCount.bind(this.client),
             msg,
         );
@@ -92,7 +101,7 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setIndexname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.get>, GetRequest>(this.client.get.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.get>, GetRequest>(this.observerConfig, this.client.get.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -108,7 +117,7 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setIndexname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.get>, GetRequest>(this.client.get.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.get>, GetRequest>(this.observerConfig, this.client.get.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -128,7 +137,11 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setIndexname(this.name);
         msg.setKey(key);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.delete>, DeleteRequest>(this.client.delete.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.delete>, DeleteRequest>(
+            this.observerConfig,
+            this.client.delete.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -145,7 +158,11 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setKey(key);
         msg.setOffset(offset);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getChunk>, GetChunkRequest>(this.client.getChunk.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.getChunk>, GetChunkRequest>(
+            this.observerConfig,
+            this.client.getChunk.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -167,7 +184,7 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setKey(key);
         msg.setValue(await encodeValue(value, this.encoding, this.compression));
 
-        const res = await promisify<CallbackReturnType<typeof this.client.put>, PutRequest>(this.client.put.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.put>, PutRequest>(this.observerConfig, this.client.put.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -182,7 +199,7 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setIndexname(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.clear>, ClearRequest>(this.client.clear.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.clear>, ClearRequest>(this.observerConfig, this.client.clear.bind(this.client), msg);
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -197,7 +214,11 @@ export class IndexRemote<T> extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setIndexname(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.listKeys>, ListKeysRequest>(this.client.listKeys.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.listKeys>, ListKeysRequest>(
+            this.observerConfig,
+            this.client.listKeys.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());

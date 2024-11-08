@@ -3,7 +3,8 @@ import { FerrumDBRemote } from './db_remote';
 import { DatabaseServerClient } from './proto/database_server_grpc_pb';
 import { CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from './proto/database_server_pb';
 import { EmptyRequest } from './proto/shared_pb';
-import { CallbackReturnType, promisify } from './util';
+import { CallbackReturnType, DatabaseResponseMetrics, ObserverConfig, performRPC } from './util';
+import { EventEmitter } from 'aurumjs';
 
 export { FerrumDBRemote } from './db_remote';
 export { IndexRemote } from './index_remote';
@@ -23,6 +24,11 @@ export class FerrumServerClient {
     private port: number;
     private client: DatabaseServerClient;
     private static instanceMap: { [key: string]: FerrumServerClient } = {};
+    private observerConfig: ObserverConfig;
+
+    public readonly onRequestSent: EventEmitter<void> = new EventEmitter();
+    public readonly onResponseReceived: EventEmitter<DatabaseResponseMetrics> = new EventEmitter();
+    public readonly onTimeout: EventEmitter<void> = new EventEmitter();
 
     private constructor(ip: string, port: number) {
         this.ip = ip;
@@ -31,6 +37,17 @@ export class FerrumServerClient {
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });
+
+        this.observerConfig = {
+            responseNotifier: this.onResponseReceived,
+            startNotifier: this.onRequestSent,
+            timeoutNotifier: this.onTimeout,
+            timeout: 0,
+        };
+    }
+
+    public setRequestTimeout(timeout: number) {
+        this.observerConfig.timeout = timeout;
     }
 
     public static getFerrumServerClient(ip: string, port: number) {
@@ -65,8 +82,8 @@ export class FerrumServerClient {
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
         const msg = new CreateDatabaseRequest();
         msg.setName(dbName);
-
-        const res = await promisify<CallbackReturnType<typeof this.client.createDatabaseIfNotExist>, CreateDatabaseRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.createDatabaseIfNotExist>, CreateDatabaseRequest>(
+            this.observerConfig,
             this.client.createDatabaseIfNotExist.bind(this.client),
             msg,
         );
@@ -75,14 +92,15 @@ export class FerrumServerClient {
             throw new Error(res.getError());
         }
 
-        return new FerrumDBRemote(this.client.getChannel(), dbName);
+        return new FerrumDBRemote(this.client.getChannel(), dbName, this.observerConfig);
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
         const msg = new CreateDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.createDatabase>, CreateDatabaseRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.createDatabase>, CreateDatabaseRequest>(
+            this.observerConfig,
             this.client.createDatabase.bind(this.client),
             msg,
         );
@@ -91,7 +109,7 @@ export class FerrumServerClient {
             throw new Error(res.getError());
         }
 
-        return new FerrumDBRemote(this.client.getChannel(), dbName);
+        return new FerrumDBRemote(this.client.getChannel(), dbName, this.observerConfig);
     }
 
     public async getDatabase(dbName: string): Promise<FerrumDBRemote> {
@@ -100,14 +118,18 @@ export class FerrumServerClient {
             throw new Error(`Database ${dbName} does not exist`);
         }
 
-        return new FerrumDBRemote(this.client.getChannel(), dbName);
+        return new FerrumDBRemote(this.client.getChannel(), dbName, this.observerConfig);
     }
 
     public async hasDatabase(dbName: string): Promise<boolean> {
         const msg = new HasDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.hasDatabase>, CreateDatabaseRequest>(this.client.hasDatabase.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.hasDatabase>, CreateDatabaseRequest>(
+            this.observerConfig,
+            this.client.hasDatabase.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -120,7 +142,8 @@ export class FerrumServerClient {
         const msg = new DropDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.dropDatabase>, CreateDatabaseRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.dropDatabase>, CreateDatabaseRequest>(
+            this.observerConfig,
             this.client.dropDatabase.bind(this.client),
             msg,
         );
@@ -134,7 +157,8 @@ export class FerrumServerClient {
         const msg = new CreateDatabaseRequest();
         msg.setName(dbName);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.clearDatabase>, CreateDatabaseRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.clearDatabase>, CreateDatabaseRequest>(
+            this.observerConfig,
             this.client.clearDatabase.bind(this.client),
             msg,
         );
@@ -146,7 +170,11 @@ export class FerrumServerClient {
 
     public async getDatabaseNames(): Promise<string[]> {
         const msg = new EmptyRequest();
-        const res = await promisify<CallbackReturnType<typeof this.client.listDatabases>, EmptyRequest>(this.client.listDatabases.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.listDatabases>, EmptyRequest>(
+            this.observerConfig,
+            this.client.listDatabases.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -157,7 +185,11 @@ export class FerrumServerClient {
 
     public async getGrpcAPIVersion(): Promise<string> {
         const msg = new EmptyRequest();
-        const res = await promisify<CallbackReturnType<typeof this.client.grpcAPIVersion>, EmptyRequest>(this.client.grpcAPIVersion.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.grpcAPIVersion>, EmptyRequest>(
+            this.observerConfig,
+            this.client.grpcAPIVersion.bind(this.client),
+            msg,
+        );
 
         return res.getVersion();
     }

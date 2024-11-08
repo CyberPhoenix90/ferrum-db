@@ -23,7 +23,7 @@ import {
     ListSeriesRequest,
     PutEntryRequest,
 } from './proto/timeseries_pb';
-import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import { CallbackReturnType, decodeValue, encodeValue, ObserverConfig, performRPC, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class TimeSeriesRemote<T> extends CollectionRemote {
@@ -31,8 +31,15 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
     private compression: SupportedCompressionTypes;
     private client: TimeSeriesClient;
 
-    constructor(channel: Channel, database: string, timeSeriesName: string, encoding: SupportedEncodingTypes, compression: SupportedCompressionTypes) {
-        super(channel, CollectionType.TIMESERIES, database, timeSeriesName);
+    constructor(
+        channel: Channel,
+        database: string,
+        timeSeriesName: string,
+        encoding: SupportedEncodingTypes,
+        compression: SupportedCompressionTypes,
+        observerConfig: ObserverConfig,
+    ) {
+        super(channel, CollectionType.TIMESERIES, database, timeSeriesName, observerConfig);
         this.client = new TimeSeriesClient(channel.getTarget(), ChannelCredentials.createSsl(), {
             channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
@@ -49,7 +56,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.hasSerie>, HasSerieRequest>(this.client.hasSerie.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.hasSerie>, HasSerieRequest>(
+            this.observerConfig,
+            this.client.hasSerie.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -66,7 +77,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getEntry>, GetEntryRequest>(this.client.getEntry.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.getEntry>, GetEntryRequest>(
+            this.observerConfig,
+            this.client.getEntry.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -87,7 +102,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.hasEntry>, HasEntryRequest>(this.client.hasEntry.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.hasEntry>, HasEntryRequest>(
+            this.observerConfig,
+            this.client.hasEntry.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -104,7 +123,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.deleteEntry>, DeleteEntryRequest>(this.client.deleteEntry.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.deleteEntry>, DeleteEntryRequest>(
+            this.observerConfig,
+            this.client.deleteEntry.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -118,7 +141,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.listEntries>, ListEntriesRequest>(this.client.listEntries.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.listEntries>, ListEntriesRequest>(
+            this.observerConfig,
+            this.client.listEntries.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -134,7 +161,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getEntries>, GetEntriesRequest>(this.client.getEntries.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.getEntries>, GetEntriesRequest>(
+            this.observerConfig,
+            this.client.getEntries.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -151,7 +182,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getNearestEntry>, GetNearestEntryRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getNearestEntry>, GetNearestEntryRequest>(
+            this.observerConfig,
             this.client.getNearestEntry.bind(this.client),
             msg,
         );
@@ -175,7 +207,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntryBefore>, GetFirstEntryBeforeRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getFirstEntryBefore>, GetFirstEntryBeforeRequest>(
+            this.observerConfig,
             this.client.getFirstEntryBefore.bind(this.client),
             msg,
         );
@@ -199,7 +232,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntryAfter>, GetFirstEntryAfterRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getFirstEntryAfter>, GetFirstEntryAfterRequest>(
+            this.observerConfig,
             this.client.getFirstEntryAfter.bind(this.client),
             msg,
         );
@@ -222,7 +256,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getLastEntry>, GetLastEntryRequest>(this.client.getLastEntry.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.getLastEntry>, GetLastEntryRequest>(
+            this.observerConfig,
+            this.client.getLastEntry.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -242,7 +280,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getFirstEntry>, GetFirstEntryRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getFirstEntry>, GetFirstEntryRequest>(
+            this.observerConfig,
             this.client.getFirstEntry.bind(this.client),
             msg,
         );
@@ -266,7 +305,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setN(count);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getLastNEntries>, GetLastNEntriesRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getLastNEntries>, GetLastNEntriesRequest>(
+            this.observerConfig,
             this.client.getLastNEntries.bind(this.client),
             msg,
         );
@@ -286,7 +326,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getEntriesBefore>, GetEntriesBeforeRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getEntriesBefore>, GetEntriesBeforeRequest>(
+            this.observerConfig,
             this.client.getEntriesBefore.bind(this.client),
             msg,
         );
@@ -306,7 +347,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setSerie(serie);
         msg.setTimestamp(timestamp);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getEntriesAfter>, GetEntriesAfterRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getEntriesAfter>, GetEntriesAfterRequest>(
+            this.observerConfig,
             this.client.getEntriesAfter.bind(this.client),
             msg,
         );
@@ -327,7 +369,8 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setFrom(start);
         msg.setTo(end);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.getEntriesBetween>, GetEntriesBetweenRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.client.getEntriesBetween>, GetEntriesBetweenRequest>(
+            this.observerConfig,
             this.client.getEntriesBetween.bind(this.client),
             msg,
         );
@@ -346,7 +389,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimeseries(this.name);
         msg.setSerie(serie);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.deleteSerie>, DeleteSerieRequest>(this.client.deleteSerie.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.deleteSerie>, DeleteSerieRequest>(
+            this.observerConfig,
+            this.client.deleteSerie.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -367,7 +414,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setTimestamp(timestamp);
         msg.setEntry(await encodeValue(value, this.encoding, this.compression));
 
-        const res = await promisify<CallbackReturnType<typeof this.client.putEntry>, PutEntryRequest>(this.client.putEntry.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.putEntry>, PutEntryRequest>(
+            this.observerConfig,
+            this.client.putEntry.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -382,7 +433,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setTimeseries(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.clearSerie>, ClearSerieRequest>(this.client.clearSerie.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.clearSerie>, ClearSerieRequest>(
+            this.observerConfig,
+            this.client.clearSerie.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());
@@ -395,7 +450,11 @@ export class TimeSeriesRemote<T> extends CollectionRemote {
         msg.setDatabase(this.database);
         msg.setTimeseries(this.name);
 
-        const res = await promisify<CallbackReturnType<typeof this.client.listSeries>, ListSeriesRequest>(this.client.listSeries.bind(this.client), msg);
+        const res = await performRPC<CallbackReturnType<typeof this.client.listSeries>, ListSeriesRequest>(
+            this.observerConfig,
+            this.client.listSeries.bind(this.client),
+            msg,
+        );
 
         if (res.getError()) {
             throw new Error(res.getError());

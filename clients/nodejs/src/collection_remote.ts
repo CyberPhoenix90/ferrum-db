@@ -1,10 +1,11 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { CollectionClient } from './proto/collection_grpc_pb';
 import { CollectionType, DeleteTagRequest, GetTagRequest, HasTagRequest, ListTagsRequest, SetTagRequest } from './proto/collection_pb';
-import { CallbackReturnType, decodeValue, encodeValue, promisify, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import { CallbackReturnType, decodeValue, encodeValue, ObserverConfig, performRPC, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class CollectionRemote {
+    protected observerConfig: ObserverConfig;
     public readonly type: CollectionType;
     public readonly database: string;
 
@@ -15,7 +16,7 @@ export class CollectionRemote {
         return this.collectionKey;
     }
 
-    constructor(channel: Channel, type: CollectionType, database: string, collectionkey: string) {
+    constructor(channel: Channel, type: CollectionType, database: string, collectionkey: string, observerConfig: ObserverConfig) {
         this.collectionClient = new CollectionClient(channel.getTarget(), ChannelCredentials.createSsl(), {
             channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
@@ -24,6 +25,7 @@ export class CollectionRemote {
         this.type = type;
         this.database = database;
         this.collectionKey = collectionkey;
+        this.observerConfig = observerConfig;
     }
 
     public async hasTag(tag: string = ''): Promise<boolean> {
@@ -33,7 +35,8 @@ export class CollectionRemote {
         msg.setCollectiontype(this.type);
         msg.setTag(tag);
 
-        const res = await promisify<CallbackReturnType<typeof this.collectionClient.hasTag>, HasTagRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.collectionClient.hasTag>, HasTagRequest>(
+            this.observerConfig,
             this.collectionClient.hasTag.bind(this.collectionClient),
             msg,
         );
@@ -53,7 +56,8 @@ export class CollectionRemote {
         msg.setCollectiontype(this.type);
         msg.setTag(tag);
 
-        const res = await promisify<CallbackReturnType<typeof this.collectionClient.getTag>, GetTagRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.collectionClient.getTag>, GetTagRequest>(
+            this.observerConfig,
             this.collectionClient.getTag.bind(this.collectionClient),
             msg,
         );
@@ -73,7 +77,8 @@ export class CollectionRemote {
         msg.setCollectiontype(this.type);
         msg.setTag(tag);
 
-        const res = await promisify<CallbackReturnType<typeof this.collectionClient.deleteTag>, DeleteTagRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.collectionClient.deleteTag>, DeleteTagRequest>(
+            this.observerConfig,
             this.collectionClient.deleteTag.bind(this.collectionClient),
             msg,
         );
@@ -90,7 +95,8 @@ export class CollectionRemote {
         msg.setCollection(this.collectionKey);
         msg.setCollectiontype(this.type);
 
-        const res = await promisify<CallbackReturnType<typeof this.collectionClient.listTags>, ListTagsRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.collectionClient.listTags>, ListTagsRequest>(
+            this.observerConfig,
             this.collectionClient.listTags.bind(this.collectionClient),
             msg,
         );
@@ -111,7 +117,8 @@ export class CollectionRemote {
         msg.setTag(key);
         msg.setValue(await encodeValue(value, encoding, compression));
 
-        const res = await promisify<CallbackReturnType<typeof this.collectionClient.setTag>, SetTagRequest>(
+        const res = await performRPC<CallbackReturnType<typeof this.collectionClient.setTag>, SetTagRequest>(
+            this.observerConfig,
             this.collectionClient.setTag.bind(this.collectionClient),
             msg,
         );
