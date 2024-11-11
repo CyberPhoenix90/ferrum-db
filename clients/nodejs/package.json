@@ -1,6 +1,6 @@
 {
     "name": "ferrum-db-client",
-    "version": "0.3.8",
+    "version": "0.3.9",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
     "description": "Client for Ferrum Database Server",
@@ -10,8 +10,7 @@
         "@grpc/grpc-js": "^1.7.3",
         "@types/node": "14.14.34",
         "bson": "4.4.0",
-        "google-protobuf": "^3.21.2",
-        "aurumjs": "0.9.50"
+        "google-protobuf": "^3.21.2"
     },
     "scripts": {}
 }

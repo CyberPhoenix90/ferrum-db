@@ -2,7 +2,24 @@ import { ServiceError } from '@grpc/grpc-js';
 import { gunzip, gzip } from 'zlib';
 import { promisify as promisifyCb } from 'util';
 import { deserialize, serialize, setInternalBufferSize } from 'bson';
-import { EventEmitter } from 'aurumjs';
+
+export class EventEmitter<T> {
+    private listeners: ((data: T) => void)[] = [];
+
+    public subscribe(cb: (data: T) => void): void {
+        this.listeners.push(cb);
+    }
+
+    public cancel(cb: (data: T) => void): void {
+        this.listeners = this.listeners.filter((e) => e !== cb);
+    }
+
+    public emit(data: T): void {
+        for (const listener of this.listeners) {
+            listener(data);
+        }
+    }
+}
 
 export type CallbackReturnType<T extends (...args: any[]) => any> = Parameters<Parameters<T>[3]>[1];
 
@@ -30,25 +47,26 @@ export function expandBsonBuffer(newSize: number): void {
 }
 
 export interface DatabaseResponseMetrics {
+    request: string;
     latency: number;
     success: boolean;
 }
 
 export interface ObserverConfig {
     startNotifier: EventEmitter<void>;
-    timeoutNotifier: EventEmitter<void>;
+    timeoutNotifier: EventEmitter<string>;
     responseNotifier: EventEmitter<DatabaseResponseMetrics>;
     timeout: number;
 }
 
 export function performRPC<T, M>(observerConfig: ObserverConfig, fn: (msg: M, cb: CallBack<T>) => void, msg: M): Promise<T> {
     return new Promise((resolve, reject) => {
-        observerConfig.startNotifier.fire();
+        observerConfig.startNotifier.emit();
         const startTime = performance.now();
         let timeoutHandle: NodeJS.Timeout;
         if (observerConfig.timeout > 0) {
             timeoutHandle = setTimeout(() => {
-                observerConfig.timeoutNotifier.fire();
+                observerConfig.timeoutNotifier.emit(printMessage(msg));
             }, observerConfig.timeout);
         }
 
@@ -58,14 +76,22 @@ export function performRPC<T, M>(observerConfig: ObserverConfig, fn: (msg: M, cb
             }
 
             if (err) {
-                observerConfig.responseNotifier.fire({ latency: performance.now() - startTime, success: false });
+                observerConfig.responseNotifier.emit({ latency: performance.now() - startTime, success: false, request: printMessage(msg) });
                 reject(err);
             } else {
-                observerConfig.responseNotifier.fire({ latency: performance.now() - startTime, success: true });
+                observerConfig.responseNotifier.emit({ latency: performance.now() - startTime, success: true, request: printMessage(msg) });
                 resolve(res);
             }
         });
     });
+}
+
+function printMessage(msg: any): string {
+    if ('u' in msg && Array.isArray(msg.u) && msg.u.length > 0 && typeof msg.u[0] === 'string') {
+        return msg.u[0];
+    } else {
+        return msg.toString().split(',')[0];
+    }
 }
 
 export function promisify<T, M>(fn: (msg: M, cb: CallBack<T>) => void, msg: M): Promise<T> {

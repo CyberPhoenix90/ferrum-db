@@ -3,8 +3,7 @@ import { FerrumDBRemote } from './db_remote';
 import { DatabaseServerClient } from './proto/database_server_grpc_pb';
 import { CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from './proto/database_server_pb';
 import { EmptyRequest } from './proto/shared_pb';
-import { CallbackReturnType, DatabaseResponseMetrics, ObserverConfig, performRPC } from './util';
-import { EventEmitter } from 'aurumjs';
+import { CallbackReturnType, DatabaseResponseMetrics, EventEmitter, ObserverConfig, performRPC } from './util';
 
 export { FerrumDBRemote } from './db_remote';
 export { IndexRemote } from './index_remote';
@@ -28,7 +27,7 @@ export class FerrumServerClient {
 
     public readonly onRequestSent: EventEmitter<void> = new EventEmitter();
     public readonly onResponseReceived: EventEmitter<DatabaseResponseMetrics> = new EventEmitter();
-    public readonly onTimeout: EventEmitter<void> = new EventEmitter();
+    public readonly onTimeout: EventEmitter<string> = new EventEmitter();
 
     private constructor(ip: string, port: number) {
         this.ip = ip;
