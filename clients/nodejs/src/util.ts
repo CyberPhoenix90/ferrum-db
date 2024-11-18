@@ -67,6 +67,7 @@ export function performRPC<T, M>(observerConfig: ObserverConfig, fn: (msg: M, cb
         if (observerConfig.timeout > 0) {
             timeoutHandle = setTimeout(() => {
                 observerConfig.timeoutNotifier.emit(printMessage(msg));
+                reject(new Error('Request timed out'));
             }, observerConfig.timeout);
         }
 

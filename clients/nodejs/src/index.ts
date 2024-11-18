@@ -16,6 +16,8 @@ export async function ferrumConnect(ip: string, port: number): Promise<FerrumSer
     return FerrumServerClient.getFerrumServerClient(ip, port);
 }
 
+export { LogVerbosity } from '@grpc/grpc-js/build/src/constants';
+export { setLogger, setLogVerbosity } from '@grpc/grpc-js';
 export { CollectionType } from './proto/collection_pb';
 
 export class FerrumServerClient {
@@ -74,8 +76,21 @@ export class FerrumServerClient {
         }
     }
 
-    private disconnect() {
+    public disconnect(): void {
         this.client.close();
+    }
+
+    public static reconnectAll(): void {
+        for (const key of Object.keys(FerrumServerClient.instanceMap)) {
+            FerrumServerClient.instanceMap[key].reconnect();
+        }
+    }
+
+    public reconnect(): void {
+        this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {
+            'grpc.max_send_message_length': -1,
+            'grpc.max_receive_message_length': -1,
+        });
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {

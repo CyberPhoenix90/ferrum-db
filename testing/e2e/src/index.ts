@@ -4,6 +4,53 @@ import { ferrumConnect } from '../../../clients/nodejs';
 import * as assert from 'assert';
 import { rm } from 'fs/promises';
 
+async function testConnectionTimeout(): Promise<void> {
+    await clearDatabase();
+    let server = await startServer();
+
+    let client = await ferrumConnect('localhost', 3001);
+    let dbRemote = await client.createDatabase('test');
+    let index = await dbRemote.createIndex('test', 'json', 'gzip');
+
+    const p = index.set('key1', 'test');
+    const time = Date.now();
+    console.log('Blocking');
+    while (Date.now() - time < 30000) {
+        // busy wait to induce timeout
+    }
+    await p;
+
+    console.log('check if connection still works');
+    if ((await index.get('key1')) !== 'test') {
+        throw new Error('Connection timeout test failed');
+    } else {
+        console.log('Connection timeout test: OK.');
+    }
+    server.kill(9);
+}
+
+async function testConnectionReconnect(): Promise<void> {
+    await clearDatabase();
+    let server = await startServer();
+
+    let client = await ferrumConnect('localhost', 3001);
+    let dbRemote = await client.createDatabase('test');
+    let index = await dbRemote.createIndex('test', 'json', 'gzip');
+
+    await index.set('key1', 'test');
+    console.log('Reconnecting');
+    client.reconnect();
+
+    console.log('check if connection still works');
+    if ((await index.get('key1')) !== 'test') {
+        throw new Error('Connection timeout test failed');
+    } else {
+        console.log('Connection reconnect test: OK.');
+    }
+    server.kill(9);
+}
+
+//@ts-ignore
 async function testKillCorruption(): Promise<void> {
     await clearDatabase();
     let server = await startServer();
@@ -39,6 +86,7 @@ async function testKillCorruption(): Promise<void> {
     server.kill(9);
 }
 
+//@ts-ignore
 async function testTimeSeries(): Promise<void> {
     await clearDatabase();
 
@@ -145,6 +193,7 @@ async function startServer(): Promise<ChildProcess> {
     return cp;
 }
 
+//@ts-ignore
 async function testTags(): Promise<void> {
     await clearDatabase();
 
@@ -179,6 +228,7 @@ async function testTags(): Promise<void> {
     server.kill(9);
 }
 
+//@ts-ignore
 async function clearTest(): Promise<void> {
     await clearDatabase();
 
@@ -206,6 +256,8 @@ async function clearTest(): Promise<void> {
     server.kill(9);
 }
 (async () => {
+    await testConnectionReconnect();
+    await testConnectionTimeout();
     await testKillCorruption();
     await testTimeSeries();
     await testTags();

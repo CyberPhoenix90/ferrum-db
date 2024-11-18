@@ -1,6 +1,7 @@
 bin
 obj
 .history
+.idea
 dist
 node_modules
 coverage.cobertura.xml
