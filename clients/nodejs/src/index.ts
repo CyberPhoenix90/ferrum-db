@@ -4,7 +4,7 @@ import { FerrumDBRemote } from './db_remote';
 import { DatabaseServerClient } from './proto/database_server_grpc_pb';
 import { CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from './proto/database_server_pb';
 import { EmptyRequest } from './proto/shared_pb';
-import { CallbackReturnType, DatabaseResponseMetrics, EventEmitter, ObserverConfig, performRPC } from './util';
+import { CallbackReturnType, DatabaseResponseMetrics, EventEmitter, ObserverConfig, performRPC, TimeoutData } from './util';
 import { ConnectivityState } from '@grpc/grpc-js/build/src/connectivity-state';
 
 export { FerrumDBRemote } from './db_remote';
@@ -31,7 +31,7 @@ export class FerrumServerClient {
 
     public readonly onRequestSent: EventEmitter<void> = new EventEmitter();
     public readonly onResponseReceived: EventEmitter<DatabaseResponseMetrics> = new EventEmitter();
-    public readonly onTimeout: EventEmitter<string> = new EventEmitter();
+    public readonly onTimeout: EventEmitter<TimeoutData> = new EventEmitter();
     private onReconnect: EventEmitter<Channel> = new EventEmitter();
 
     private constructor(ip: string, port: number) {
@@ -94,12 +94,14 @@ export class FerrumServerClient {
     }
 
     public reconnect(): void {
+        const previousClient = this.client;
         this.client = new DatabaseServerClient(`${this.ip}:${this.port}`, ChannelCredentials.createSsl(), {
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });
 
         this.onReconnect.emit(this.client.getChannel());
+        previousClient.close();
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {

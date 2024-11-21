@@ -46,6 +46,11 @@ export function expandBsonBuffer(newSize: number): void {
     bsonBufferSize = newSize;
 }
 
+export interface TimeoutData {
+    request: string;
+    startTime: number;
+}
+
 export interface DatabaseResponseMetrics {
     request: string;
     latency: number;
@@ -54,7 +59,7 @@ export interface DatabaseResponseMetrics {
 
 export interface ObserverConfig {
     startNotifier: EventEmitter<void>;
-    timeoutNotifier: EventEmitter<string>;
+    timeoutNotifier: EventEmitter<TimeoutData>;
     responseNotifier: EventEmitter<DatabaseResponseMetrics>;
     timeout: number;
 }
@@ -63,10 +68,14 @@ export function performRPC<T, M>(observerConfig: ObserverConfig, fn: (msg: M, cb
     return new Promise((resolve, reject) => {
         observerConfig.startNotifier.emit();
         const startTime = performance.now();
+        const startTimeTs = Date.now();
         let timeoutHandle: NodeJS.Timeout;
         if (observerConfig.timeout > 0) {
             timeoutHandle = setTimeout(() => {
-                observerConfig.timeoutNotifier.emit(printMessage(msg));
+                observerConfig.timeoutNotifier.emit({
+                    request: printMessage(msg),
+                    startTime: startTimeTs,
+                });
                 reject(new Error('Request timed out'));
             }, observerConfig.timeout);
         }
