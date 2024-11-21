@@ -13,7 +13,16 @@ import {
     ListKeysRequest,
     PutRequest,
 } from './proto/index_pb';
-import { CallbackReturnType, decodeValue, encodeValue, ObserverConfig, performRPC, SupportedCompressionTypes, SupportedEncodingTypes } from './util';
+import {
+    CallbackReturnType,
+    decodeValue,
+    encodeValue,
+    EventEmitter,
+    ObserverConfig,
+    performRPC,
+    SupportedCompressionTypes,
+    SupportedEncodingTypes,
+} from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class IndexRemote<T> extends CollectionRemote {
@@ -23,13 +32,22 @@ export class IndexRemote<T> extends CollectionRemote {
 
     constructor(
         channel: Channel,
+        onReconnect: EventEmitter<Channel>,
         database: string,
         indexName: string,
         encoding: SupportedEncodingTypes,
         compression: SupportedCompressionTypes,
         observerConfig: ObserverConfig,
     ) {
-        super(channel, CollectionType.INDEX, database, indexName, observerConfig);
+        super(channel, onReconnect, CollectionType.INDEX, database, indexName, observerConfig);
+        onReconnect.subscribe((ch) => {
+            this.client = new IndexClient(ch.getTarget(), ChannelCredentials.createSsl(), {
+                channelFactoryOverride: () => ch,
+                'grpc.max_send_message_length': -1,
+                'grpc.max_receive_message_length': -1,
+            });
+        });
+
         this.client = new IndexClient(channel.getTarget(), ChannelCredentials.createSsl(), {
             channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,

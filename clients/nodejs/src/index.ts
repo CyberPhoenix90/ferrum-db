@@ -1,9 +1,11 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
+import { Channel } from '@grpc/grpc-js/build/src/channel';
 import { FerrumDBRemote } from './db_remote';
 import { DatabaseServerClient } from './proto/database_server_grpc_pb';
 import { CreateDatabaseRequest, DropDatabaseRequest, HasDatabaseRequest } from './proto/database_server_pb';
 import { EmptyRequest } from './proto/shared_pb';
 import { CallbackReturnType, DatabaseResponseMetrics, EventEmitter, ObserverConfig, performRPC } from './util';
+import { ConnectivityState } from '@grpc/grpc-js/build/src/connectivity-state';
 
 export { FerrumDBRemote } from './db_remote';
 export { IndexRemote } from './index_remote';
@@ -30,6 +32,7 @@ export class FerrumServerClient {
     public readonly onRequestSent: EventEmitter<void> = new EventEmitter();
     public readonly onResponseReceived: EventEmitter<DatabaseResponseMetrics> = new EventEmitter();
     public readonly onTimeout: EventEmitter<string> = new EventEmitter();
+    private onReconnect: EventEmitter<Channel>;
 
     private constructor(ip: string, port: number) {
         this.ip = ip;
@@ -47,11 +50,15 @@ export class FerrumServerClient {
         };
     }
 
-    public setRequestTimeout(timeout: number) {
+    public getChannelStatus(): ConnectivityState {
+        return this.client.getChannel().getConnectivityState(false);
+    }
+
+    public setRequestTimeout(timeout: number): void {
         this.observerConfig.timeout = timeout;
     }
 
-    public static getFerrumServerClient(ip: string, port: number) {
+    public static getFerrumServerClient(ip: string, port: number): FerrumServerClient {
         const key = `${ip}:${port}`;
         if (!FerrumServerClient.instanceMap[key]) {
             FerrumServerClient.instanceMap[key] = new FerrumServerClient(ip, port);
@@ -60,7 +67,7 @@ export class FerrumServerClient {
         return FerrumServerClient.instanceMap[key];
     }
 
-    public static disconnectAll() {
+    public static disconnectAll(): void {
         for (const key of Object.keys(FerrumServerClient.instanceMap)) {
             FerrumServerClient.instanceMap[key].disconnect();
         }
@@ -68,7 +75,7 @@ export class FerrumServerClient {
         FerrumServerClient.instanceMap = {};
     }
 
-    public async disconnectClient(ip: string, port: number) {
+    public async disconnectClient(ip: string, port: number): Promise<void> {
         const key = `${ip}:${port}`;
         if (FerrumServerClient.instanceMap[key]) {
             FerrumServerClient.instanceMap[key].disconnect();
@@ -91,6 +98,8 @@ export class FerrumServerClient {
             'grpc.max_send_message_length': -1,
             'grpc.max_receive_message_length': -1,
         });
+
+        this.onReconnect.emit(this.client.getChannel());
     }
 
     public async createDatabaseIfNotExists(dbName: string): Promise<FerrumDBRemote> {
@@ -106,7 +115,7 @@ export class FerrumServerClient {
             throw new Error(res.getError());
         }
 
-        return new FerrumDBRemote(this.client.getChannel(), dbName, this.observerConfig);
+        return new FerrumDBRemote(this.client.getChannel(), this.onReconnect, dbName, this.observerConfig);
     }
 
     public async createDatabase(dbName: string): Promise<FerrumDBRemote> {
@@ -123,7 +132,7 @@ export class FerrumServerClient {
             throw new Error(res.getError());
         }
 
-        return new FerrumDBRemote(this.client.getChannel(), dbName, this.observerConfig);
+        return new FerrumDBRemote(this.client.getChannel(), this.onReconnect, dbName, this.observerConfig);
     }
 
     public async getDatabase(dbName: string): Promise<FerrumDBRemote> {
@@ -132,7 +141,7 @@ export class FerrumServerClient {
             throw new Error(`Database ${dbName} does not exist`);
         }
 
-        return new FerrumDBRemote(this.client.getChannel(), dbName, this.observerConfig);
+        return new FerrumDBRemote(this.client.getChannel(), this.onReconnect, dbName, this.observerConfig);
     }
 
     public async hasDatabase(dbName: string): Promise<boolean> {

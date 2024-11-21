@@ -17,7 +17,7 @@ import {
 } from './proto/database_pb';
 import { SetRemote } from './set_remote';
 import { TimeSeriesRemote } from './time_series_remote';
-import { SupportedCompressionTypes, SupportedEncodingTypes, CallbackReturnType, performRPC, ObserverConfig } from './util';
+import { SupportedCompressionTypes, SupportedEncodingTypes, CallbackReturnType, performRPC, ObserverConfig, EventEmitter } from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class FerrumDBRemote {
@@ -25,8 +25,18 @@ export class FerrumDBRemote {
     public readonly name: string;
     private channel: Channel;
     private observerConfig: ObserverConfig;
+    private onReconnect: EventEmitter<Channel>;
 
-    constructor(channel: Channel, dbName: string, observerConfig: ObserverConfig) {
+    constructor(channel: Channel, onReconnect: EventEmitter<Channel>, dbName: string, observerConfig: ObserverConfig) {
+        this.onReconnect = onReconnect;
+        onReconnect.subscribe((ch) => {
+            this.client = new DatabaseClient(ch.getTarget(), ChannelCredentials.createSsl(), {
+                channelFactoryOverride: () => ch,
+                'grpc.max_send_message_length': -1,
+                'grpc.max_receive_message_length': -1,
+            });
+            this.channel = ch;
+        });
         this.channel = channel;
         this.name = dbName;
         this.client = new DatabaseClient(channel.getTarget(), ChannelCredentials.createSsl(), {
@@ -58,7 +68,7 @@ export class FerrumDBRemote {
     }
 
     public getIndex<T>(index: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): IndexRemote<T> {
-        return new IndexRemote<T>(this.channel, this.name, index, encoding, compression, this.observerConfig);
+        return new IndexRemote<T>(this.channel, this.onReconnect, this.name, index, encoding, compression, this.observerConfig);
     }
 
     public async deleteIndex(index: string): Promise<void> {
@@ -160,7 +170,7 @@ export class FerrumDBRemote {
     }
 
     public getSet(set: string): SetRemote {
-        return new SetRemote(this.channel, this.name, set, this.observerConfig);
+        return new SetRemote(this.channel, this.onReconnect, this.name, set, this.observerConfig);
     }
 
     public async deleteSet(set: string): Promise<void> {
@@ -262,7 +272,7 @@ export class FerrumDBRemote {
     }
 
     public getTimeSeries<T>(name: string, encoding: SupportedEncodingTypes = 'bson', compression: SupportedCompressionTypes = 'gzip'): TimeSeriesRemote<T> {
-        return new TimeSeriesRemote<T>(this.channel, this.name, name, encoding, compression, this.observerConfig);
+        return new TimeSeriesRemote<T>(this.channel, this.onReconnect, this.name, name, encoding, compression, this.observerConfig);
     }
 
     public async deleteTimeSeries(name: string): Promise<void> {

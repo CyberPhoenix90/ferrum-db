@@ -3,14 +3,21 @@ import { CollectionRemote } from './collection_remote';
 import { CollectionType } from './proto/collection_pb';
 import { SetClient } from './proto/set_grpc_pb';
 import { ClearRequest, DeleteRequest, HasRequest, ListKeysRequest, PutRequest, SizeRequest } from './proto/set_pb';
-import { CallbackReturnType, ObserverConfig, performRPC } from './util';
+import { CallbackReturnType, EventEmitter, ObserverConfig, performRPC } from './util';
 import { Channel } from '@grpc/grpc-js/build/src/channel';
 
 export class SetRemote extends CollectionRemote {
     private client: SetClient;
 
-    constructor(channel: Channel, database: string, setName: string, observerConfig: ObserverConfig) {
-        super(channel, CollectionType.SET, database, setName, observerConfig);
+    constructor(channel: Channel, onReconnect: EventEmitter<Channel>, database: string, setName: string, observerConfig: ObserverConfig) {
+        super(channel, onReconnect, CollectionType.SET, database, setName, observerConfig);
+        onReconnect.subscribe((ch) => {
+            this.client = new SetClient(ch.getTarget(), ChannelCredentials.createSsl(), {
+                channelFactoryOverride: () => ch,
+                'grpc.max_send_message_length': -1,
+                'grpc.max_receive_message_length': -1,
+            });
+        });
         this.client = new SetClient(channel.getTarget(), ChannelCredentials.createSsl(), {
             channelFactoryOverride: () => channel,
             'grpc.max_send_message_length': -1,
