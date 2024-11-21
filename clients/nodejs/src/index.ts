@@ -32,7 +32,7 @@ export class FerrumServerClient {
     public readonly onRequestSent: EventEmitter<void> = new EventEmitter();
     public readonly onResponseReceived: EventEmitter<DatabaseResponseMetrics> = new EventEmitter();
     public readonly onTimeout: EventEmitter<string> = new EventEmitter();
-    private onReconnect: EventEmitter<Channel>;
+    private onReconnect: EventEmitter<Channel> = new EventEmitter();
 
     private constructor(ip: string, port: number) {
         this.ip = ip;
