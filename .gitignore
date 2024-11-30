@@ -1,6 +1,7 @@
 bin
 obj
 .history
+.idea
 dist
 node_modules
 coverage.cobertura.xml
@@ -11,3 +12,4 @@ ferrum-db-server/ferrum
 .mono
 ferrum/main/db
 clients/nodejs/src/proto
+ferrum-db.sln.DotSettings.user

@@ -1,22 +1,17 @@
 namespace ferrum_collection_engine;
 
-public enum CollectionKeyType
-{
+public enum CollectionKeyType {
     StringCollection = 0,
-    NumberCollection = 1,
-
+    NumberCollection = 1
 }
 
-public enum CompressionAlgorithm
-{
+public enum CompressionAlgorithm {
     None = 0,
     Lz4 = 1,
-    Zstd = 2,
+    Zstd = 2
 }
 
-
-public enum ValueEncodingType
-{
+public enum ValueEncodingType {
     Binary = 0,
     String = 1,
     Integer = 2,
@@ -25,27 +20,21 @@ public enum ValueEncodingType
     Json = 5,
     Real = 6,
     NdJson = 7,
-    Void = 8,
+    Void = 8
 }
 
-
-public enum EvictionPolicy
-{
+public enum EvictionPolicy {
     Lru = 0,
     Lfu = 1,
-    Fifo = 2,
+    Fifo = 2
 }
 
-public enum Persistence
-{
+public enum Persistence {
     Persisted = 0,
-    InMemory = 1,
+    InMemory = 1
 }
 
-
-
-public record CollectionConfiguration
-{
+public record CollectionConfiguration {
     public required string Name { get; init; }
     public required CollectionKeyType KeyType { get; init; }
     public required ValueEncodingType ValueEncoding { get; init; }
@@ -56,5 +45,4 @@ public record CollectionConfiguration
     public float? Overprovision { get; init; }
     public EvictionPolicy? evictionPolicy { get; init; }
     public required Persistence Persistence { get; init; }
-
 }

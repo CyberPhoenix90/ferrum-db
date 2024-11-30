@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "type": "commonjs",
   "dependencies": {
-    "@grpc/grpc-js": "^1.7.3",
+    "@grpc/grpc-js": "^1.12.2",
     "@types/google-protobuf": "^3.15.12",
     "@types/node": "^20.12.12",
     "bson": "4.4.0",

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,33 +6,27 @@ using ferrum_transaction_engine;
 
 namespace ferrum_query_engine;
 
-public class QueryEngine
-{
+public class QueryEngine {
+    public delegate void onDebugMessageDelegate(int debugPort);
+
     private DatabaseEngine databaseEngine;
-    private TransactionEngine transactionEngine;
 
     public List<Query> pendingQueries = [];
     public List<ExecutionEngine> queryEngines = [];
+    private TransactionEngine transactionEngine;
 
-    public delegate void onDebugMessageDelegate(int debugPort);
-
-    public QueryEngine(DatabaseEngine databaseEngine, TransactionEngine transactionEngine, QueryEngineConfig config)
-    {
+    public QueryEngine(DatabaseEngine databaseEngine, TransactionEngine transactionEngine, QueryEngineConfig config) {
         this.transactionEngine = transactionEngine;
         this.databaseEngine = databaseEngine;
 
-        for (int i = 0; i < config.maxQueryVMs; i++)
-        {
+        for (var i = 0; i < config.maxQueryVMs; i++)
             queryEngines.Add(new ExecutionEngine(databaseEngine, transactionEngine, config));
-        }
     }
 
     public async Task<QueryResult> SubmitQuery(string query, string[] parameters, bool debugMode,
-    onDebugMessageDelegate onDebugMessage
-    , int? overrideMaxQueryTime = null, int? overrideMaxQueryVMMemory = null)
-    {
+        onDebugMessageDelegate onDebugMessage, int? overrideMaxQueryTime = null, int? overrideMaxQueryVMMemory = null) {
         var taskSource = new TaskCompletionSource<QueryResult>();
-        Query q = new Query(query, parameters, debugMode, taskSource, overrideMaxQueryTime, overrideMaxQueryVMMemory);
+        var q = new Query(query, parameters, debugMode, taskSource, overrideMaxQueryTime, overrideMaxQueryVMMemory);
         pendingQueries.Add(q);
         NextQuery();
 
@@ -43,29 +36,21 @@ public class QueryEngine
         return await taskSource.Task;
     }
 
-    private void NextQuery()
-    {
-        Query? query = pendingQueries.FirstOrDefault();
-        if (query != null)
-        {
-            ExecutionEngine? engine = GetAvailableEngine();
-            if (engine != null)
-            {
+    private void NextQuery() {
+        var query = pendingQueries.FirstOrDefault();
+        if (query != null) {
+            var engine = GetAvailableEngine();
+            if (engine != null) {
                 engine.AssignAndExecuteQuery(query);
                 pendingQueries.Remove(query);
             }
         }
     }
 
-    private ExecutionEngine? GetAvailableEngine()
-    {
+    private ExecutionEngine? GetAvailableEngine() {
         foreach (var engine in queryEngines)
-        {
             if (!engine.isBusy)
-            {
                 return engine;
-            }
-        }
 
         return null;
     }
